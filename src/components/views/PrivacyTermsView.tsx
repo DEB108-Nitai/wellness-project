@@ -1,71 +1,45 @@
 import React, { useState } from 'react';
-import { Shield, Lock, Trash2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { storage } from '../../services/storageService';
+import { Shield, Lock, CheckCircle2, FileText, Sparkles } from 'lucide-react';
 
 interface PrivacyTermsViewProps {
-  initialTab?: 'privacy' | 'terms' | 'delete';
+  initialTab?: 'privacy' | 'terms';
 }
 
 export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab = 'privacy' }) => {
-  const [activeTab, setActiveTab] = useState<'privacy' | 'terms' | 'delete'>(initialTab);
-  const [refId, setRefId] = useState('');
-  const [email, setEmail] = useState('');
-  const [submittedDeletion, setSubmittedDeletion] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleDeleteSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!refId.trim()) {
-      setError('Please provide your 10-character Reference ID (e.g. WL-8K2Q9X).');
-      return;
-    }
-
-    storage.submitDeletionRequest(refId, email);
-    setSubmittedDeletion(true);
-    setError('');
-  };
+  const [activeTab, setActiveTab] = useState<'privacy' | 'terms'>(initialTab);
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 space-y-8 pb-24">
       {/* HEADER & TABS */}
       <div className="text-center space-y-3">
         <span className="text-xs font-bold text-teal-700 uppercase tracking-wider bg-teal-50 px-3 py-1 rounded-full">
-          Governance & Compliance
+          Platform Governance
         </span>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-heading">
-          Privacy, Terms & Data Governance
+          Privacy Policy & Terms of Service
         </h1>
-        <p className="text-sm text-slate-600">
-          Fully compliant with the General Data Protection Regulation (GDPR), the India DPDP Act 2023, and CCPA.
+        <p className="text-sm text-slate-600 max-w-2xl mx-auto">
+          Information on how your assessment scores, demographics, and 60-day transformation challenge data are collected, utilized, and securely managed.
         </p>
       </div>
 
       <div className="flex items-center justify-center gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab('privacy')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
+          className={`px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'privacy' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Privacy Policy
+          Privacy & Data Policy
         </button>
 
         <button
           onClick={() => setActiveTab('terms')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
+          className={`px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
             activeTab === 'terms' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Terms of Service
-        </button>
-
-        <button
-          onClick={() => setActiveTab('delete')}
-          className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${
-            activeTab === 'delete' ? 'bg-rose-600 text-white shadow-xs' : 'text-rose-700 hover:bg-rose-50'
-          }`}
-        >
-          Delete My Data Request
         </button>
       </div>
 
@@ -73,30 +47,45 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
       {activeTab === 'privacy' && (
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-6 text-xs sm:text-sm text-slate-700 leading-relaxed">
           <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">1. Data Minimization & Collection</h2>
+            <h2 className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
+              <Shield className="w-5 h-5 text-teal-600" />
+              <span>1. Data Collection & Processing Scope</span>
+            </h2>
             <p>
-              Wellness collects only minimal demographics (country of residence, age range, and gender) necessary to calibrate statistical population Sten norms. We do not require real names, phone numbers, or social logins to take the assessment.
+              When you participate in the Wellness 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic Therapeutic Intervention & Transcendental Therapeutic Intervention), we collect and store:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-slate-600">
+              <li>Item response scores across the 163 personality questionnaire statements.</li>
+              <li>Calculated Sten scale scores (1-10), z-scores, and 5 global domain profiles.</li>
+              <li>Basic demographics (age group, gender, country) for benchmark calibration.</li>
+              <li>Challenge registration information (name, contact details, preferred cohort timing, and stated goals).</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-lg font-bold text-slate-900 font-heading">2. Utilization of Data</h2>
+            <p>
+              All collected information is retained and utilized by the Wellness platform to:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-slate-600">
+              <li>Generate and deliver your interactive, downloadable 16-factor visual personality report.</li>
+              <li>Provide personalized mentoring and practice materials during the 60-day transformation tracks.</li>
+              <li>Maintain your longitudinal assessment record so you can compare future test retakes over time.</li>
+              <li>Refine statistical population norm distributions and improve psychometric scoring precision.</li>
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <h2 className="text-lg font-bold text-slate-900 font-heading">3. Security & Access Controls</h2>
+            <p>
+              Participant records are secured with industry-standard encryption, unique reference tokens, and strict access controls. Data is exclusively utilized for personal developmental insights, program delivery, and platform administration. We do not sell participant data to external advertising networks.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">2. Research & Norm Calibration</h2>
+            <h2 className="text-lg font-bold text-slate-900 font-heading">4. Data Retention & Record Continuity</h2>
             <p>
-              Anonymized question responses are aggregated to improve psychometric validity and factor analysis. Your individual response sheet is stored under a randomized cryptographic token and human-friendly reference ID.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">3. No Commercial Data Sale</h2>
-            <p>
-              We do not sell, rent, or trade assessment results with marketing or advertising brokers. Data is accessible solely to authorized researchers whose campaign link you voluntary completed, or to platform administrators for quality verification.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">4. Right to Erasure (GDPR Article 17 & DPDP)</h2>
-            <p>
-              You maintain the absolute right to have your assessment responses, factor scores, and session logs permanently purged. Submit your Reference Code via the "Delete My Data" tab to process your request.
+              Assessment profiles and challenge milestones are permanently stored to ensure participants and program coaches maintain continuous access to their historical behavioral progress, reports, and transformation records.
             </p>
           </div>
         </div>
@@ -106,106 +95,35 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
       {activeTab === 'terms' && (
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-6 text-xs sm:text-sm text-slate-700 leading-relaxed">
           <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">1. Purpose of the Assessment</h2>
+            <h2 className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
+              <FileText className="w-5 h-5 text-teal-600" />
+              <span>1. Purpose of Assessment & 60-Day Programs</span>
+            </h2>
             <p>
-              Wellness 16 Personality Factors is an educational and self-insight instrument based on the public-domain International Personality Item Pool (IPIP). It is intended to foster personal development, communication awareness, and team cohesion.
+              Wellness provides behavioral self-insight tools based on the scientific International Personality Item Pool (IPIP) and holistic lifestyle transformation methodologies. Our programs are designed to cultivate self-awareness, cognitive balance, habit discipline, and conscious personal growth.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">2. Non-Clinical & Non-Diagnostic Disclaimer</h2>
+            <h2 className="text-lg font-bold text-slate-900 font-heading">2. Educational & Non-Clinical Disclaimer</h2>
             <p>
-              This questionnaire is <strong>not</strong> a medical or clinical psychiatric diagnostic tool. It should not be used as the sole criterion for clinical diagnosis, legal determination, or discriminatory employment practices.
+              The 16 Personality Factors assessment and the 60-Day Challenges (STI and TTI) are educational and self-developmental frameworks. They do not constitute medical, clinical psychiatric, or diagnostic services.
             </p>
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-lg font-bold text-slate-900 font-heading">3. Intellectual Property</h2>
+            <h2 className="text-lg font-bold text-slate-900 font-heading">3. Participant Commitment & Code of Conduct</h2>
             <p>
-              "Wellness" personality software and visual presentation layouts are proprietary. The underlying 16-factor item pool is utilized under the public-domain IPIP terms (ipip.ori.org). 16PF® is a registered trademark of its respective trademark holders with whom this independent research applet is not affiliated.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: DELETE DATA FORM */}
-      {activeTab === 'delete' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-6 max-w-2xl mx-auto">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
-              <Trash2 className="w-5 h-5" />
-              <span>Right to Erasure Request</span>
-            </div>
-            <h3 className="text-xl font-bold text-slate-900 font-heading">
-              Request Permanent Data Deletion
-            </h3>
-            <p className="text-xs text-slate-500">
-              Enter the unique Reference ID provided at the conclusion of your test (e.g. WL-7K2Q9X).
+              Participants enrolled in the 60-Day Challenges agree to participate respectfully in group reflection circles, honor peer privacy, and engage in daily practices in good faith.
             </p>
           </div>
 
-          {!submittedDeletion ? (
-            <form onSubmit={handleDeleteSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Participant Reference Code <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. WL-8K2Q9X"
-                  value={refId}
-                  onChange={(e) => setRefId(e.target.value.toUpperCase())}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-mono uppercase"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Contact Email (Optional for confirmation notice)
-                </label>
-                <input
-                  type="email"
-                  placeholder="you@domain.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
-                />
-              </div>
-
-              {error && (
-                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
-              >
-                Submit Deletion Request
-              </button>
-            </form>
-          ) : (
-            <div className="py-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 mx-auto flex items-center justify-center">
-                <CheckCircle2 className="w-7 h-7" />
-              </div>
-              <h4 className="text-base font-bold text-slate-900 font-heading">
-                Deletion Request Queued
-              </h4>
-              <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                Your request to purge Reference ID <strong>{refId}</strong> has been logged in the administrator queue. All associated response records and scoring data will be purged.
-              </p>
-              <button
-                onClick={() => setSubmittedDeletion(false)}
-                className="px-4 py-2 text-xs font-semibold bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200"
-              >
-                Submit Another Request
-              </button>
-            </div>
-          )}
+          <div className="space-y-2">
+            <h2 className="text-lg font-bold text-slate-900 font-heading">4. Intellectual Property</h2>
+            <p>
+              "Wellness" personality algorithms, presentation layouts, and 60-Day Challenge curriculums are proprietary. The underlying 16-factor item pool is utilized in accordance with the public-domain IPIP terms (ipip.ori.org).
+            </p>
+          </div>
         </div>
       )}
     </div>

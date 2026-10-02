@@ -13,7 +13,9 @@ import {
   RefreshCw,
   HelpCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  PlayCircle,
+  RotateCcw
 } from 'lucide-react';
 import { QUESTIONS_POOL } from '../../data/questionsData';
 import { Demographics, TestSession } from '../../types';
@@ -47,6 +49,8 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
   onNavigate,
   campaignSlug,
 }) => {
+  const currentUser = storage.getCurrentUser();
+
   // Steps: 'consent' | 'demographics' | 'questions' | 'review' | 'thankyou'
   const [step, setStep] = useState<'consent' | 'demographics' | 'questions' | 'review' | 'thankyou'>('consent');
 
@@ -59,7 +63,7 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
   const [country, setCountry] = useState('US');
   const [age, setAge] = useState<number | ''>(28);
   const [gender, setGender] = useState<'Female' | 'Male' | 'Non-binary' | 'Prefer not to say' | 'Self-describe'>('Female');
-  const [nickname, setNickname] = useState('');
+  const [nickname, setNickname] = useState(currentUser?.name || '');
   const [education, setEducation] = useState('Bachelor\'s Degree');
   const [occupation, setOccupation] = useState('');
   const [demoError, setDemoError] = useState('');
@@ -71,12 +75,34 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
   const itemsPerPage = 7;
   const totalPages = Math.ceil(QUESTIONS_POOL.length / itemsPerPage); // 24
 
+  // In-progress draft detection (strictly for logged-in user who left an assessment in-between)
+  const [draftSession, setDraftSession] = useState<TestSession | undefined>(
+    () => (currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined)
+  );
+
   // Timer & UI helpers
   const [secondsSpent, setSecondsSpent] = useState(0);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved');
   const [copiedRef, setCopiedRef] = useState(false);
   const [missingQuestionId, setMissingQuestionId] = useState<number | null>(null);
+
+  // Resume draft handler
+  const handleResumeDraft = (draft: TestSession) => {
+    setSession(draft);
+    setAnswers(draft.draftAnswers || {});
+    setCurrentPage(draft.currentPage || 1);
+    setStep('questions');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Start fresh handler
+  const handleStartFresh = () => {
+    if (draftSession) {
+      storage.discardDraftSession(draftSession.token);
+      setDraftSession(undefined);
+    }
+  };
 
   // Post-test review
   const [reviewRating, setReviewRating] = useState(5);
@@ -248,8 +274,67 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
 
   // --- STEP 1: CONSENT SCREEN ---
   if (step === 'consent') {
+    const draftProgressPct = draftSession && draftSession.answeredCount > 0
+      ? Math.round((draftSession.answeredCount / 163) * 100)
+      : 0;
+
     return (
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 py-12 space-y-6">
+        {/* RESUME IN-PROGRESS ASSESSMENT BANNER */}
+        {draftSession && draftSession.answeredCount > 0 && (
+          <div className="bg-gradient-to-br from-teal-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border-2 border-teal-500/40 shadow-xl space-y-5 animate-in fade-in-50 duration-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-semibold border border-teal-400/30">
+                  <PlayCircle className="w-3.5 h-3.5 text-teal-300" />
+                  <span>Assessment In Progress Detected</span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-bold font-heading text-white">
+                  Welcome back, {draftSession.demographics.nickname || currentUser?.name || 'Participant'}!
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-300">
+                  You left off with <strong>{draftSession.answeredCount} of 163</strong> statements completed ({draftProgressPct}%).
+                </p>
+              </div>
+
+              <div className="sm:text-right">
+                <span className="text-3xl font-extrabold text-teal-400 font-mono">
+                  {draftProgressPct}%
+                </span>
+                <p className="text-[11px] text-slate-400">Page {draftSession.currentPage || 1} of {totalPages}</p>
+              </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700">
+              <div
+                className="bg-gradient-to-r from-teal-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${draftProgressPct}%` }}
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => handleResumeDraft(draftSession)}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer group"
+              >
+                <PlayCircle className="w-4 h-4 text-slate-950 group-hover:scale-110 transition-transform" />
+                <span>Resume Where I Left Off (Page {draftSession.currentPage || 1})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleStartFresh}
+                className="text-xs text-slate-400 hover:text-rose-300 flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Discard draft & start over</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white rounded-3xl p-6 sm:p-10 border border-slate-200 shadow-sm space-y-8">
           <div className="text-center space-y-3">
             <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">
@@ -797,7 +882,7 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
               </button>
             </div>
             <p className="text-[11px] text-slate-400">
-              Save this code to access your profile or request data deletion later.
+              Save this Reference Code to access or reference your 16 personality profile.
             </p>
           </div>
         )}

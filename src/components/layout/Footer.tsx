@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, CheckCircle2, Shield, Heart, ExternalLink } from 'lucide-react';
+import { Mail, CheckCircle2, Shield, Heart, Sparkles, Volume2 } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (view: string) => void;
@@ -21,16 +21,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
     <footer className="bg-[#181E29] text-slate-300 border-t border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800">
-          {/* Col 1: Brand & Scientific Mission */}
+          {/* Col 1: Brand & Mission */}
           <div className="lg:col-span-2 space-y-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center text-white font-bold text-base">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 via-indigo-600 to-amber-500 flex items-center justify-center text-white font-bold text-base">
                 W
               </div>
               <span className="text-xl font-bold tracking-tight text-white">Wellness</span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
-              An open, standardized 16 Personality Factors assessment platform built on the scientific International Personality Item Pool (IPIP) model. Providing deep behavioral self-understanding and research-grade psychometrics.
+              Standardized 16 Personality Factors assessment and holistic 60-Day Life Transformation programs. Empowering deep self-awareness, cognitive mastery, and conscious living.
             </p>
             <div className="pt-2 text-xs text-slate-500">
               <span>* Derived from the public-domain IPIP 16-factor construct (ipip.ori.org).</span>
@@ -44,62 +44,76 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <button onClick={() => onNavigate('landing')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('landing')} className="hover:text-white transition-colors cursor-pointer">
                   Home
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('factors')} className="hover:text-white transition-colors">
+                <button
+                  onClick={() => {
+                    onNavigate('landing');
+                    setTimeout(() => {
+                      document.getElementById('60-days-challenge')?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                  className="text-amber-400 hover:text-amber-300 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>60 Days Challenges</span>
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('factors')} className="hover:text-white transition-colors cursor-pointer">
                   The 16 Factors
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('how-it-works')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('how-it-works')} className="hover:text-white transition-colors cursor-pointer">
                   How It Works
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('benefits')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('benefits')} className="hover:text-white transition-colors cursor-pointer">
                   Key Benefits
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('test')} className="text-teal-400 hover:text-teal-300 font-medium transition-colors">
-                  Take the Assessment
+                <button onClick={() => onNavigate('test')} className="text-teal-400 hover:text-teal-300 font-medium transition-colors cursor-pointer">
+                  Take Free Assessment
                 </button>
               </li>
             </ul>
           </div>
 
-          {/* Col 3: Research & Admin */}
+          {/* Col 3: Legal & Admin */}
           <div>
             <h3 className="text-xs font-semibold text-slate-100 uppercase tracking-wider mb-4">
               Platform & Legal
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <button onClick={() => onNavigate('researcher')} className="hover:text-white transition-colors">
-                  Researcher Portal
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('admin')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('admin')} className="hover:text-white transition-colors cursor-pointer">
                   Admin Console
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors">
-                  Privacy Policy & GDPR
+                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors cursor-pointer">
+                  Privacy Policy & Data
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors">
+                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors cursor-pointer">
                   Terms of Service
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('delete-data')} className="text-rose-400 hover:text-rose-300 transition-colors">
-                  Delete My Data
+                <button onClick={() => onNavigate('faq')} className="hover:text-white transition-colors cursor-pointer">
+                  Frequently Asked Questions
+                </button>
+              </li>
+              <li>
+                <button onClick={() => onNavigate('contact')} className="hover:text-white transition-colors cursor-pointer">
+                  Contact Support
                 </button>
               </li>
             </ul>
@@ -108,10 +122,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Col 4: Newsletter & Updates */}
           <div>
             <h3 className="text-xs font-semibold text-slate-100 uppercase tracking-wider mb-4">
-              Psychometrics Digest
+              Transformation Digest
             </h3>
             <p className="text-xs text-slate-400 mb-3 leading-normal">
-              Receive quarterly research insights on organizational psychology and personality dynamics.
+              Receive updates on upcoming 60-day challenge cohorts, psychometrics, and mental wellness.
             </p>
             {subscribed ? (
               <div className="flex items-center gap-2 text-teal-400 text-xs py-2">
@@ -146,11 +160,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-teal-500 shrink-0" />
             <p>
-              Disclaimer: For self-understanding, research, and team development. Not a medical or clinical psychological diagnosis.
+              Disclaimer: For self-understanding, behavioral development, and personal wellness transformation.
             </p>
           </div>
-          <div>
-            <p>© {new Date().getFullYear()} Wellness 16 Personality Factors. All rights reserved.</p>
+          <div className="text-slate-500">
+            © {new Date().getFullYear()} Wellness Platform. All rights reserved.
           </div>
         </div>
       </div>

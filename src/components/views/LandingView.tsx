@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ArrowRight,
   ShieldCheck,
@@ -17,16 +17,33 @@ import {
   BrainCircuit,
   Lock,
   Layers,
-  FileText
+  FileText,
+  PlayCircle,
+  RotateCcw
 } from 'lucide-react';
 import { FACTORS_DATA } from '../../data/factorsData';
 import { FactorCard } from '../common/FactorCard';
+import { ChallengeSection } from './ChallengeSection';
+import { storage } from '../../services/storageService';
 
 interface LandingViewProps {
   onNavigate: (view: string, param?: string) => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
+  const currentUser = storage.getCurrentUser();
+  const [activeDraft, setActiveDraft] = useState(() => (currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined));
+  const draftProgress = activeDraft && activeDraft.answeredCount > 0
+    ? Math.round((activeDraft.answeredCount / 163) * 100)
+    : 0;
+
+  const handleStartFresh = () => {
+    if (activeDraft) {
+      storage.discardDraftSession(activeDraft.token);
+      setActiveDraft(undefined);
+    }
+    onNavigate('test');
+  };
   const factorList = Object.values(FACTORS_DATA);
 
   // Key uses matching the user's reference image
@@ -62,7 +79,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
     {
       num: "01",
       title: "Consent & Demographics",
-      desc: "Set your preferences in under 1 minute. Fully anonymized and compliant with international privacy standards.",
+      desc: "Set your preferences in under 1 minute. Anonymized and strictly secure under privacy standards.",
     },
     {
       num: "02",
@@ -91,8 +108,8 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/15 border border-teal-400/30 text-teal-300 text-xs font-semibold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Standardized IPIP-Based Psychometric Model</span>
+              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+              <span>Scientific Well-Being & Holistic Transformation</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white font-heading">
@@ -100,28 +117,37 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             </h1>
 
             <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto font-normal">
-              Discover a deep, objective understanding of your cognitive, relational, and emotional behavioral traits with standardized Sten norms.
+              Empowering deep self-understanding and sustainable life transformation. Complete your standardized personality profile or join our flagship 60-day transformation challenges.
             </p>
 
-            {/* CTAs */}
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button
-                onClick={() => onNavigate('test')}
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-slate-950 font-bold text-base shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
-              >
-                <span>Start Free Assessment</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                onClick={() => {
-                  const el = document.getElementById('factors-grid');
-                  el?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-base border border-white/20 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Explore the 16 Factors</span>
-              </button>
+            {/* Hero Primary CTA: Dynamic Continue Assessment or Start Free Assessment */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+              {activeDraft && activeDraft.answeredCount > 0 ? (
+                <>
+                  <button
+                    onClick={() => onNavigate('test')}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-base shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-teal-300"
+                  >
+                    <PlayCircle className="w-5 h-5 text-slate-950" />
+                    <span>Continue Assessment ({draftProgress}% Done)</span>
+                  </button>
+                  <button
+                    onClick={handleStartFresh}
+                    className="text-xs text-slate-300 hover:text-white px-4 py-2 flex items-center gap-1.5 transition-colors underline cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>or Start Over</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => onNavigate('test')}
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-slate-950 font-bold text-base shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
+                >
+                  <span>Start Free Assessment</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              )}
             </div>
 
             {/* Trust Chips */}
@@ -147,7 +173,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* SECTION 2: ABOUT THE 16 FACTORS (Syngrity Reference Structure) */}
+      {/* SECTION 2: ABOUT THE 16 FACTORS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-3xl p-8 sm:p-12 lg:p-14 border border-slate-200 shadow-sm space-y-8">
           <div className="text-center max-w-3xl mx-auto space-y-3">
@@ -190,7 +216,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* SECTION 3: THE 16 PERSONALITY FACTORS GRID (Matching 4x4 blue cards) */}
+      {/* SECTION 3: THE 16 PERSONALITY FACTORS GRID (Matching 4x4 cards) */}
       <section id="factors-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">
@@ -262,7 +288,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* SECTION 5: KEY USES & BENEFITS (Matching Image 5) */}
+      {/* SECTION 5: KEY USES & BENEFITS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
         <div className="text-center max-w-2xl mx-auto space-y-3">
           <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">
@@ -272,7 +298,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             Key Uses & Benefits
           </h2>
           <p className="text-sm text-slate-600">
-            How objective 16-factor psychometrics empowers leadership, talent development, and organizational growth.
+            How objective 16-factor psychometrics empowers leadership, talent development, and personal growth.
           </p>
         </div>
 
@@ -319,7 +345,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                   { title: "16-Factor Sten Visualizer", desc: "Detailed 1 to 10 scale charts showing where you land between opposite behavioral poles." },
                   { title: "5 Global Personality Domains", desc: "Extraversion, Anxiety, Tough-Mindedness, Independence, and Self-Control summaries." },
                   { title: "Strengths & Growth Matrix", desc: "Personalized breakdown of your top distinctive traits and suggested development actions." },
-                  { title: "Printable / PDF Report", desc: "Formatted diagnostic report ready for your career portfolio, coach, or organization." },
+                  { title: "Printable / PDF Report", desc: "Formatted diagnostic report ready for your personal development or organization." },
                 ].map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-teal-600 shrink-0 mt-0.5" />
@@ -380,36 +406,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* SECTION 7: MEET OUR EXPERT & SCIENTIFIC FOUNDATION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-slate-200 shadow-sm">
-          <div className="flex flex-col md:flex-row items-center gap-8">
-            <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl bg-gradient-to-br from-indigo-800 to-teal-700 flex items-center justify-center text-white shrink-0 shadow-lg p-3 text-center">
-              <div>
-                <Award className="w-10 h-10 mx-auto text-teal-300 mb-1" />
-                <span className="text-[11px] font-bold uppercase tracking-wider">Scientific Advisory</span>
-              </div>
-            </div>
-
-            <div className="space-y-3 flex-1 text-center md:text-left">
-              <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">
-                Leadership & Psychometrics
-              </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900 font-heading">
-                Dr. Alistair Sterling, Ph.D.
-              </h3>
-              <p className="text-xs text-slate-500 font-medium -mt-1">
-                Senior Organizational Psychologist & Psychometrics Consultant
-              </p>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                "By decoupling personality measurement from rigid archetypes and measuring continuous 16-factor trait dimensions, organizations and individuals gain an empirically validated map of human behavior, strengths, and collaborative potential."
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 8: DUAL CTA BAND */}
+      {/* SECTION 7: DUAL CTA BAND */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-indigo-900 rounded-3xl p-8 sm:p-12 text-white text-center space-y-6 shadow-xl">
           <h2 className="text-2xl sm:text-4xl font-bold font-heading">
@@ -434,6 +431,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
           </div>
         </div>
       </section>
+
+      {/* SECTION 8: 60-DAY TRANSFORMATION CHALLENGES (Sonic STI + Transcendental TTI) */}
+      <ChallengeSection />
     </div>
   );
 };

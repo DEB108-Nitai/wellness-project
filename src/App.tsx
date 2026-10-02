@@ -19,9 +19,8 @@ import { BenefitsView } from './components/views/BenefitsView';
 import { FAQView } from './components/views/FAQView';
 import { ContactView } from './components/views/ContactView';
 import { PrivacyTermsView } from './components/views/PrivacyTermsView';
-import { ResearcherPortalView } from './components/views/ResearcherPortalView';
 import { AdminPortalView } from './components/views/AdminPortalView';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 export default function App() {
   const [currentView, setCurrentView] = useState<string>('landing');
@@ -66,12 +65,6 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStartCampaignTest = (slug: string) => {
-    setActiveCampaignSlug(slug);
-    setCurrentView('test');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   // Find active session for results view
   let activeSession: TestSession | undefined;
   if (activeResultsToken) {
@@ -95,7 +88,7 @@ export default function App() {
           </p>
           <button
             onClick={() => setCurrentView('admin')}
-            className="text-xs text-teal-400 hover:underline pt-2 inline-block"
+            className="text-xs text-teal-400 hover:underline pt-2 inline-block cursor-pointer"
           >
             Administrator Login →
           </button>
@@ -165,17 +158,6 @@ export default function App() {
 
         {currentView === 'privacy-terms' && (
           <PrivacyTermsView initialTab="privacy" />
-        )}
-
-        {currentView === 'delete-data' && (
-          <PrivacyTermsView initialTab="delete" />
-        )}
-
-        {currentView === 'researcher' && (
-          <ResearcherPortalView
-            onStartCampaignTest={handleStartCampaignTest}
-            onNavigate={handleNavigate}
-          />
         )}
 
         {currentView === 'admin' && (

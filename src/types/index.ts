@@ -82,6 +82,8 @@ export interface TestSession {
   id: string;
   token: string;
   referenceId: string; // e.g. WL-7K2Q9X
+  userId?: string;
+  userEmail?: string;
   campaignId?: string;
   campaignSlug?: string;
   status: SessionStatus;
@@ -187,10 +189,56 @@ export interface ContactMessage {
   handled: boolean;
 }
 
+export interface UserAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'researcher' | 'admin';
+  avatar?: string;
+  createdAt: string;
+}
+
+export type ChallengeTrack = 'tti-intensive' | 'mind-consciousness';
+
+export interface ChallengeRegistration {
+  id: string;
+  referenceCode: string; // e.g. TTI-60-8K2Q9X
+  name: string;
+  email: string;
+  phone: string;
+  age?: number;
+  city?: string;
+  programTrack: ChallengeTrack;
+  cohortTiming: 'morning' | 'evening' | 'weekend';
+  currentStruggles: string[];
+  primaryGoal: string;
+  status: 'pending' | 'confirmed' | 'waitlisted' | 'completed';
+  createdAt: string;
+  notes?: string;
+}
+
+export type SonicTherapyFormat = 'sound-bath-circle' | 'one-on-one-clinical' | '21-day-reset-protocol';
+
+export interface SonicRegistration {
+  id: string;
+  referenceCode: string; // e.g. STI-SOUND-8K2Q9X
+  name: string;
+  email: string;
+  phone: string;
+  age?: number;
+  city?: string;
+  therapyFormat: SonicTherapyFormat;
+  sessionPreference: 'in-person' | 'live-online' | 'recorded-frequency-suite';
+  primaryFocus: string[]; // e.g. ['Anxiety & Stress Dissolution', 'Sleep & Insomnia Recovery', 'Trauma & Somatic Release', 'Deep Focus & Neuro-Clarity']
+  specialNotes?: string;
+  status: 'pending' | 'confirmed' | 'waitlisted' | 'completed';
+  createdAt: string;
+}
+
 export interface FAQItem {
   id: string;
   question: string;
   answer: string;
-  category: 'Assessment' | 'Science & Scoring' | 'Privacy & Data' | 'Organizations';
+  category: 'Assessment' | 'Science & Scoring' | 'Privacy & Data' | 'Organizations' | '60 Days Challenge' | 'Sonic Therapy';
   sortOrder: number;
 }
