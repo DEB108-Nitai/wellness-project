@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, X, ArrowRight, ShieldCheck, UserCheck, BookOpen, BarChart3, HelpCircle, Sparkles, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
-import { storage } from '../../services/storageService';
+import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
@@ -13,11 +13,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const { user: currentUser, logout } = useAuth();
-  // Draft continuation only applies to a logged-in user who has an active draft
-  const activeDraft = currentUser ? storage.getActiveDraftSession(String(currentUser.id)) : undefined;
-  const draftProgress = activeDraft && activeDraft.answeredCount > 0
-    ? Math.round((activeDraft.answeredCount / 163) * 100)
-    : 0;
+  // In-progress assessment for this visitor (account or guest browser), from the API.
+  const { active: activeDraft, progress: draftProgress } = useActiveSession();
 
   const navItems = [
     { id: 'landing', label: 'Home' },
@@ -165,6 +162,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                         <span>My Account</span>
                       </button>
 
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          onNavigate('my-results');
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer border-b border-slate-100"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>My Results</span>
+                      </button>
+
                       {currentUser.role === 'admin' && (
                         <button
                           onClick={() => {
@@ -298,6 +306,15 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 </button>
               ) : (
                 <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate('my-results');
+                    }}
+                    className="flex-1 py-2 text-xs font-medium text-center text-slate-700 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    My Results
+                  </button>
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);

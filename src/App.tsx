@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { storage } from './services/storageService';
 import { useAuth } from './context/AuthContext';
@@ -16,8 +16,6 @@ import { CookieNotice } from './components/layout/CookieNotice';
 import { VerifyEmailBanner } from './components/layout/VerifyEmailBanner';
 import { RequireAdmin, RequireAuth } from './components/auth/RouteGuards';
 import { LandingView } from './components/views/LandingView';
-import { TestFlowView } from './components/views/TestFlowView';
-import { ResultsView } from './components/views/ResultsView';
 import { FactorsDirectoryView } from './components/views/FactorsDirectoryView';
 import { HowItWorksView } from './components/views/HowItWorksView';
 import { BenefitsView } from './components/views/BenefitsView';
@@ -32,6 +30,10 @@ import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AccountPage } from './pages/AccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { AssessmentPage } from './pages/test/AssessmentPage';
+import { ResultsPage } from './pages/results/ResultsPage';
+import { SharedResultsPage } from './pages/results/SharedResultsPage';
+import { MyResultsPage } from './pages/results/MyResultsPage';
 
 /** Public site chrome: announcement, navbar, verification reminder, footer, cookie notice. */
 function SiteLayout() {
@@ -72,41 +74,6 @@ function SiteLayout() {
   );
 }
 
-function TestRoute() {
-  const navigate = useNavigate();
-  const onNavigate = useAppNavigate();
-  return (
-    <TestFlowView
-      onComplete={(token) => {
-        navigate(`/results?token=${encodeURIComponent(token)}`);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }}
-      onNavigate={onNavigate}
-    />
-  );
-}
-
-/** Interim results route: looks up the session by its private token only — never falls back to someone else's results. */
-function ResultsRoute() {
-  const [params] = useSearchParams();
-  const onNavigate = useAppNavigate();
-  const token = params.get('token');
-  const session = token ? storage.getSessionByToken(token) : undefined;
-
-  if (!session || session.status !== 'completed') {
-    return (
-      <div className="max-w-lg mx-auto px-4 py-24 text-center space-y-4">
-        <h1 className="text-2xl font-bold text-slate-900 font-heading">Results not found</h1>
-        <p className="text-slate-600">This results link is invalid, or the assessment has not been completed yet.</p>
-        <Link to="/test" className="inline-block text-sm font-semibold text-teal-700 hover:text-teal-800">
-          Take the assessment →
-        </Link>
-      </div>
-    );
-  }
-  return <ResultsView session={session} onRetake={() => onNavigate('test')} onNavigate={onNavigate} />;
-}
-
 function FactorsRoute() {
   const { code } = useParams();
   const onNavigate = useAppNavigate();
@@ -134,8 +101,17 @@ export default function App() {
 
       <Route element={<SiteLayout />}>
         <Route index element={<WithNavigate component={LandingView} />} />
-        <Route path="/test" element={<TestRoute />} />
-        <Route path="/results" element={<ResultsRoute />} />
+        <Route path="/test" element={<AssessmentPage />} />
+        <Route path="/results/:ref" element={<ResultsPage />} />
+        <Route path="/r/:token" element={<SharedResultsPage />} />
+        <Route
+          path="/my-results"
+          element={
+            <RequireAuth>
+              <MyResultsPage />
+            </RequireAuth>
+          }
+        />
         <Route path="/factors" element={<FactorsRoute />} />
         <Route path="/factors/:code" element={<FactorsRoute />} />
         <Route path="/how-it-works" element={<WithNavigate component={HowItWorksView} />} />

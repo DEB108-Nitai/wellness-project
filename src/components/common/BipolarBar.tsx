@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { FactorScoreResult } from '../../types';
+import { FactorScore } from '../../api/assessment';
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 
 interface BipolarBarProps {
-  score: FactorScoreResult;
+  score: FactorScore;
   showDetailsDefault?: boolean;
 }
 
@@ -120,9 +120,10 @@ export const BipolarBar: React.FC<BipolarBarProps> = ({ score, showDetailsDefaul
           <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
             {score.interpretation}
           </p>
-          <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 font-mono">
-            <span>Raw Factor Sum: {score.rawScore}</span>
-            <span>z-score: {score.zScore > 0 ? `+${score.zScore}` : score.zScore} (Percentile ~{score.percentile}%)</span>
+          <p className="text-xs text-slate-500 leading-relaxed">{score.workplaceImpact}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 pt-1 font-mono">
+            <span>Raw score {score.rawScore}</span>
+            <span>Higher than {Math.round(score.percentile)}% of people</span>
           </div>
         </div>
       )}

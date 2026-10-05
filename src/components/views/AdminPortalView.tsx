@@ -27,10 +27,8 @@ import {
   AuditLogEntry,
   ChallengeRegistration,
   SystemSettings,
-  TestSession,
 } from '../../types';
 import { storage } from '../../services/storageService';
-import { QUESTIONS_POOL } from '../../data/questionsData';
 import { FACTORS_DATA } from '../../data/factorsData';
 
 interface AdminPortalViewProps {
@@ -43,9 +41,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
     'dashboard' | 'participants' | 'challenge-regs' | 'settings' | 'audit' | 'questions'
   >('dashboard');
 
-  // Search & Filter states for participants
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterFlagged, setFilterFlagged] = useState('all');
 
   // Challenge Registrations filter states
   const [challengeSearch, setChallengeSearch] = useState('');
@@ -54,7 +49,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
   const [inspectChallenge, setInspectChallenge] = useState<ChallengeRegistration | null>(null);
 
   // Selected participant for deep inspection
-  const [inspectSession, setInspectSession] = useState<TestSession | null>(null);
 
   // Settings form state
   const [settingsState, setSettingsState] = useState<SystemSettings>(storage.getSettings());
@@ -65,15 +59,15 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
   const refresh = () => setTick((t) => t + 1);
 
   // Load real records
-  const sessions = storage.getSessions();
   const auditLogs = storage.getAuditLogs();
   const challengeRegistrations = storage.getChallengeRegistrations();
 
   // Statistics
-  const totalStarted = sessions.length;
-  const totalCompleted = sessions.filter((s) => s.status === 'completed').length;
-  const completionRate = totalStarted > 0 ? Math.round((totalCompleted / totalStarted) * 100) : 0;
-  const flaggedSessions = sessions.filter((s) => s.qualityFlags?.flagged);
+  // Assessment statistics move to the server-backed admin API in Phase 5.
+  const totalStarted = '—';
+  const totalCompleted = '—';
+  const completionRate = '—';
+  const flaggedSessions = { length: '—' };
   const pendingChallenges = challengeRegistrations.filter((c) => c.status === 'pending');
 
   // Filtered challenge registrations
@@ -103,46 +97,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `wellness_60day_challenge_registrations_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  // Filtered participants list
-  const filteredSessions = sessions.filter((s) => {
-    const matchesSearch =
-      s.referenceId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.demographics.nickname && s.demographics.nickname.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesFlag =
-      filterFlagged === 'all'
-        ? true
-        : filterFlagged === 'flagged'
-        ? s.qualityFlags?.flagged
-        : !s.qualityFlags?.flagged;
-
-    return matchesSearch && matchesFlag;
-  });
-
-  const handleExportCSV = () => {
-    const csvData = storage.exportParticipantsCSV();
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `wellness_16pf_data_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleExportJSON = () => {
-    const jsonData = storage.exportParticipantsJSON();
-    const blob = new Blob([jsonData], { type: 'application/json;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `wellness_16pf_backup_${Date.now()}.json`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -185,20 +139,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
           >
             <span>← Exit to Site</span>
           </button>
-          <button
-            onClick={handleExportCSV}
-            className="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-700"
-          >
-            <Download className="w-4 h-4 text-teal-400" />
-            <span>Full DB CSV</span>
-          </button>
-          <button
-            onClick={handleExportJSON}
-            className="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-700"
-          >
-            <Download className="w-4 h-4 text-teal-400" />
-            <span>JSON Backup</span>
-          </button>
+          {/* Participant exports return with the server-backed console (Phase 5). */}
         </div>
       </div>
 
@@ -208,7 +149,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
           { id: 'dashboard', label: 'Overview Metrics', badge: undefined },
           { id: 'participants', label: 'Participants & Sten Data', badge: totalStarted },
           { id: 'challenge-regs', label: '60-Day Challenge Registrations', badge: challengeRegistrations.length },
-          { id: 'questions', label: 'Question Set & Norms', badge: '163 items' },
+          { id: 'questions', label: 'Question Set & Norms', badge: '166 items' },
           { id: 'settings', label: 'System Settings', badge: undefined },
           { id: 'audit', label: 'Audit Log', badge: auditLogs.length },
         ].map((tab) => (
@@ -327,104 +268,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
 
       {/* TAB 2: PARTICIPANTS & RESPONSES CONSOLE */}
       {activeAdminTab === 'participants' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 font-heading">
-                Participant Submissions Console
-              </h3>
-              <p className="text-xs text-slate-500">
-                Inspect 163-statement answers, Sten scale calculations, and export records.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search Ref ID or nickname..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-                />
-              </div>
-
-              <select
-                value={filterFlagged}
-                onChange={(e) => setFilterFlagged(e.target.value)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-              >
-                <option value="all">All Quality States</option>
-                <option value="clean">Clean Submissions</option>
-                <option value="flagged">Quality Flagged</option>
-              </select>
-
-              <button
-                onClick={handleExportCSV}
-                className="px-3 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-xl flex items-center gap-1 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" /> CSV
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Reference ID</th>
-                  <th className="py-3 px-4">Participant</th>
-                  <th className="py-3 px-4">Country & Age</th>
-                  <th className="py-3 px-4">Answered</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Quality Flag</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredSessions.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50/50">
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900">{s.referenceId}</td>
-                    <td className="py-3 px-4">{s.demographics.nickname || 'Anonymous'}</td>
-                    <td className="py-3 px-4">{s.demographics.country} · {s.demographics.age}y</td>
-                    <td className="py-3 px-4 font-mono">{s.answeredCount} / 163</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          s.status === 'completed'
-                            ? 'bg-emerald-50 text-emerald-700'
-                            : 'bg-amber-50 text-amber-700'
-                        }`}
-                      >
-                        {s.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4">
-                      {s.qualityFlags?.flagged ? (
-                        <span className="text-rose-600 font-bold flex items-center gap-1">
-                          <AlertTriangle className="w-3.5 h-3.5" /> Flagged
-                        </span>
-                      ) : (
-                        <span className="text-emerald-600 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Valid
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={() => setInspectSession(s)}
-                        className="px-2.5 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50 rounded-lg cursor-pointer"
-                      >
-                        Inspect Scores
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-2">
+          <h2 className="text-lg font-bold text-slate-900 font-heading">Participants & Sten Data</h2>
+          <p className="text-sm text-slate-500 max-w-lg mx-auto">
+            Assessments are now stored securely on the server. This view is being rebuilt on the server data in Phase 5
+            (search, filters, score inspection and exports).
+          </p>
         </div>
       )}
 
@@ -664,61 +513,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
 
       {/* TAB 4: QUESTION POOL & FACTORS */}
       {activeAdminTab === 'questions' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-slate-900 font-heading">
-                Calibrated IPIP-16 Item Pool (163 Statements)
-              </h3>
-              <p className="text-xs text-slate-500">
-                16 factors, reverse-keyed items, and embedded attention check statements.
-              </p>
-            </div>
-            <span className="text-xs font-mono font-bold text-teal-700 bg-teal-50 px-3 py-1 rounded-lg">
-              Active Set: IPIP16-v1
-            </span>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 max-h-[500px] overflow-y-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px] sticky top-0 bg-slate-100">
-                <tr>
-                  <th className="py-2.5 px-3">#</th>
-                  <th className="py-2.5 px-3">Statement Text</th>
-                  <th className="py-2.5 px-3">Factor</th>
-                  <th className="py-2.5 px-3">Keying</th>
-                  <th className="py-2.5 px-3">Type</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {QUESTIONS_POOL.map((q) => (
-                  <tr key={q.id} className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 font-mono text-slate-500">{q.position}</td>
-                    <td className="py-2.5 px-3 font-medium text-slate-900">{q.text}</td>
-                    <td className="py-2.5 px-3">
-                      {q.factorCode ? (
-                        <span className="font-bold text-teal-700 font-mono">Factor {q.factorCode}</span>
-                      ) : (
-                        <span className="text-slate-400">—</span>
-                      )}
-                    </td>
-                    <td className="py-2.5 px-3 font-mono text-[11px]">
-                      {q.reverseKeyed ? <span className="text-rose-600">Reverse (5-x)</span> : <span className="text-slate-500">Direct</span>}
-                    </td>
-                    <td className="py-2.5 px-3">
-                      {q.isAttentionCheck ? (
-                        <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
-                          Attention Check
-                        </span>
-                      ) : (
-                        <span className="text-slate-400">Standard Item</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-2">
+          <h2 className="text-lg font-bold text-slate-900 font-heading">Question Set & Norms</h2>
+          <p className="text-sm text-slate-500 max-w-lg mx-auto">
+            Assessments are now stored securely on the server. This view is being rebuilt on the server data in Phase 5
+            (search, filters, score inspection and exports).
+          </p>
         </div>
       )}
 
@@ -855,70 +655,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
         </div>
       )}
 
-      {/* INSPECT PARTICIPANT MODAL */}
-      {inspectSession && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <span className="text-xs font-mono font-bold text-teal-700">{inspectSession.referenceId}</span>
-                <h3 className="text-xl font-bold text-slate-900 font-heading">
-                  {inspectSession.demographics.nickname || 'Participant'} — Sten Scores
-                </h3>
-              </div>
-              <button
-                onClick={() => setInspectSession(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-4 rounded-2xl text-xs">
-              <div>
-                <span className="text-slate-400 block">Status</span>
-                <span className="font-semibold text-slate-800">{inspectSession.status}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Country</span>
-                <span className="font-semibold text-slate-800">{inspectSession.demographics.country}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Age</span>
-                <span className="font-semibold text-slate-800">{inspectSession.demographics.age}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Answered</span>
-                <span className="font-semibold text-slate-800">{inspectSession.answeredCount} / 163</span>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Computed 16-Factor Sten Scores:
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {inspectSession.scores?.map((s) => (
-                  <div key={s.factorCode} className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-                    <span className="font-bold text-teal-800 block">Factor {s.factorCode}</span>
-                    <span className="text-[11px] text-slate-600 truncate block">{s.factorName}</span>
-                    <span className="text-base font-bold font-mono text-slate-900">Sten {s.sten}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="pt-2 text-right">
-              <button
-                onClick={() => setInspectSession(null)}
-                className="px-5 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl cursor-pointer"
-              >
-                Close Dossier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

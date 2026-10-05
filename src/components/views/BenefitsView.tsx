@@ -81,7 +81,7 @@ export const BenefitsView: React.FC<BenefitsViewProps> = ({ onNavigate }) => {
               Take the Assessment for Your Own Profile
             </h3>
             <p className="text-xs text-teal-100 leading-relaxed">
-              20 minutes, 163 statements, instant visual report with Sten score breakdowns.
+              20 minutes, 166 statements, instant visual report with Sten score breakdowns.
             </p>
           </div>
           <button

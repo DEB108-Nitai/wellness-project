@@ -55,7 +55,7 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
               When you participate in the Wellness 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic Therapeutic Intervention & Transcendental Therapeutic Intervention), we collect and store:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-600">
-              <li>Item response scores across the 163 personality questionnaire statements.</li>
+              <li>Item response scores across the 166 personality questionnaire statements.</li>
               <li>Calculated Sten scale scores (1-10), z-scores, and 5 global domain profiles.</li>
               <li>Basic demographics (age group, gender, country) for benchmark calibration.</li>
               <li>Challenge registration information (name, contact details, preferred cohort timing, and stated goals).</li>

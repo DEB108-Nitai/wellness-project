@@ -74,6 +74,7 @@ final class AuthService
         Session::set(self::S_LAST_SEEN, time());
         UserRepository::touchLogin((int) $user['id']);
         self::$current = UserRepository::find((int) $user['id']);
+        AssessmentService::claimGuestSessions((int) $user['id'], $request); // TEST-9: guest tests follow the person
         AuditService::forUser($user, 'AUTH_LOGIN', 'user', null, ['method' => $method], $request);
     }
 

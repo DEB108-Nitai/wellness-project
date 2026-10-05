@@ -88,6 +88,7 @@ function useTestDatabase(): void
 }
 
 // ------------------------------------------------------------------ discover & run
+require __DIR__ . '/_helpers.php';
 $filter = $argv[1] ?? '';
 foreach (glob(__DIR__ . '/*Test.php') as $file) {
     if ($filter !== '' && stripos(basename($file), $filter) === false) {

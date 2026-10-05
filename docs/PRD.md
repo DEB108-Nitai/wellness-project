@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Product** | Wellness: 16 Personality Factors assessment + 60-Day Transformation Challenge (STI & TTI) |
-| **Version** | 1.1 (owner decisions applied) |
+| **Version** | 1.2 (owner decisions applied; Phase 3 clarifications) |
 | **Date** | 2026-10-03 |
 | **Stack** | React 19 + Vite + Tailwind (static build) · PHP 8.2+ (plain, no framework) · MySQL 8 / MariaDB 10.4+ |
 | **Hosting** | DreamHost (shared or VPS), single domain, HTTPS |
@@ -160,7 +160,7 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 |---|---|
 | TEST-1 | **Consent step:** two required checkboxes (terms/privacy; "not a clinical diagnosis") plus a clear notice that **anonymised responses are retained for research**. The consent version and timestamp are stored. The Terms and Privacy links open in a modal or new tab so the person doesn't lose their place. **(F14)** |
 | TEST-2 | **Demographics:** country (full ISO 3166 list), age (18 up to 100; the `min_age` setting cannot go below 18), gender (+ optional self-describe text), optional nickname, education and occupation. All are validated on the server. **(F10)** |
-| TEST-3 | **Start:** creates a `test_session` with a public reference `WL-XXXXXX` (6 characters from a 31-character alphabet that avoids lookalikes such as 0/O and 1/I, generated with a cryptographically secure random function and guaranteed unique). For a guest, a random 32-byte guest token is set in the `wl_guest` cookie (HttpOnly, 30 days) and stored only as a hash. For a signed-in user, the session is linked to `user_id`. |
+| TEST-3 | **Start:** creates a `test_session` with a public reference `WL-XXXXXX` (6 characters from a 32-character alphabet that avoids lookalikes such as 0/O and 1/I, generated with a cryptographically secure random function and guaranteed unique). For a guest, a random 32-byte guest token is set in the `wl_guest` cookie (HttpOnly, 30 days) and stored only as a hash. For a signed-in user, the session is linked to `user_id`. |
 | TEST-4 | **One active session:** each user or guest has at most one `in_progress` session. Opening `/test` with one in progress offers **Resume (x %)** or **Start over**. "Start over" marks the old session `abandoned`; it is kept, not deleted. **(F12, F13)** |
 | TEST-5 | **Autosave:** answers are sent in batches (about 800 ms after the last click, and immediately when the page changes) to `PUT /api/test/session/answers`, together with the current page and the real seconds spent on it. The server accepts only values 1–5 and item IDs from the session's item set, and only for the session's owner. The UI shows "Saving… / Saved ✓ / Offline – will retry". Unsent answers are queued in the browser and retried once the connection is back. **(F13)** |
 | TEST-6 | **Resume:** a signed-in user can resume on any device. A guest can resume on the same browser through the cookie. If a guest signs in mid-test, the guest session is attached to their account. |
@@ -174,7 +174,7 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 ### 4.3 Results — `RES`
 | ID | Requirement |
 |---|---|
-| RES-1 | `/results/:ref` can be viewed **only by the owner or an admin**. There is no fallback to another person's session. **(F4)** |
+| RES-1 | `/results/:ref` can be viewed **only by the owner or an admin**. There is no fallback to another person's session. Signed-in non-owners receive **404** (not 403), so a response never confirms that someone else's report exists. **(F4)** |
 | RES-2 | **Report content:** header (nickname, date, reference); quality notice if flagged; top distinctive traits (sten ≥ 8) and low-pole traits (sten ≤ 3), consistent with the bands (fixes #23: the prototype used ≥7 / ≤4); 5 global domains; 16 bipolar bars with sten, percentile ("higher than X % of people") and interpretation; filter (All/High/Average/Low); growth recommendations; disclaimer and norm attribution. |
 | RES-3 | **My Results** (`/my-results`): a list of all sessions (in progress or completed) with date, status, reference, and View or Resume. |
 | RES-4 | **Share link:** off by default. The owner can turn on a read-only public link `/r/:shareToken` (32 random characters) and turn it off again. The shared view hides age, country and the email address. |
@@ -452,7 +452,7 @@ Landing page sections; 16 factor flip cards and factor directory; how-it-works a
 3. A signed-in user starts on a laptop and resumes on a phone.
 4. Submitting with any item unanswered is rejected by the API, even if the UI is bypassed.
 5. Scores for golden vectors match the Python reference exactly.
-6. User A cannot open user B's `/results/:ref` (403), and a guest cannot read any report (401).
+6. User A cannot open user B's `/results/:ref` (404, see RES-1), and a guest cannot read any report (401).
 7. A wrong password is rejected; the 6th failed attempt within 15 minutes is rate-limited.
 8. The forgot-password email arrives; its link works once only and expires after 60 minutes.
 9. Google sign-in creates an account, signs in, and links to an existing account with the same verified email.

@@ -29,7 +29,7 @@ export const INITIAL_FAQS: FAQItem[] = [
     id: 'faq_02',
     category: 'Assessment',
     question: 'How long does the assessment take?',
-    answer: 'The assessment contains approximately 163 statements divided into 24 bite-sized pages (7 statements per screen). Most participants complete the questionnaire in 20 to 25 minutes. Your progress is saved automatically at every step.',
+    answer: 'The assessment contains 166 statements divided into 24 bite-sized pages (7 statements per screen). Most participants complete the questionnaire in 20 to 25 minutes. Your progress is saved automatically at every step.',
     sortOrder: 2,
   },
   {

@@ -19,6 +19,7 @@ final class Request
         public readonly array $query,
         private readonly array $server,
         private readonly string $rawBody,
+        private readonly array $cookies = [],
     ) {
     }
 
@@ -45,7 +46,7 @@ final class Request
             throw new HttpException(413, 'PAYLOAD_TOO_LARGE', 'Request body is too large.');
         }
 
-        return new self($method, $path, $_GET, $_SERVER, $raw);
+        return new self($method, $path, $_GET, $_SERVER, $raw, $_COOKIE);
     }
 
     /** Decoded JSON body (empty array when there is no body). */
@@ -80,6 +81,12 @@ final class Request
         }
         $value = $this->server[$key] ?? null;
         return $value === null ? null : (string) $value;
+    }
+
+    public function cookie(string $name): ?string
+    {
+        $value = $this->cookies[$name] ?? null;
+        return is_string($value) ? $value : null;
     }
 
     public function query(string $key, ?string $default = null): ?string

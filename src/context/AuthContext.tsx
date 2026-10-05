@@ -1,6 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi, AuthUser, SessionPayload } from '../api/auth';
-import { storage } from '../services/storageService';
 
 interface AuthState {
   user: AuthUser | null;
@@ -17,16 +16,6 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-/**
- * Mirrors the signed-in user into the legacy browser store so the assessment
- * flow keeps attaching drafts to the right person until it moves to the API (Phase 3).
- */
-function mirrorToLegacyStore(user: AuthUser | null): void {
-  storage.setCurrentUser(
-    user ? { id: String(user.id), name: user.name, email: user.email, role: user.role, createdAt: user.createdAt ?? '' } : null,
-  );
-}
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +24,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const applySession = useCallback((payload: SessionPayload) => {
     setUser(payload.user);
     setGoogleEnabled(payload.googleEnabled);
-    mirrorToLegacyStore(payload.user);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -44,7 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // Network/server problem: keep the UI usable as a signed-out visitor.
       setUser(null);
-      mirrorToLegacyStore(null);
     } finally {
       setLoading(false);
     }
@@ -77,7 +64,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       applySession(await authApi.logout());
     } catch {
       setUser(null);
-      mirrorToLegacyStore(null);
     }
   }, [applySession]);
 

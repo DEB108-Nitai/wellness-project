@@ -27,7 +27,7 @@ export const CookieNotice: React.FC = () => {
         <div className="space-y-1.5 flex-1">
           <h4 className="text-sm font-semibold text-slate-900">Essential Cookies Only</h4>
           <p className="text-xs text-slate-600 leading-relaxed">
-            We use strictly essential local storage to save your test progress and ensure a seamless session. No third-party ad tracking.
+            We use only essential cookies: to keep you signed in, protect your session and save your assessment progress. No advertising or tracking cookies.
           </p>
           <div className="pt-1 flex items-center gap-2">
             <button

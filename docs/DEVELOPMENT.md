@@ -41,6 +41,7 @@
 | Migration status | `C:\xampp\php\php.exe api\bin\migrate.php --status` |
 | Rebuild the local DB from scratch | `C:\xampp\php\php.exe api\bin\migrate.php --fresh` |
 | API tests (uses `wellness16pf_test`, wiped each run) | `C:\xampp\php\php.exe api\tests\run.php` |
+| Daily housekeeping (expire stale tests, purge old tokens) | `C:\xampp\php\php.exe api\bin\cron-daily.php` |
 | Type-check the frontend | `npm run lint` |
 | Production build (outputs `dist/`, including `.htaccess`) | `npm run build` |
 
@@ -52,7 +53,8 @@ If XAMPP serves the project from a different URL, set `WELLNESS_API_TARGET` (for
 2. Build the item list and norms:
    `python docs/scoring/derive_norms.py <data.csv> <items.txt> docs/scoring`
    (`items.txt` contains `CODE<TAB>text` lines; see `docs/scoring/ipip16_items.tsv`.)
-3. Rebuild the SQL: `php database/tools/build-seeds.php`
+3. Rebuild the SQL: `php database/tools/build-seeds.php`, then regenerate the scoring test cases with
+   `python docs/scoring/reference_scoring.py golden <data.csv>`.
 4. Put the new data in a **new** migration with a new item-set or norm-set version. Never change one that has already been applied.
 
 ## Layout

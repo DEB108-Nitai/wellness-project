@@ -19,6 +19,7 @@ const VIEW_PATHS: Record<string, string> = {
   terms: '/terms',
   admin: '/admin',
   account: '/account',
+  'my-results': '/my-results',
   login: '/login',
   signup: '/signup',
 };

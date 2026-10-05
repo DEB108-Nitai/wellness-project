@@ -8,9 +8,11 @@
 declare(strict_types=1);
 
 use Wellness\Controllers\AccountController;
+use Wellness\Controllers\AssessmentController;
 use Wellness\Controllers\AuthController;
 use Wellness\Controllers\GoogleAuthController;
 use Wellness\Controllers\HealthController;
+use Wellness\Controllers\ResultsController;
 use Wellness\Controllers\SettingsController;
 use Wellness\Core\Router;
 
@@ -36,4 +38,21 @@ return static function (Router $r): void {
     // --- Account ------------------------------------------------------------
     $r->patch('/account', [AccountController::class, 'update'], ['auth' => 'user']);
     $r->post('/account/password', [AccountController::class, 'changePassword'], ['auth' => 'user']);
+
+    // --- Assessment (Phase 3) — guests and users ------------------------------
+    $r->get('/test/items', [AssessmentController::class, 'items']);
+    $r->get('/test/session', [AssessmentController::class, 'current']);
+    $r->post('/test/session', [AssessmentController::class, 'start']);
+    $r->put('/test/session/answers', [AssessmentController::class, 'saveAnswers']);
+    $r->post('/test/session/abandon', [AssessmentController::class, 'abandon']);
+    $r->post('/test/session/submit', [AssessmentController::class, 'submit']);
+    $r->post('/test/session/review', [AssessmentController::class, 'review']);
+
+    // --- Results ------------------------------------------------------------
+    $ref = '{ref:WL-[2-9A-HJ-NP-Z]{6}}';
+    $r->get('/results', [ResultsController::class, 'index'], ['auth' => 'user']);
+    $r->get("/results/$ref", [ResultsController::class, 'show']); // 401 RESULTS_LOCKED for guests
+    $r->post("/results/$ref/share", [ResultsController::class, 'share'], ['auth' => 'user']);
+    $r->delete("/results/$ref/share", [ResultsController::class, 'unshare'], ['auth' => 'user']);
+    $r->get('/shared/{token:[A-Za-z0-9]{32}}', [ResultsController::class, 'shared']);
 };

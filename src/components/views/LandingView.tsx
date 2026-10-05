@@ -24,26 +24,23 @@ import {
 import { FACTORS_DATA } from '../../data/factorsData';
 import { FactorCard } from '../common/FactorCard';
 import { ChallengeSection } from './ChallengeSection';
-import { storage } from '../../services/storageService';
-import { useAuth } from '../../context/AuthContext';
+import { useActiveSession } from '../../context/ActiveSessionContext';
 
 interface LandingViewProps {
   onNavigate: (view: string, param?: string) => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
-  const { user: currentUser } = useAuth();
-  const [draftDiscarded, setDraftDiscarded] = useState(false);
-  // Re-evaluated on every render so it appears as soon as the user signs in.
-  const activeDraft = !draftDiscarded && currentUser ? storage.getActiveDraftSession(String(currentUser.id)) : undefined;
-  const draftProgress = activeDraft && activeDraft.answeredCount > 0
-    ? Math.round((activeDraft.answeredCount / 163) * 100)
-    : 0;
+  // In-progress assessment for this visitor (account or guest browser), from the API.
+  const { active: activeDraft, progress: draftProgress, abandon } = useActiveSession();
 
-  const handleStartFresh = () => {
+  const handleStartFresh = async () => {
     if (activeDraft) {
-      storage.discardDraftSession(activeDraft.token);
-      setDraftDiscarded(true);
+      try {
+        await abandon();
+      } catch {
+        // already gone — start a new one anyway
+      }
     }
     onNavigate('test');
   };
@@ -87,7 +84,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
     {
       num: "02",
       title: "Answer Statements",
-      desc: "Respond to 163 simple statements across 24 screens using our intuitive circular agree-to-disagree scale.",
+      desc: "Respond to 166 short statements across 24 screens using our intuitive circular agree-to-disagree scale.",
     },
     {
       num: "03",

@@ -2,42 +2,21 @@ import {
   AuditLogEntry,
   ChallengeRegistration,
   ContactMessage,
-  Demographics,
   FAQItem,
   SonicRegistration,
   SystemSettings,
-  TestSession,
-  UserAccount,
 } from '../types';
 import { DEFAULT_SETTINGS, INITIAL_FAQS } from '../data/initialData';
-import { computeFactorScores, computeQualityFlags } from './scoringEngine';
 
 const KEYS = {
-  SESSIONS: 'wellness_sessions',
   SETTINGS: 'wellness_settings',
   AUDIT: 'wellness_audit_logs',
   MESSAGES: 'wellness_messages',
   FAQS: 'wellness_faqs',
   SUBSCRIBERS: 'wellness_subscribers',
-  CURRENT_SESSION_TOKEN: 'wellness_current_token',
   CHALLENGE_REGISTRATIONS: 'wellness_challenge_registrations',
   SONIC_REGISTRATIONS: 'wellness_sonic_registrations',
-  CURRENT_USER: 'wellness_current_user',
 };
-
-// Generate human-friendly reference ID like WL-7K2Q9X
-export function generateReferenceId(): string {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-  let code = 'WL-';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
-
-export function generateToken(): string {
-  return 'tok_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
 
 class StorageService {
   constructor() {
@@ -52,24 +31,6 @@ class StorageService {
     }
     if (!localStorage.getItem(KEYS.FAQS)) {
       localStorage.setItem(KEYS.FAQS, JSON.stringify(INITIAL_FAQS));
-    }
-  }
-
-  // --- SIGNED-IN USER (mirrored from AuthContext; real auth lives in the PHP API) ---
-  public getCurrentUser(): UserAccount | null {
-    try {
-      const data = localStorage.getItem(KEYS.CURRENT_USER);
-      return data ? JSON.parse(data) : null;
-    } catch {
-      return null;
-    }
-  }
-
-  public setCurrentUser(user: UserAccount | null) {
-    if (user) {
-      localStorage.setItem(KEYS.CURRENT_USER, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(KEYS.CURRENT_USER);
     }
   }
 
@@ -279,188 +240,6 @@ class StorageService {
     return JSON.stringify(this.getSonicRegistrations(), null, 2);
   }
 
-  // --- SESSIONS ---
-  public getSessions(): TestSession[] {
-    try {
-      const data = localStorage.getItem(KEYS.SESSIONS);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  public getSessionByToken(token: string): TestSession | undefined {
-    return this.getSessions().find((s) => s.token === token);
-  }
-
-  public getSessionByRefId(refId: string): TestSession | undefined {
-    return this.getSessions().find((s) => s.referenceId.toUpperCase() === refId.trim().toUpperCase());
-  }
-
-  public getActiveDraftSession(userIdOrEmail?: string): TestSession | undefined {
-    try {
-      const currentUser = this.getCurrentUser();
-      const targetUser = userIdOrEmail || currentUser?.email || currentUser?.id;
-
-      // Strict rule: Draft continuation is exclusively for a logged-in user who left an assessment in-between
-      if (!targetUser) {
-        return undefined;
-      }
-
-      const sessions = this.getSessions();
-      const userDraft = sessions.find(
-        (s) =>
-          s.status === 'in_progress' &&
-          s.answeredCount > 0 &&
-          (s.userEmail?.toLowerCase() === targetUser.toLowerCase() ||
-            s.userId === targetUser ||
-            s.demographics?.email?.toLowerCase() === targetUser.toLowerCase())
-      );
-
-      return userDraft;
-    } catch {
-      return undefined;
-    }
-  }
-
-  public discardDraftSession(token?: string) {
-    try {
-      if (token) {
-        const sessions = this.getSessions().filter((s) => s.token !== token);
-        localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
-      }
-      localStorage.removeItem(KEYS.CURRENT_SESSION_TOKEN);
-    } catch {
-      // ignore
-    }
-  }
-
-  public startSession(demographics: Demographics): TestSession {
-    const sessions = this.getSessions();
-    const refId = generateReferenceId();
-    const token = generateToken();
-    const now = new Date().toISOString();
-    const currentUser = this.getCurrentUser();
-
-    const newSession: TestSession = {
-      id: `sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      token,
-      referenceId: refId,
-      userId: currentUser?.id,
-      userEmail: currentUser?.email || demographics.email,
-      status: 'in_progress',
-      currentPage: 1,
-      consentVersion: 'v1.0',
-      consentAt: now,
-      demographics,
-      draftAnswers: {},
-      answeredCount: 0,
-      pageTimes: {},
-      startedAt: now,
-      lastActivityAt: now,
-      idempotencyKey: `idemp_${token}`,
-    };
-
-    sessions.push(newSession);
-    localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
-    localStorage.setItem(KEYS.CURRENT_SESSION_TOKEN, token);
-
-    this.logAudit('system', currentUser?.name || 'System Engine', 'SESSION_START', 'TestSession', refId, 'Participant started assessment.');
-    return newSession;
-  }
-
-  public autosaveAnswers(
-    token: string,
-    answers: Record<number, number>,
-    page: number,
-    pageSeconds: number
-  ): TestSession | null {
-    const sessions = this.getSessions();
-    const idx = sessions.findIndex((s) => s.token === token);
-    if (idx === -1) return null;
-
-    const session = sessions[idx];
-    if (session.status === 'completed') return session;
-
-    const currentUser = this.getCurrentUser();
-
-    // Merge answers
-    const updatedDraft = { ...session.draftAnswers, ...answers };
-    const answeredCount = Object.keys(updatedDraft).length;
-    const pageTimes = { ...session.pageTimes, [page]: (session.pageTimes[page] || 0) + pageSeconds };
-
-    const updatedSession: TestSession = {
-      ...session,
-      userId: session.userId || currentUser?.id,
-      userEmail: session.userEmail || currentUser?.email,
-      draftAnswers: updatedDraft,
-      answeredCount,
-      currentPage: page,
-      pageTimes,
-      lastActivityAt: new Date().toISOString(),
-    };
-
-    sessions[idx] = updatedSession;
-    localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
-    localStorage.setItem(KEYS.CURRENT_SESSION_TOKEN, token);
-    return updatedSession;
-  }
-
-  public submitSession(token: string): { session: TestSession; error?: string } | { error: string } {
-    const sessions = this.getSessions();
-    const idx = sessions.findIndex((s) => s.token === token);
-    if (idx === -1) return { error: 'Session not found or expired.' };
-
-    const session = sessions[idx];
-    if (session.status === 'completed') {
-      return { session }; // Idempotent return
-    }
-
-    const settings = this.getSettings();
-    const answers = session.draftAnswers;
-    const answeredCount = Object.keys(answers).length;
-
-    if (answeredCount < 10) {
-      return { error: `Please answer more statements before submitting. (${answeredCount}/163 answered)` };
-    }
-
-    const now = new Date().toISOString();
-    const durationSeconds = Math.max(60, Math.floor((new Date(now).getTime() - new Date(session.startedAt).getTime()) / 1000));
-
-    const { scores, globalDomains } = computeFactorScores(answers, settings.scalePoints);
-    const qualityFlags = computeQualityFlags(answers, durationSeconds, settings.tooFastMinutes);
-
-    const completedSession: TestSession = {
-      ...session,
-      status: 'completed',
-      completedAt: now,
-      lastActivityAt: now,
-      scores,
-      globalDomains,
-      qualityFlags,
-    };
-
-    sessions[idx] = completedSession;
-    localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
-
-    this.logAudit('system', 'System Engine', 'SESSION_SUBMIT', 'TestSession', session.referenceId, `Participant completed 163-factor assessment. Sten scores computed.`);
-    return { session: completedSession };
-  }
-
-  public saveReview(token: string, rating: number, comment?: string): boolean {
-    const sessions = this.getSessions();
-    const idx = sessions.findIndex((s) => s.token === token);
-    if (idx === -1) return false;
-
-    sessions[idx].review = {
-      rating,
-      comment,
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
-    return true;
-  }
-
   // --- SETTINGS ---
   public getSettings(): SystemSettings {
     try {
@@ -566,69 +345,6 @@ class StorageService {
 
   public saveFAQs(faqs: FAQItem[]) {
     localStorage.setItem(KEYS.FAQS, JSON.stringify(faqs));
-  }
-
-  // --- EXPORT ENGINES (WITH FORMULA INJECTION DEFENSE) ---
-  public exportParticipantsCSV(sessionsToExport?: TestSession[]): string {
-    const list = sessionsToExport || this.getSessions();
-    const factorCodes = ['A', 'B', 'C', 'E', 'F', 'G', 'H', 'I', 'L', 'M', 'N', 'O', 'Q1', 'Q2', 'Q3', 'Q4'];
-
-    const headers = [
-      'Reference ID',
-      'Status',
-      'Started At',
-      'Completed At',
-      'Country',
-      'Age',
-      'Gender',
-      'Education',
-      'Occupation Field',
-      'Rating',
-      'Duration (sec)',
-      'Flags',
-      ...factorCodes.map((f) => `Factor ${f} (Sten)`),
-      ...factorCodes.map((f) => `Factor ${f} (Raw)`),
-    ];
-
-    const sanitizeCell = (val: unknown): string => {
-      if (val === undefined || val === null) return '""';
-      let str = String(val);
-      // NFR-SEC-015: Formula injection protection for CSV
-      if (/^[=+\-@\t\r]/.test(str)) {
-        str = "'" + str;
-      }
-      return `"${str.replace(/"/g, '""')}"`;
-    };
-
-    const rows = list.map((s) => {
-      const scoreMap = new Map((s.scores || []).map((sc) => [sc.factorCode, sc]));
-
-      const rowData = [
-        s.referenceId,
-        s.status,
-        s.startedAt,
-        s.completedAt || '',
-        s.demographics.country,
-        s.demographics.age,
-        s.demographics.gender,
-        s.demographics.education || '',
-        s.demographics.occupationField || '',
-        s.review?.rating || '',
-        s.qualityFlags?.durationSeconds || '',
-        s.qualityFlags?.flagged ? 'FLAGGED' : 'CLEAN',
-        ...factorCodes.map((f) => scoreMap.get(f as any)?.sten ?? ''),
-        ...factorCodes.map((f) => scoreMap.get(f as any)?.rawScore ?? ''),
-      ];
-
-      return rowData.map(sanitizeCell).join(',');
-    });
-
-    return [headers.map(sanitizeCell).join(','), ...rows].join('\n');
-  }
-
-  public exportParticipantsJSON(sessionsToExport?: TestSession[]): string {
-    const list = sessionsToExport || this.getSessions();
-    return JSON.stringify(list, null, 2);
   }
 }
 

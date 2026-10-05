@@ -13,42 +13,6 @@ use Wellness\Services\Mailer;
 use Wellness\Services\PasswordPolicy;
 use Wellness\Services\TokenService;
 
-// ------------------------------------------------------------------ helpers
-function authReq(?string $ip = null): Request
-{
-    $ip ??= '10.' . random_int(0, 255) . '.' . random_int(0, 255) . '.' . random_int(1, 254);
-    return new Request('POST', '/test', [], ['REMOTE_ADDR' => $ip], '');
-}
-
-/** Capture outgoing mail instead of sending it. */
-function captureMail(): ArrayObject
-{
-    $box = new ArrayObject();
-    Mailer::$transport = static function (string $to, array $msg) use ($box): void {
-        $box[] = ['to' => $to] + $msg;
-    };
-    return $box;
-}
-
-function freshSession(): void
-{
-    $_SESSION = [];
-    AuthService::flush();
-}
-
-function tokenFromMail(array $mail): string
-{
-    preg_match('/token=([A-Za-z0-9_-]{43})/', $mail['text'], $m);
-    return $m[1] ?? '';
-}
-
-function uniqueEmail(): string
-{
-    return 'user' . bin2hex(random_bytes(4)) . '@example.com';
-}
-
-const GOOD_PASSWORD = 'Calm-River-Lantern-42';
-
 // ------------------------------------------------------------------ password policy
 test('password policy rejects short, common, repetitive and email passwords', function () {
     assertTrue(PasswordPolicy::check('short') !== null);
