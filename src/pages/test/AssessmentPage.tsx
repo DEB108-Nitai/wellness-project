@@ -32,6 +32,7 @@ export const AssessmentPage: React.FC = () => {
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [page, setPage] = useState(1);
   const [missingId, setMissingId] = useState<number | null>(null);
+  const [elapsed, setElapsed] = useState(0); // seconds shown by the timer
 
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -73,6 +74,7 @@ export const AssessmentPage: React.FC = () => {
   // ------------------------------------------------------------------ resume / start
   const enterSession = (state: SessionState) => {
     setSession(state);
+    setElapsed(state.activeSeconds ?? 0);
     const restored: Record<number, number> = {};
     Object.entries(state.answers).forEach(([id, v]) => (restored[Number(id)] = v));
     setAnswers(restored);
@@ -130,6 +132,15 @@ export const AssessmentPage: React.FC = () => {
       setStarting(false);
     }
   };
+
+  // Timer: counts while the statements are on screen and the tab is visible (resumes from the saved total).
+  useEffect(() => {
+    if (step !== 'questions') return;
+    const tick = window.setInterval(() => {
+      if (document.visibilityState === 'visible') setElapsed((s) => s + 1);
+    }, 1000);
+    return () => window.clearInterval(tick);
+  }, [step]);
 
   // ------------------------------------------------------------------ answering
   const answer = useCallback(
@@ -231,6 +242,7 @@ export const AssessmentPage: React.FC = () => {
         totalItems={totalItems}
         answers={answers}
         saveStatus={autosave.status}
+        elapsedSeconds={elapsed}
         missingId={missingId}
         onAnswer={answer}
         onNext={next}

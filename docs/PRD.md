@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Product** | Wellness: 16 Personality Factors assessment + 60-Day Transformation Challenge (STI & TTI) |
-| **Version** | 1.2 (owner decisions applied; Phase 3 clarifications) |
+| **Product** | Wellness: 16 Personality Factors assessment + 60-Day Transformation Challenges (STI, PTI & TTI) |
+| **Version** | 1.3 (third program PTI added — owner request 2026-10-05) |
 | **Date** | 2026-10-03 |
 | **Stack** | React 19 + Vite + Tailwind (static build) · PHP 8.2+ (plain, no framework) · MySQL 8 / MariaDB 10.4+ |
 | **Hosting** | DreamHost (shared or VPS), single domain, HTTPS |
@@ -17,12 +17,12 @@
 1. Turn the AI-Studio prototype, which stores everything in `localStorage`, into a production web app with a real PHP + MySQL backend.
 2. Deliver a **psychometrically valid** 16PF assessment that uses the public-domain IPIP items and real population norms.
 3. Provide secure accounts for two roles (**user** and **admin**), including email/password and real Google sign-in.
-4. Run **60-Day Challenge** registration for both tracks (**STI** Sonic Therapeutic Intervention and **TTI** Transcendental Therapeutic Intervention).
+4. Run **60-Day Challenge** registration for three programs: **STI** Sonic Therapeutic Intervention, **PTI** Philosophical Therapeutic Intervention and **TTI** Transcendental Therapeutic Intervention.
 5. Give admins a complete console covering participants, results, registrations, messages, users, FAQs, settings and the audit log.
 6. Make the site fast, secure and reliable for users worldwide, with a modern, consistent UI in the spirit of 16personalities.com and syngrity.com.
 
 ### 1.2 In scope
-Public website, assessment (guest and signed-in), results and history, authentication, 60-Day Challenge (STI + TTI), contact form, newsletter, FAQ, admin console, deployment to DreamHost.
+Public website, assessment (guest and signed-in), results and history, authentication, 60-Day Challenges (STI, PTI, TTI), contact form, newsletter, FAQ, admin console, deployment to DreamHost.
 
 ### 1.3 Removed from the prototype
 | Item | Reason |
@@ -46,7 +46,7 @@ Payments, multiple languages (the UI is English; data handling is Unicode-safe s
 | Take / autosave / resume the assessment | ✓ (same device, via cookie) | ✓ (any device) | ✓ |
 | **View own results** | ✗ → must sign up or sign in | ✓ | ✓ |
 | Results history ("My Results"), share link | ✗ | ✓ | ✓ |
-| Register for the 60-Day Challenge (STI/TTI) | ✓ | ✓ (prefilled, linked to account) | ✓ |
+| Register for the 60-Day Challenges (STI/PTI/TTI) | ✓ | ✓ (prefilled, linked to account) | ✓ |
 | Contact form, newsletter | ✓ | ✓ | ✓ |
 | Admin console (`/admin/*`) and admin APIs | ✗ | ✗ | ✓ |
 | Change user roles / disable accounts | ✗ | ✗ | ✓ (cannot demote or disable themselves) |
@@ -181,16 +181,16 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 | RES-5 | **Print / Save as PDF:** a print stylesheet that produces a clean multi-page report. |
 | RES-6 | The prototype's old local `?results=<token>` links are not supported (there was never any server data behind them). |
 
-### 4.4 60-Day Challenge (STI + TTI) — `CH`
+### 4.4 60-Day Challenges (STI, PTI, TTI) — `CH`
 | ID | Requirement |
 |---|---|
-| CH-1 | The section stays on the landing page (`/#challenge`; the nav item scrolls there). It contains two program cards, **STI** and **TTI**, as in the current design. |
-| CH-2 | **One registration form for both programs.** Fields: program (STI / TTI), full name, email, phone (with country code, validated), age, city, country, preferred cohort time (morning / evening / weekend), current struggles (multi-select from a fixed list), primary goal (≤ 1000 chars), consent checkbox. Every selected value is saved exactly as chosen. **(F16)** |
+| CH-1 | The section stays on the landing page (`/#challenge`; the nav item scrolls there). It contains three program blocks in this order: **STI (Program 01) → PTI (Program 02) → TTI (Program 03)**, all sharing one layout (header → introduction card → four pillars). STI and TTI keep their approved wording; PTI uses the copy approved on 2026-10-05 (incl. the book names *Bhagavad Gita As It Is · Srimad Bhagavatam · Chaitanya Caritamrita*). Each block has a photo slot in its left panel, beside the description (photos supplied by the owner later). |
+| CH-2 | **One registration form for all three programs.** Fields: program (STI / PTI / TTI), full name, email, phone (with country code, validated), age, city, country, preferred cohort time (morning / evening / weekend), current struggles (multi-select from a fixed list), primary goal (≤ 1000 chars), consent checkbox. Every selected value is saved exactly as chosen. **(F16)** |
 | CH-3 | **Free, no payment, sign-in not required.** If the person is signed in, name and email are prefilled and the registration is linked to their account. |
-| CH-4 | **On submit, they see "Registered successfully 🎉"** with a reference code (`STI-60-XXXXXX` / `TTI-60-XXXXXX`) and next steps. A confirmation email is sent. |
-| CH-5 | **Duplicates:** if the same email already has an active registration for the same program, the person is shown "You're already registered (ref …)" and no duplicate row is created. **(F17)** |
+| CH-4 | **On submit, they see only "Registered successfully"** (owner decision). A reference code (`STI-60-` / `PTI-60-` / `TTI-60-XXXXXX`) is stored and sent in the confirmation email, which also says session details (online and in-person) follow by email. |
+| CH-5 | **Duplicates:** if the same email already has an active registration for the same program, the person is told they are already registered for that program and no duplicate row is created. Joining a *different* program is allowed. **(F17)** |
 | CH-6 | **Statuses:** `registered` (initial) → `confirmed` / `waitlisted` / `completed` / `cancelled`. Admins manage these and add notes. **(F17)** |
-| CH-7 | Both programs are stored in a **single table** with a `program` column, so admins see all registrations in one place. **(F15)** |
+| CH-7 | All three programs are stored in a **single table** with a `program` column, so admins see all registrations in one place. **(F15)** |
 | CH-8 | The admin setting `challenge_registration_open` can close registration; the form then shows a "Registration currently closed" message. |
 
 ### 4.5 Contact, newsletter, FAQ — `SITE`
@@ -211,7 +211,7 @@ All lists are paginated, searched and filtered **on the server** (25 per page by
 | ADM-1 | **Dashboard:** tests started / completed / completion rate (7d, 30d, all-time), flagged sessions, registrations by program and status, new messages, new users; recent audit events. |
 | ADM-2 | **Participants:** search by reference, nickname or email; filter by status, flag, date range, country. Detail view shows demographics, timing, quality flags, the 16 factor and 5 domain scores, and individual item answers. |
 | ADM-3 | **Exports (CSV, streamed):** participants with scores, and optionally the 166 item answers (for research); registrations; messages; newsletter subscribers. Spreadsheet formula injection is neutralised. Every export is written to the audit log. |
-| ADM-4 | **Challenge registrations:** filter by program (STI/TTI), status, cohort and date; change status; add notes; view the full record. |
+| ADM-4 | **Challenge registrations:** filter by program (STI/PTI/TTI), status, cohort and date; change status; add notes; view the full record. |
 | ADM-5 | **Messages:** list and detail; mark handled or unhandled. |
 | ADM-6 | **Users:** list and search; view a user (their sessions and registrations); change role; disable or enable. Admins cannot demote or disable themselves. |
 | ADM-7 | **FAQs:** create, edit, delete, reorder, publish or unpublish. |
@@ -346,7 +346,7 @@ wellness-project-1/
 ### 6.5 Frontend routes
 | Path | Page |
 |---|---|
-| `/` (`/#challenge` scrolls to the challenge section) | Landing + 60-Day Challenge (STI/TTI) |
+| `/` (`/#challenge` scrolls to the challenge section) | Landing + 60-Day Challenges (STI/PTI/TTI) |
 | `/test` | Consent → Demographics → Questions → Review → Submitted / Results gate |
 | `/results/:ref`, `/r/:token`, `/my-results` | Report, shared report, history |
 | `/login`, `/signup`, `/forgot-password`, `/reset-password`, `/verify-email`, `/account` | Auth and account |
@@ -378,7 +378,7 @@ All tables use InnoDB and `utf8mb4_unicode_ci`. Timestamps are `DATETIME` in UTC
 | `session_factor_scores` | session_id, factor_code, raw_score, z_score, sten, percentile, band — PK(session_id,factor_code) |
 | `session_domain_scores` | session_id, domain_code, composite, z_score, sten, band — PK(session_id,domain_code) |
 | `session_reviews` | session_id PK, rating, comment, created_at |
-| `challenge_registrations` | ref_code unique, program ENUM(STI,TTI), user_id NULL, name, email, phone, age, city, country, cohort_timing ENUM(morning,evening,weekend), struggles (JSON text), primary_goal, consent_at, status ENUM(registered,confirmed,waitlisted,completed,cancelled), admin_notes, ip_hash, created_at, updated_at — index (email,program,status) |
+| `challenge_registrations` | ref_code unique, program ENUM(STI,PTI,TTI), user_id NULL, name, email, phone, age, city, country, cohort_timing ENUM(morning,evening,weekend), struggles (JSON text), primary_goal, consent_at, status ENUM(registered,confirmed,waitlisted,completed,cancelled), admin_notes, ip_hash, created_at, updated_at — index (email,program,status) |
 | `contact_messages` | name, email, subject, message, status ENUM(new,handled), handled_by, handled_at, ip_hash, created_at |
 | `newsletter_subscribers` | email unique, status ENUM(subscribed,unsubscribed), unsubscribe_token unique, created_at, unsubscribed_at |
 | `faqs` | category, question, answer, sort_order, is_published, updated_at |
@@ -397,7 +397,7 @@ All tables use InnoDB and `utf8mb4_unicode_ci`. Timestamps are `DATETIME` in UTC
 | **1. Foundation** | Folder layout; PHP core (router, DB, config, errors, logging, validator, CSRF, rate limiter); migrations and seeds (factors, IPIP item set + attention checks, norms, FAQs, settings); `.htaccess` (SPA fallback, `/api` routing, headers, caching); Vite proxy; remove dead code, demo data and unused packages; `/api/health` + `/api/settings/public` working end to end | Fresh database migrates and seeds on XAMPP; health check OK; app builds |
 | **2. Auth** | AUTH-1…13; auth pages + AuthContext; Google sign-in (**owner provides OAuth client ID**); SMTP mail (**owner provides SMTP details**); create-admin CLI | All auth test cases pass locally; real emails received; Google sign-in works |
 | **3. Assessment & results** | TEST-1…12, RES-1…5; PHP ScoringService + golden tests; new item set in UI; results gate; My Results; share links | Golden tests pass; guest → sign up → report flow works; resume works across devices |
-| **4. Challenge & site forms** | CH-1…8, SITE-1…5 | Both programs register correctly with emails; duplicates blocked |
+| **4. Challenge & site forms** | CH-1…8, SITE-1…5 | All three programs register correctly with emails; duplicates blocked |
 | **5. Admin console** | ADM-1…12 | Every admin page works on real data; exports open correctly in Excel |
 | **6. UI polish** | Design system pass across all pages, routing/SEO (SITE-6), accessibility, responsive QA | Owner UI review approved |
 | **7. Production & deploy** | Performance tuning, security header check, backups, cron, `docs/DEPLOY.md`, deploy to DreamHost, smoke test on the live domain | Live site passes the acceptance checklist (Appendix C) |
@@ -457,7 +457,7 @@ Landing page sections; 16 factor flip cards and factor directory; how-it-works a
 8. The forgot-password email arrives; its link works once only and expires after 60 minutes.
 9. Google sign-in creates an account, signs in, and links to an existing account with the same verified email.
 10. A non-admin calling any `/api/admin/*` endpoint gets 403; a request without the CSRF header gets 403.
-11. STI and TTI registrations both show "Registered successfully", send an email and appear in admin with the correct fields; a duplicate is detected.
+11. STI, PTI and TTI registrations all show "Registered successfully", send an email and appear in admin with the correct fields; a duplicate is detected.
 12. Maintenance mode blocks the public site (503 page) while admins keep working.
 13. A CSV export opens in Excel without formula execution and includes all participants (paged on the server, streamed).
 14. Lighthouse on the landing page: Performance ≥ 85 (mobile), Accessibility ≥ 95, Best Practices ≥ 95, SEO ≥ 95.

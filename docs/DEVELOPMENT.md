@@ -43,6 +43,7 @@
 | API tests (uses `wellness16pf_test`, wiped each run) | `C:\xampp\php\php.exe api\tests\run.php` |
 | Daily housekeeping (expire stale tests, purge old tokens) | `C:\xampp\php\php.exe api\bin\cron-daily.php` |
 | Type-check the frontend | `npm run lint` |
+| Browser end-to-end tests (dev server must be running) | see `tests/e2e/README.md` |
 | Production build (outputs `dist/`, including `.htaccess`) | `npm run build` |
 
 If XAMPP serves the project from a different URL, set `WELLNESS_API_TARGET` (for example in `.env.local`) to that URL without the `/api` suffix.
@@ -61,4 +62,4 @@ If XAMPP serves the project from a different URL, set `WELLNESS_API_TARGET` (for
 - `api/` is the PHP backend. `index.php` is the only file reachable over HTTP; `routes.php` holds the route table.
 - `api/src/Core` contains the framework pieces: config, database, router, request/response, validation, sessions, CSRF protection, rate limiting and logging.
 - `database/migrations` holds the versioned SQL files. `database/tools` holds the seed generator.
-- `docs/PRD.md` is the plan of record. `docs/scoring/` contains the item key and norms.
+- `docs/PRD.md` is the plan of record. `docs/PROGRESS.md` is the status and handover document (start here). `docs/scoring/` contains the item key and norms.

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Check, CloudOff, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Clock, CloudOff, Loader2, Sparkles } from 'lucide-react';
 import { TestItem } from '../../api/assessment';
 import { SaveStatus } from '../../hooks/useAutosave';
 
@@ -10,6 +10,7 @@ interface Props {
   totalItems: number;
   answers: Record<number, number>;
   saveStatus: SaveStatus;
+  elapsedSeconds: number;
   missingId: number | null;
   onAnswer: (itemId: number, value: number) => void;
   onNext: () => void;
@@ -23,6 +24,14 @@ const OPTIONS = [
   { value: 4, label: 'Agree', size: 'w-10 h-10 sm:w-11 sm:h-11', idle: 'border-teal-400 hover:bg-teal-50', active: 'bg-teal-500 border-teal-500 ring-teal-100', check: 'w-4 h-4' },
   { value: 5, label: 'Strongly agree', size: 'w-12 h-12 sm:w-14 sm:h-14', idle: 'border-teal-500/80 hover:bg-teal-50', active: 'bg-teal-600 border-teal-600 ring-teal-200', check: 'w-5 h-5' },
 ];
+
+/** 75 → "1:15", 3725 → "1:02:05" */
+function formatTime(total: number): string {
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = String(total % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`;
+}
 
 const SaveIndicator: React.FC<{ status: SaveStatus }> = ({ status }) => {
   const map: Record<SaveStatus, React.ReactNode> = {
@@ -48,7 +57,7 @@ const SaveIndicator: React.FC<{ status: SaveStatus }> = ({ status }) => {
 };
 
 /** TEST-7: one page of statements on the 5-point circle scale. */
-export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalItems, answers, saveStatus, missingId, onAnswer, onNext, onPrev }) => {
+export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalItems, answers, saveStatus, elapsedSeconds, missingId, onAnswer, onNext, onPrev }) => {
   const answeredCount = Object.keys(answers).length;
   const progress = Math.round((answeredCount / totalItems) * 100);
 
@@ -84,6 +93,10 @@ export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalI
             </div>
             <div className="flex items-center gap-3">
               <span className="text-teal-700 font-bold font-mono">{progress}%</span>
+              <span className="flex items-center gap-1 text-slate-500 font-mono" title="Time spent" aria-label={`Time spent ${formatTime(elapsedSeconds)}`}>
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                {formatTime(elapsedSeconds)}
+              </span>
               <SaveIndicator status={saveStatus} />
             </div>
           </div>

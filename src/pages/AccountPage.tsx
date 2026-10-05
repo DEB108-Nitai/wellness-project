@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { CheckCircle2, LogOut, Mail, ShieldCheck, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { CalendarCheck, CheckCircle2, LogOut, Mail, ShieldCheck, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError } from '../api/client';
 import { authApi } from '../api/auth';
+import { challengeApi, Registration } from '../api/challenge';
 import { useAuth } from '../context/AuthContext';
 import { FormAlert, PasswordField, SubmitButton, TextField } from '../components/auth/FormControls';
 
@@ -40,6 +41,11 @@ export const AccountPage: React.FC = () => {
   const [savingPassword, setSavingPassword] = useState(false);
 
   const [verifyMsg, setVerifyMsg] = useState<string | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[] | null>(null);
+
+  useEffect(() => {
+    challengeApi.mine().then(setRegistrations).catch(() => setRegistrations([]));
+  }, []);
 
   if (!user) return null; // guarded by <RequireAuth>
 
@@ -143,6 +149,33 @@ export const AccountPage: React.FC = () => {
           )}
           {user.hasGoogle && <p className="text-sm text-slate-500">Google sign-in is connected to this account.</p>}
         </div>
+      </Section>
+
+      <Section icon={CalendarCheck} title="My 60-Day Challenges" description="Programs you have registered for.">
+        {registrations === null ? (
+          <p className="text-sm text-slate-400">Loading…</p>
+        ) : registrations.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            You haven't joined a challenge yet.{' '}
+            <a href="/#60-days-challenge" className="font-semibold text-teal-700 underline">
+              Explore the 60-Day Challenges
+            </a>
+          </p>
+        ) : (
+          <ul className="space-y-2.5 max-w-md">
+            {registrations.map((r) => (
+              <li key={r.ref} className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-slate-200">
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-900 truncate">{r.programName}</p>
+                  <p className="text-xs font-mono text-slate-400">{r.ref}</p>
+                </div>
+                <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-50 text-teal-700">
+                  {r.status}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       <Section

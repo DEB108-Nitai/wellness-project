@@ -1,660 +1,162 @@
-import React, { useState } from 'react';
-import {
-  ShieldAlert,
-  Users,
-  BarChart3,
-  CheckCircle2,
-  XCircle,
-  AlertTriangle,
-  Download,
-  Settings,
-  Search,
-  Filter,
-  Eye,
-  Trash2,
-  RefreshCw,
-  FileText,
-  Sparkles,
-  Award,
-  Globe,
-  HelpCircle,
-  Sliders,
-  History,
-  Check,
-  Volume2
-} from 'lucide-react';
-import {
-  AuditLogEntry,
-  ChallengeRegistration,
-  SystemSettings,
-} from '../../types';
-import { storage } from '../../services/storageService';
-import { FACTORS_DATA } from '../../data/factorsData';
+import React, { useEffect, useState } from 'react';
+import { BarChart3, Sparkles } from 'lucide-react';
+import { adminApi, RegistrationPage } from '../../api/admin';
+import { PROGRAMS, ProgramCode } from '../../api/challenge';
+import { useSettings } from '../../context/SettingsContext';
+import { PROGRAM_BADGE, RegistrationsPanel } from '../admin/RegistrationsPanel';
+import { SettingsPanel } from '../admin/SettingsPanel';
 
 interface AdminPortalViewProps {
   onNavigate: (view: string) => void;
 }
 
+type Tab = 'dashboard' | 'participants' | 'challenge-regs' | 'questions' | 'settings' | 'audit';
+
+/** Shown for areas that move to server data in Phase 5. */
+const Phase5Notice: React.FC<{ title: string; text: string }> = ({ title, text }) => (
+  <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-2">
+    <h2 className="text-lg font-bold text-slate-900 font-heading">{title}</h2>
+    <p className="text-sm text-slate-500 max-w-lg mx-auto">{text}</p>
+  </div>
+);
+
+/**
+ * Admin console. Access is enforced by <RequireAdmin> on the route and by the API on every admin endpoint.
+ * Phase 4: registrations + settings run on server data; the rest of the console is rebuilt in Phase 5.
+ */
 export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) => {
-  // Access is enforced by <RequireAdmin> (route) and by the API for every admin endpoint.
-  const [activeAdminTab, setActiveAdminTab] = useState<
-    'dashboard' | 'participants' | 'challenge-regs' | 'settings' | 'audit' | 'questions'
-  >('dashboard');
+  const { settings } = useSettings();
+  const [tab, setTab] = useState<Tab>('dashboard');
+  const [overview, setOverview] = useState<RegistrationPage | null>(null);
 
+  useEffect(() => {
+    if (tab === 'dashboard') {
+      adminApi.registrations({ perPage: 5 }).then(setOverview).catch(() => setOverview(null));
+    }
+  }, [tab]);
 
-  // Challenge Registrations filter states
-  const [challengeSearch, setChallengeSearch] = useState('');
-  const [challengeTrackFilter, setChallengeTrackFilter] = useState<'all' | 'tti-intensive' | 'mind-consciousness'>('all');
-  const [challengeStatusFilter, setChallengeStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'waitlisted' | 'completed'>('all');
-  const [inspectChallenge, setInspectChallenge] = useState<ChallengeRegistration | null>(null);
-
-  // Selected participant for deep inspection
-
-  // Settings form state
-  const [settingsState, setSettingsState] = useState<SystemSettings>(storage.getSettings());
-  const [settingsSaved, setSettingsSaved] = useState(false);
-
-  // Reload trigger
-  const [tick, setTick] = useState(0);
-  const refresh = () => setTick((t) => t + 1);
-
-  // Load real records
-  const auditLogs = storage.getAuditLogs();
-  const challengeRegistrations = storage.getChallengeRegistrations();
-
-  // Statistics
-  // Assessment statistics move to the server-backed admin API in Phase 5.
-  const totalStarted = '—';
-  const totalCompleted = '—';
-  const completionRate = '—';
-  const flaggedSessions = { length: '—' };
-  const pendingChallenges = challengeRegistrations.filter((c) => c.status === 'pending');
-
-  // Filtered challenge registrations
-  const filteredChallenges = challengeRegistrations.filter((c) => {
-    const matchesSearch =
-      c.referenceCode.toLowerCase().includes(challengeSearch.toLowerCase()) ||
-      c.name.toLowerCase().includes(challengeSearch.toLowerCase()) ||
-      c.email.toLowerCase().includes(challengeSearch.toLowerCase()) ||
-      (c.city && c.city.toLowerCase().includes(challengeSearch.toLowerCase())) ||
-      c.phone.toLowerCase().includes(challengeSearch.toLowerCase());
-
-    const matchesTrack = challengeTrackFilter === 'all' || c.programTrack === challengeTrackFilter;
-    const matchesStatus = challengeStatusFilter === 'all' || c.status === challengeStatusFilter;
-
-    return matchesSearch && matchesTrack && matchesStatus;
-  });
-
-  const handleUpdateChallengeStatus = (id: string, status: ChallengeRegistration['status']) => {
-    storage.updateChallengeRegistrationStatus(id, status);
-    refresh();
-  };
-
-  const handleExportChallengeCSV = () => {
-    const csvData = storage.exportChallengeRegistrationsCSV();
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `wellness_60day_challenge_registrations_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    storage.updateSettings(settingsState);
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 2500);
-  };
+  const programTotal = (code: ProgramCode) => Object.values(overview?.counts[code] ?? {}).reduce((a, b) => a + (b ?? 0), 0);
+  const newCount = (['STI', 'PTI', 'TTI'] as ProgramCode[]).reduce((n, c) => n + (overview?.counts[c]?.registered ?? 0), 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 pb-28">
-      {/* ADMIN HEADER & METRICS */}
+      {/* HEADER */}
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold font-mono text-teal-400 bg-slate-800 px-2.5 py-0.5 rounded">
-              ADMIN CONSOLE · WELLNESS PLATFORM
-            </span>
-            {settingsState.maintenanceMode && (
-              <span className="text-xs font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded border border-rose-700">
-                MAINTENANCE MODE ACTIVE
-              </span>
+            <span className="text-xs font-bold font-mono text-teal-400 bg-slate-800 px-2.5 py-0.5 rounded">ADMIN CONSOLE · WELLNESS PLATFORM</span>
+            {settings.maintenance_mode && (
+              <span className="text-xs font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded border border-rose-700">MAINTENANCE MODE ACTIVE</span>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-heading">
-            Wellness Platform Administration
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-400">
-            Psychometric database console, 60-day challenge candidate dossiers, and system settings.
-          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-heading">Wellness Platform Administration</h1>
+          <p className="text-xs sm:text-sm text-slate-400">Assessments, 60-day challenge registrations and platform settings.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => onNavigate('landing')}
-            className="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-700"
-          >
-            <span>← Exit to Site</span>
-          </button>
-          {/* Participant exports return with the server-backed console (Phase 5). */}
-        </div>
+        <button
+          onClick={() => onNavigate('landing')}
+          className="px-3.5 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition-colors cursor-pointer border border-slate-700"
+        >
+          ← Exit to Site
+        </button>
       </div>
 
-      {/* ADMIN NAVIGATION TABS */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-        {[
-          { id: 'dashboard', label: 'Overview Metrics', badge: undefined },
-          { id: 'participants', label: 'Participants & Sten Data', badge: totalStarted },
-          { id: 'challenge-regs', label: '60-Day Challenge Registrations', badge: challengeRegistrations.length },
-          { id: 'questions', label: 'Question Set & Norms', badge: '166 items' },
-          { id: 'settings', label: 'System Settings', badge: undefined },
-          { id: 'audit', label: 'Audit Log', badge: auditLogs.length },
-        ].map((tab) => (
+      {/* TABS */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3" role="tablist">
+        {(
+          [
+            ['dashboard', 'Overview'],
+            ['participants', 'Participants & Sten Data'],
+            ['challenge-regs', '60-Day Challenge Registrations'],
+            ['questions', 'Question Set & Norms'],
+            ['settings', 'System Settings'],
+            ['audit', 'Audit Log'],
+          ] as [Tab, string][]
+        ).map(([id, label]) => (
           <button
-            key={tab.id}
-            onClick={() => setActiveAdminTab(tab.id as any)}
-            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer ${
-              activeAdminTab === tab.id
-                ? 'bg-indigo-700 text-white shadow-xs'
-                : 'text-slate-600 hover:bg-slate-100'
-            }`}
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => setTab(id)}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-colors cursor-pointer ${tab === id ? 'bg-indigo-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <span>{tab.label}</span>
-            {tab.badge !== undefined && (
-              <span
-                className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
-                  activeAdminTab === tab.id
-                    ? 'bg-white/20 text-white'
-                    : 'bg-slate-200 text-slate-700'
-                }`}
-              >
-                {tab.badge}
-              </span>
-            )}
+            {label}
           </button>
         ))}
       </div>
 
-      {/* TAB 1: DASHBOARD OVERVIEW */}
-      {activeAdminTab === 'dashboard' && (
+      {tab === 'dashboard' && (
         <div className="space-y-8">
-          {/* Top KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-xs font-medium text-slate-500">16PF Started Sessions</span>
-              <h3 className="text-2xl font-bold text-slate-900 font-mono">{totalStarted}</h3>
-              <span className="text-[11px] text-teal-700 font-medium">All sessions recorded</span>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-xs font-medium text-slate-500">Completed Assessments</span>
-              <h3 className="text-2xl font-bold text-teal-700 font-mono">{totalCompleted}</h3>
-              <span className="text-[11px] text-slate-500 font-medium">{completionRate}% Completion Rate</span>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-amber-200/80 bg-amber-50/20 shadow-xs space-y-1">
-              <span className="text-xs font-medium text-amber-900">60-Day Challenge Enrolled</span>
-              <h3 className="text-2xl font-bold text-amber-700 font-mono">{challengeRegistrations.length}</h3>
-              <span className="text-[11px] text-amber-800 font-semibold">{pendingChallenges.length} pending review</span>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-xs font-medium text-slate-500">Quality Flagged</span>
-              <h3 className="text-2xl font-bold text-slate-700 font-mono">{flaggedSessions.length}</h3>
-              <span className="text-[11px] text-slate-500">Speed / Repetition checks</span>
+            {(['STI', 'PTI', 'TTI'] as ProgramCode[]).map((code) => (
+              <div key={code} className={`p-5 rounded-2xl border shadow-xs space-y-1 ${PROGRAM_BADGE[code]}`}>
+                <span className="text-xs font-medium">{PROGRAMS[code].short} registrations</span>
+                <h3 className="text-2xl font-bold font-mono">{overview ? programTotal(code) : '—'}</h3>
+              </div>
+            ))}
+            <div className="p-5 rounded-2xl border border-sky-200 bg-sky-50 text-sky-900 shadow-xs space-y-1">
+              <span className="text-xs font-medium">Awaiting review</span>
+              <h3 className="text-2xl font-bold font-mono">{overview ? newCount : '—'}</h3>
+              <span className="text-[11px]">Status “registered”</span>
             </div>
           </div>
 
-          {/* Recent Audit Action & Quick Challenge Summary */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Recent 60-Day Challenge Applications */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900 font-heading">
-                  Latest 60-Day Challenge Applicants
-                </h4>
-                <button
-                  onClick={() => setActiveAdminTab('challenge-regs')}
-                  className="text-xs text-teal-700 hover:underline font-semibold"
-                >
-                  View All →
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-600" /> Latest 60-Day registrations
+                </h3>
+                <button onClick={() => setTab('challenge-regs')} className="text-xs font-semibold text-indigo-700 hover:underline cursor-pointer">
+                  View all →
                 </button>
               </div>
-
-              {challengeRegistrations.length > 0 ? (
-                <div className="space-y-2.5">
-                  {challengeRegistrations.slice(0, 5).map((c) => (
-                    <div key={c.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="font-bold text-slate-900 block">{c.name}</span>
-                        <span className="text-[11px] text-slate-500">{c.email} · {c.cohortTiming} cohort</span>
+              {overview && overview.items.length > 0 ? (
+                <ul className="space-y-2">
+                  {overview.items.map((r) => (
+                    <li key={r.id} className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 text-xs">
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-900 block truncate">{r.name}</span>
+                        <span className="text-[11px] text-slate-500 truncate block">{r.email}</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        c.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {c.status.toUpperCase()}
-                      </span>
-                    </div>
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-bold ${PROGRAM_BADGE[r.program]}`}>{r.program}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
-                <p className="text-xs text-slate-400 italic py-4">No challenge applications yet.</p>
+                <p className="text-xs text-slate-400 italic">No registrations yet.</p>
               )}
             </div>
 
-            {/* Recent Audit Trail */}
-            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
-              <h4 className="text-sm font-bold text-slate-900 font-heading">
-                Recent Security & System Events
-              </h4>
-              <div className="space-y-2.5">
-                {auditLogs.slice(0, 5).map((log) => (
-                  <div key={log.id} className="p-3 bg-slate-50 rounded-xl text-xs space-y-1 border border-slate-100">
-                    <div className="flex items-center justify-between text-slate-500">
-                      <span className="font-mono font-bold text-teal-700">{log.action}</span>
-                      <span className="font-mono text-[10px]">{new Date(log.createdAt).toLocaleTimeString()}</span>
-                    </div>
-                    <p className="text-slate-700">{log.details || `Action performed on ${log.entityType} (${log.entityId})`}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 2: PARTICIPANTS & RESPONSES CONSOLE */}
-      {activeAdminTab === 'participants' && (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-2">
-          <h2 className="text-lg font-bold text-slate-900 font-heading">Participants & Sten Data</h2>
-          <p className="text-sm text-slate-500 max-w-lg mx-auto">
-            Assessments are now stored securely on the server. This view is being rebuilt on the server data in Phase 5
-            (search, filters, score inspection and exports).
-          </p>
-        </div>
-      )}
-
-      {/* TAB 3: 60-DAY CHALLENGE REGISTRATIONS */}
-      {activeAdminTab === 'challenge-regs' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-600" />
-                <h3 className="text-lg font-bold text-slate-900 font-heading">
-                  60-Day Transformation Challenge Registrations
-                </h3>
-              </div>
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-teal-600" /> Assessment statistics
+              </h3>
               <p className="text-xs text-slate-500">
-                Review incoming candidate intakes for Sonic (STI) and Transcendental (TTI) programs.
+                Tests started and completed, completion rate, quality flags and the latest audit events arrive with the full server-backed
+                console in Phase 5.
               </p>
             </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search name, code, city..."
-                  value={challengeSearch}
-                  onChange={(e) => setChallengeSearch(e.target.value)}
-                  className="pl-9 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-                />
-              </div>
-
-              <select
-                value={challengeStatusFilter}
-                onChange={(e) => setChallengeStatusFilter(e.target.value as any)}
-                className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="waitlisted">Waitlisted</option>
-                <option value="completed">Completed</option>
-              </select>
-
-              <button
-                onClick={handleExportChallengeCSV}
-                className="px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-xl flex items-center gap-1 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" /> Export CSV
-              </button>
-            </div>
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-200">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Code</th>
-                  <th className="py-3 px-4">Candidate</th>
-                  <th className="py-3 px-4">Contact</th>
-                  <th className="py-3 px-4">Program & Cohort</th>
-                  <th className="py-3 px-4">Focus / Struggles</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium">
-                {filteredChallenges.length > 0 ? (
-                  filteredChallenges.map((reg) => (
-                    <tr key={reg.id} className="hover:bg-slate-50/50">
-                      <td className="py-3 px-4 font-mono font-bold text-amber-800">{reg.referenceCode}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900">{reg.name}</div>
-                        <div className="text-[11px] text-slate-400">
-                          {reg.age ? `${reg.age}y` : ''} {reg.city ? `· ${reg.city}` : ''}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="text-slate-800">{reg.email}</div>
-                        <div className="text-[11px] font-mono text-slate-500">{reg.phone}</div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-slate-900">
-                          {reg.programTrack === 'tti-intensive' ? (
-                            <span className="text-amber-800">Transcendental (TTI)</span>
-                          ) : (
-                            <span className="text-teal-800">Sonic (STI)</span>
-                          )}
-                        </div>
-                        <div className="text-[11px] text-slate-500 uppercase font-mono">
-                          {reg.cohortTiming} cohort
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 max-w-xs">
-                        <div className="flex flex-wrap gap-1">
-                          {reg.currentStruggles.slice(0, 2).map((st, i) => (
-                            <span key={i} className="text-[10px] bg-rose-50 text-rose-800 px-1.5 py-0.5 rounded border border-rose-200 truncate">
-                              {st}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                            reg.status === 'confirmed'
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : reg.status === 'pending'
-                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                              : reg.status === 'waitlisted'
-                              ? 'bg-slate-100 text-slate-700 border border-slate-300'
-                              : 'bg-purple-100 text-purple-800'
-                          }`}
-                        >
-                          {reg.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1.5">
-                        <button
-                          onClick={() => setInspectChallenge(reg)}
-                          className="px-2.5 py-1 text-[11px] font-semibold text-indigo-700 hover:bg-indigo-50 rounded-lg cursor-pointer"
-                        >
-                          Details
-                        </button>
-                        {reg.status !== 'confirmed' && (
-                          <button
-                            onClick={() => handleUpdateChallengeStatus(reg.id, 'confirmed')}
-                            className="px-2 py-1 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg cursor-pointer"
-                            title="Confirm Enrollment"
-                          >
-                            Confirm
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-400">
-                      No 60-Day Challenge applications match the current filter criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
           </div>
         </div>
       )}
 
-      {/* INSPECT CHALLENGE REGISTRATION MODAL */}
-      {inspectChallenge && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full max-h-[90vh] overflow-y-auto space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div>
-                <span className="text-xs font-mono font-bold text-amber-800">{inspectChallenge.referenceCode}</span>
-                <h3 className="text-xl font-bold text-slate-900 font-heading">
-                  {inspectChallenge.name} — Intake Dossier
-                </h3>
-              </div>
-              <button
-                onClick={() => setInspectChallenge(null)}
-                className="p-2 hover:bg-slate-100 rounded-lg text-slate-500 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl text-xs">
-              <div>
-                <span className="text-slate-400 block">Email</span>
-                <span className="font-semibold text-slate-800 break-all">{inspectChallenge.email}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Phone</span>
-                <span className="font-semibold text-slate-800">{inspectChallenge.phone}</span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Program Track</span>
-                <span className="font-semibold text-amber-800">
-                  {inspectChallenge.programTrack === 'tti-intensive' ? 'Transcendental (TTI)' : 'Sonic (STI)'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-400 block">Cohort Timing</span>
-                <span className="font-semibold text-slate-800 uppercase font-mono">{inspectChallenge.cohortTiming}</span>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider block">
-                Reported Struggles:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {inspectChallenge.currentStruggles.map((st, i) => (
-                  <span key={i} className="text-xs bg-rose-50 text-rose-800 px-2.5 py-1 rounded-lg border border-rose-200">
-                    {st}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-1.5 p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs">
-              <span className="font-bold text-amber-900 block">Primary 60-Day Transformation Goal:</span>
-              <p className="text-amber-950 italic leading-relaxed">
-                "{inspectChallenge.primaryGoal}"
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-              <button
-                onClick={() => {
-                  storage.deleteChallengeRegistration(inspectChallenge.id);
-                  setInspectChallenge(null);
-                  refresh();
-                }}
-                className="px-3.5 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-semibold rounded-xl cursor-pointer"
-              >
-                Delete Intake
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    handleUpdateChallengeStatus(inspectChallenge.id, 'confirmed');
-                    setInspectChallenge(null);
-                  }}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  Confirm Candidate
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {tab === 'participants' && (
+        <Phase5Notice
+          title="Participants & Sten Data"
+          text="Assessments are stored securely on the server. Search, filters, score inspection and exports are rebuilt on that data in Phase 5."
+        />
       )}
-
-      {/* TAB 4: QUESTION POOL & FACTORS */}
-      {activeAdminTab === 'questions' && (
-        <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm text-center space-y-2">
-          <h2 className="text-lg font-bold text-slate-900 font-heading">Question Set & Norms</h2>
-          <p className="text-sm text-slate-500 max-w-lg mx-auto">
-            Assessments are now stored securely on the server. This view is being rebuilt on the server data in Phase 5
-            (search, filters, score inspection and exports).
-          </p>
-        </div>
+      {tab === 'challenge-regs' && <RegistrationsPanel />}
+      {tab === 'questions' && (
+        <Phase5Notice title="Question Set & Norms" text="A read-only view of the 166-item set, its scoring key and the norm tables arrives in Phase 5." />
       )}
-
-      {/* TAB 5: SYSTEM SETTINGS */}
-      {activeAdminTab === 'settings' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 max-w-2xl">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-900 font-heading">
-              Platform Configuration & Global Flags
-            </h3>
-            <p className="text-xs text-slate-500">
-              Update site title, announcement banner, and maintenance mode.
-            </p>
-          </div>
-
-          <form onSubmit={handleSaveSettings} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Platform Name
-              </label>
-              <input
-                type="text"
-                value={settingsState.siteName}
-                onChange={(e) => setSettingsState({ ...settingsState, siteName: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Support Email
-              </label>
-              <input
-                type="email"
-                value={settingsState.supportEmail}
-                onChange={(e) => setSettingsState({ ...settingsState, supportEmail: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Announcement Banner Text
-              </label>
-              <input
-                type="text"
-                value={settingsState.announcementText}
-                onChange={(e) => setSettingsState({ ...settingsState, announcementText: e.target.value })}
-                className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-              />
-            </div>
-
-            <div className="flex items-center gap-3 pt-2">
-              <input
-                type="checkbox"
-                id="announcementActive"
-                checked={settingsState.announcementActive}
-                onChange={(e) => setSettingsState({ ...settingsState, announcementActive: e.target.checked })}
-                className="w-4 h-4 text-teal-600 rounded"
-              />
-              <label htmlFor="announcementActive" className="text-xs font-medium text-slate-700">
-                Display Announcement Banner
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3 pt-2 border-t border-slate-100">
-              <input
-                type="checkbox"
-                id="maintenanceMode"
-                checked={settingsState.maintenanceMode}
-                onChange={(e) => setSettingsState({ ...settingsState, maintenanceMode: e.target.checked })}
-                className="w-4 h-4 text-rose-600 rounded"
-              />
-              <label htmlFor="maintenanceMode" className="text-xs font-medium text-slate-700">
-                Enable Maintenance Mode (locks public assessment flow)
-              </label>
-            </div>
-
-            <div className="pt-3">
-              <button
-                type="submit"
-                className="px-6 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-              >
-                Save System Settings
-              </button>
-              {settingsSaved && (
-                <span className="text-xs text-emerald-600 font-semibold ml-3 animate-in fade-in-50">
-                  ✓ Settings saved successfully!
-                </span>
-              )}
-            </div>
-          </form>
-        </div>
+      {tab === 'settings' && <SettingsPanel />}
+      {tab === 'audit' && (
+        <Phase5Notice
+          title="Audit Log"
+          text="Every sign-in, registration, settings change and export is already being recorded on the server. The searchable audit view arrives in Phase 5."
+        />
       )}
-
-      {/* TAB 6: AUDIT TRAIL */}
-      {activeAdminTab === 'audit' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-900 font-heading">
-              Live Security & Administrative Audit Log
-            </h3>
-            <p className="text-xs text-slate-500">
-              Immutable logging of administrative actions, test submissions, and exports.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto rounded-2xl border border-slate-200 max-h-[500px] overflow-y-auto">
-            <table className="w-full text-left text-xs text-slate-700">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px] sticky top-0 bg-slate-100">
-                <tr>
-                  <th className="py-2.5 px-3">Timestamp</th>
-                  <th className="py-2.5 px-3">Actor</th>
-                  <th className="py-2.5 px-3">Action</th>
-                  <th className="py-2.5 px-3">Target Entity</th>
-                  <th className="py-2.5 px-3">Details</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-mono">
-                {auditLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-slate-50">
-                    <td className="py-2.5 px-3 text-slate-400 text-[11px]">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td className="py-2.5 px-3 font-semibold text-slate-800">{log.actorName}</td>
-                    <td className="py-2.5 px-3 font-bold text-teal-700">{log.action}</td>
-                    <td className="py-2.5 px-3 text-slate-600">{log.entityType} ({log.entityId})</td>
-                    <td className="py-2.5 px-3 text-slate-500 max-w-xs truncate">{log.details}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 };

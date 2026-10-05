@@ -21,6 +21,8 @@ export interface SessionState {
   /** item id (as string key) → 1..5 */
   answers: Record<string, number>;
   answeredCount: number;
+  /** Time actively spent so far (seconds), for the on-screen timer. */
+  activeSeconds: number;
   totalItems: number;
   nickname: string | null;
   startedAt: string;

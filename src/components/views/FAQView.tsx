@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { storage } from '../../services/storageService';
+import React, { useEffect, useState } from 'react';
+import { Faq, siteApi } from '../../api/site';
 import { ChevronDown, ChevronUp, HelpCircle, Search, ArrowRight } from 'lucide-react';
 
 interface FAQViewProps {
@@ -7,10 +7,21 @@ interface FAQViewProps {
 }
 
 export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
-  const faqs = storage.getFAQs();
+  const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [expandedId, setExpandedId] = useState<string | null>('faq_01');
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    siteApi
+      .faqs()
+      .then((list) => {
+        setFaqs(list);
+        setExpandedId(list[0]?.id ?? null);
+      })
+      .catch(() => setLoadError(true));
+  }, []);
 
   const filtered = faqs.filter((f) => {
     const matchesSearch =
@@ -48,7 +59,7 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
         </div>
 
         <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl overflow-x-auto w-full sm:w-auto">
-          {['all', 'Assessment', 'Science & Scoring', 'Privacy & Data', '60 Days Challenge'].map((cat) => (
+          {['all', ...Array.from(new Set(faqs.map((f) => f.category)))].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
@@ -64,6 +75,9 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
 
       {/* Accordion List */}
       <div className="space-y-3">
+        {loadError && (
+          <p role="alert" className="text-sm text-rose-600 text-center">We could not load the FAQs right now. Please refresh the page.</p>
+        )}
         {filtered.map((item) => {
           const isExpanded = expandedId === item.id;
           return (

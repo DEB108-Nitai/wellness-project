@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { ApiError } from '../../api/client';
+import { siteApi } from '../../api/site';
 import { Mail, CheckCircle2, Shield, Heart, Sparkles, Volume2 } from 'lucide-react';
 
 interface FooterProps {
@@ -9,11 +11,23 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
+  const [subscribing, setSubscribing] = useState(false);
+  const [website, setWebsite] = useState(''); // honeypot
+  const startedAt = useRef(Date.now());
+
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim() && email.includes('@')) {
+    setSubscribeError(null);
+    setSubscribing(true);
+    try {
+      await siteApi.subscribe(email.trim(), { website, formStartedAt: startedAt.current });
       setSubscribed(true);
       setEmail('');
+    } catch (err) {
+      setSubscribeError(err instanceof ApiError ? Object.values(err.fields)[0] ?? err.message : 'Could not subscribe. Please try again.');
+    } finally {
+      setSubscribing(false);
     }
   };
 
@@ -139,11 +153,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                     className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-teal-500"
                   />
                 </div>
+                <div aria-hidden="true" className="absolute -left-[10000px] w-px h-px overflow-hidden">
+                  <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                </div>
+                {subscribeError && <p className="text-[11px] text-rose-300">{subscribeError}</p>}
                 <button
                   type="submit"
-                  className="w-full py-2 px-3 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-500 rounded-lg transition-colors cursor-pointer"
+                  disabled={subscribing}
+                  className="w-full py-2 px-3 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-60 rounded-lg transition-colors cursor-pointer"
                 >
-                  Subscribe
+                  {subscribing ? 'Subscribing…' : 'Subscribe'}
                 </button>
               </form>
             )}

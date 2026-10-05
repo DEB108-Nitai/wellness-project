@@ -8,12 +8,15 @@
 declare(strict_types=1);
 
 use Wellness\Controllers\AccountController;
+use Wellness\Controllers\AdminController;
 use Wellness\Controllers\AssessmentController;
 use Wellness\Controllers\AuthController;
+use Wellness\Controllers\ChallengeController;
 use Wellness\Controllers\GoogleAuthController;
 use Wellness\Controllers\HealthController;
 use Wellness\Controllers\ResultsController;
 use Wellness\Controllers\SettingsController;
+use Wellness\Controllers\SiteController;
 use Wellness\Core\Router;
 
 return static function (Router $r): void {
@@ -55,4 +58,20 @@ return static function (Router $r): void {
     $r->post("/results/$ref/share", [ResultsController::class, 'share'], ['auth' => 'user']);
     $r->delete("/results/$ref/share", [ResultsController::class, 'unshare'], ['auth' => 'user']);
     $r->get('/shared/{token:[A-Za-z0-9]{32}}', [ResultsController::class, 'shared']);
+
+    // --- 60-Day Challenge & site forms (Phase 4) ------------------------------
+    $r->post('/challenge/registrations', [ChallengeController::class, 'register']);
+    $r->get('/challenge/my-registrations', [ChallengeController::class, 'mine'], ['auth' => 'user']);
+    $r->post('/contact', [SiteController::class, 'contact']);
+    $r->post('/newsletter/subscribe', [SiteController::class, 'subscribe']);
+    $r->post('/newsletter/unsubscribe', [SiteController::class, 'unsubscribe']);
+    $r->get('/faqs', [SiteController::class, 'faqs']);
+
+    // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
+    $admin = ['auth' => 'admin', 'maintenance' => false];
+    $r->get('/admin/registrations', [AdminController::class, 'registrations'], $admin);
+    $r->patch('/admin/registrations/{id:[0-9]+}', [AdminController::class, 'updateRegistration'], $admin);
+    $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
+    $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);
+    $r->put('/admin/settings', [AdminController::class, 'updateSettings'], $admin);
 };

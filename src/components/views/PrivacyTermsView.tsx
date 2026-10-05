@@ -52,7 +52,7 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
               <span>1. Data Collection & Processing Scope</span>
             </h2>
             <p>
-              When you participate in the Wellness 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic Therapeutic Intervention & Transcendental Therapeutic Intervention), we collect and store:
+              When you participate in the Wellness 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic, Philosophical and Transcendental Therapeutic Interventions), we collect and store:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-600">
               <li>Item response scores across the 166 personality questionnaire statements.</li>
@@ -107,7 +107,7 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900 font-heading">2. Educational & Non-Clinical Disclaimer</h2>
             <p>
-              The 16 Personality Factors assessment and the 60-Day Challenges (STI and TTI) are educational and self-developmental frameworks. They do not constitute medical, clinical psychiatric, or diagnostic services.
+              The 16 Personality Factors assessment and the 60-Day Challenges (STI, PTI and TTI) are educational and self-developmental frameworks. They do not constitute medical, clinical psychiatric, or diagnostic services.
             </p>
           </div>
 

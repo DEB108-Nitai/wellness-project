@@ -6,7 +6,7 @@
 import React from 'react';
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
-import { storage } from './services/storageService';
+import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigate, viewForPath } from './lib/routes';
 import { Navbar } from './components/layout/Navbar';
@@ -30,6 +30,7 @@ import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
 import { AccountPage } from './pages/AccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { UnsubscribePage } from './pages/UnsubscribePage';
 import { AssessmentPage } from './pages/test/AssessmentPage';
 import { ResultsPage } from './pages/results/ResultsPage';
 import { SharedResultsPage } from './pages/results/SharedResultsPage';
@@ -40,10 +41,10 @@ function SiteLayout() {
   const location = useLocation();
   const onNavigate = useAppNavigate();
   const { user } = useAuth();
-  const settings = storage.getSettings();
+  const { settings } = useSettings();
 
-  // Maintenance mode (admins keep full access). Enforced server-side in Phase 4.
-  if (settings.maintenanceMode && user?.role !== 'admin') {
+  // Maintenance mode: the API also refuses public requests (503); admins keep full access (SITE-5).
+  if (settings.maintenance_mode && user?.role !== 'admin') {
     return (
       <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center space-y-4 bg-slate-800 p-8 rounded-3xl border border-slate-700">
@@ -62,7 +63,7 @@ function SiteLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#1E2430]">
-      {settings.announcementActive && <AnnouncementBar text={settings.announcementText} />}
+      {settings.announcement_active && settings.announcement_text && <AnnouncementBar text={settings.announcement_text} />}
       <Navbar currentView={viewForPath(location.pathname)} onNavigate={onNavigate} />
       <VerifyEmailBanner />
       <main className="flex-1">
@@ -136,6 +137,7 @@ export default function App() {
             </RequireAdmin>
           }
         />
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
         <Route path="/privacy-terms" element={<Navigate to="/privacy" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>

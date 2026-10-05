@@ -344,6 +344,7 @@ final class AssessmentService
             'currentPage' => (int) $session['current_page'],
             'answers' => (object) $answers,
             'answeredCount' => count($answers),
+            'activeSeconds' => (int) $session['active_seconds'],
             'totalItems' => count(PsychometricRepository::items($session['item_set_version'])),
             'nickname' => $session['nickname'],
             'startedAt' => gmdate('c', strtotime($session['started_at'] . ' UTC')),

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   ArrowRight,
   ShieldCheck,
@@ -31,6 +32,14 @@ interface LandingViewProps {
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
+  // Deep links such as /#60-days-challenge scroll to that section once the page has rendered.
+  const location = useLocation();
+  useEffect(() => {
+    if (!location.hash) return;
+    const t = window.setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 100);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
+
   // In-progress assessment for this visitor (account or guest browser), from the API.
   const { active: activeDraft, progress: draftProgress, abandon } = useActiveSession();
 
@@ -432,7 +441,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* SECTION 8: 60-DAY TRANSFORMATION CHALLENGES (Sonic STI + Transcendental TTI) */}
+      {/* SECTION 8: 60-DAY TRANSFORMATION CHALLENGES (STI, PTI, TTI) */}
       <ChallengeSection />
     </div>
   );

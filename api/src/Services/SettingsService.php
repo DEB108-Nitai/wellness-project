@@ -76,6 +76,67 @@ final class SettingsService
         self::$cache = null;
     }
 
+    /**
+     * Validate and store admin changes (ADM-8). Unknown keys are rejected; values are
+     * checked against each definition so a bad value can never break the site.
+     * @return array<string,mixed> the full, updated settings
+     */
+    public static function update(array $changes, int $adminId): array
+    {
+        $errors = [];
+        $clean = [];
+        foreach ($changes as $key => $value) {
+            $def = self::DEFINITIONS[$key] ?? null;
+            if ($def === null) {
+                $errors[$key] = 'Unknown setting.';
+                continue;
+            }
+            switch ($def['type']) {
+                case 'bool':
+                    if (!is_bool($value)) {
+                        $errors[$key] = 'Must be true or false.';
+                        continue 2;
+                    }
+                    $clean[$key] = $value ? '1' : '0';
+                    break;
+                case 'int':
+                    if (!is_int($value) || $value < ($def['min'] ?? PHP_INT_MIN) || $value > ($def['max'] ?? PHP_INT_MAX)) {
+                        $errors[$key] = sprintf('Must be a whole number between %d and %d.', $def['min'] ?? 0, $def['max'] ?? 0);
+                        continue 2;
+                    }
+                    $clean[$key] = (string) $value;
+                    break;
+                case 'email':
+                    $value = is_string($value) ? mb_strtolower(trim($value)) : '';
+                    if ($value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $errors[$key] = 'Please enter a valid email address.';
+                        continue 2;
+                    }
+                    $clean[$key] = $value;
+                    break;
+                default:
+                    $value = is_string($value) ? \Wellness\Core\Validator::cleanString($value) : '';
+                    if (mb_strlen($value) > ($def['max'] ?? 255) || ($key === 'site_name' && $value === '')) {
+                        $errors[$key] = 'Please enter a valid value (max ' . ($def['max'] ?? 255) . ' characters).';
+                        continue 2;
+                    }
+                    $clean[$key] = $value;
+            }
+        }
+        if ($errors) {
+            throw \Wellness\Core\HttpException::validation($errors);
+        }
+        foreach ($clean as $key => $value) {
+            Database::run(
+                'INSERT INTO settings (setting_key, value, updated_by) VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value), updated_by = VALUES(updated_by)',
+                [$key, $value, $adminId]
+            );
+        }
+        self::flush();
+        return self::all();
+    }
+
     private static function cast(string $raw, array $def): mixed
     {
         $value = match ($def['type']) {

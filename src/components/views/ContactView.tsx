@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Mail, Send, CheckCircle2, MessageSquare, Shield, Clock } from 'lucide-react';
-import { storage } from '../../services/storageService';
+import { ApiError } from '../../api/client';
+import { siteApi } from '../../api/site';
 
 export const ContactView: React.FC = () => {
   const [name, setName] = useState('');
@@ -8,13 +9,35 @@ export const ContactView: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [website, setWebsite] = useState(''); // honeypot
+  const startedAt = useRef(Date.now());
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) return;
-
-    storage.addContactMessage(name, email, subject || 'General Inquiry', message);
-    setSubmitted(true);
+    setSending(true);
+    setError(null);
+    try {
+      await siteApi.contact({
+        name: name.trim(),
+        email: email.trim(),
+        ...(subject.trim() ? { subject: subject.trim() } : {}),
+        message: message.trim(),
+        website,
+        formStartedAt: startedAt.current,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? Object.values(err.fields)[0] ?? err.message
+          : 'Could not send your message. Please try again.',
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -125,11 +148,25 @@ export const ContactView: React.FC = () => {
                 />
               </div>
 
+              <div aria-hidden="true" className="absolute -left-[10000px] w-px h-px overflow-hidden">
+                <label>
+                  Website
+                  <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
+                </label>
+              </div>
+
+              {error && (
+                <p role="alert" className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl">
+                  {error}
+                </p>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                disabled={sending}
+                className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Send Message</span>
+                <span>{sending ? 'Sending…' : 'Send Message'}</span>
                 <Send className="w-3.5 h-3.5" />
               </button>
             </form>
