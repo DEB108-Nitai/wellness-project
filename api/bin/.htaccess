@@ -1,0 +1,2 @@
+# Never serve these files directly; everything goes through api/index.php.
+Require all denied

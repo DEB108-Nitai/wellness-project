@@ -1,39 +1,21 @@
 import {
   AuditLogEntry,
-  Campaign,
   ChallengeRegistration,
   ContactMessage,
-  DeletionRequest,
   Demographics,
   FAQItem,
-  Researcher,
   SonicRegistration,
   SystemSettings,
   TestSession,
   UserAccount,
 } from '../types';
-import {
-  DEFAULT_SETTINGS,
-  INITIAL_AUDIT_LOGS,
-  INITIAL_CAMPAIGNS,
-  INITIAL_CHALLENGE_REGISTRATIONS,
-  INITIAL_DELETIONS,
-  INITIAL_FAQS,
-  INITIAL_MESSAGES,
-  INITIAL_RESEARCHERS,
-  INITIAL_SESSIONS,
-  INITIAL_SONIC_REGISTRATIONS,
-  INITIAL_USERS,
-} from '../data/initialData';
+import { DEFAULT_SETTINGS, INITIAL_FAQS } from '../data/initialData';
 import { computeFactorScores, computeQualityFlags } from './scoringEngine';
 
 const KEYS = {
   SESSIONS: 'wellness_sessions',
-  RESEARCHERS: 'wellness_researchers',
-  CAMPAIGNS: 'wellness_campaigns',
   SETTINGS: 'wellness_settings',
   AUDIT: 'wellness_audit_logs',
-  DELETIONS: 'wellness_deletions',
   MESSAGES: 'wellness_messages',
   FAQS: 'wellness_faqs',
   SUBSCRIBERS: 'wellness_subscribers',
@@ -41,7 +23,6 @@ const KEYS = {
   CHALLENGE_REGISTRATIONS: 'wellness_challenge_registrations',
   SONIC_REGISTRATIONS: 'wellness_sonic_registrations',
   CURRENT_USER: 'wellness_current_user',
-  USERS: 'wellness_users',
 };
 
 // Generate human-friendly reference ID like WL-7K2Q9X
@@ -63,43 +44,18 @@ class StorageService {
     this.init();
   }
 
+  // Temporary browser storage until each feature moves to the PHP API (PRD phases 2-5).
+  // No demo data is seeded.
   private init() {
-    if (!localStorage.getItem(KEYS.SESSIONS)) {
-      localStorage.setItem(KEYS.SESSIONS, JSON.stringify(INITIAL_SESSIONS));
-    }
-    if (!localStorage.getItem(KEYS.RESEARCHERS)) {
-      localStorage.setItem(KEYS.RESEARCHERS, JSON.stringify(INITIAL_RESEARCHERS));
-    }
-    if (!localStorage.getItem(KEYS.CAMPAIGNS)) {
-      localStorage.setItem(KEYS.CAMPAIGNS, JSON.stringify(INITIAL_CAMPAIGNS));
-    }
     if (!localStorage.getItem(KEYS.SETTINGS)) {
       localStorage.setItem(KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
-    }
-    if (!localStorage.getItem(KEYS.AUDIT)) {
-      localStorage.setItem(KEYS.AUDIT, JSON.stringify(INITIAL_AUDIT_LOGS));
-    }
-    if (!localStorage.getItem(KEYS.DELETIONS)) {
-      localStorage.setItem(KEYS.DELETIONS, JSON.stringify(INITIAL_DELETIONS));
-    }
-    if (!localStorage.getItem(KEYS.MESSAGES)) {
-      localStorage.setItem(KEYS.MESSAGES, JSON.stringify(INITIAL_MESSAGES));
     }
     if (!localStorage.getItem(KEYS.FAQS)) {
       localStorage.setItem(KEYS.FAQS, JSON.stringify(INITIAL_FAQS));
     }
-    if (!localStorage.getItem(KEYS.CHALLENGE_REGISTRATIONS)) {
-      localStorage.setItem(KEYS.CHALLENGE_REGISTRATIONS, JSON.stringify(INITIAL_CHALLENGE_REGISTRATIONS));
-    }
-    if (!localStorage.getItem(KEYS.USERS)) {
-      localStorage.setItem(KEYS.USERS, JSON.stringify(INITIAL_USERS));
-    }
-    if (!localStorage.getItem(KEYS.SONIC_REGISTRATIONS)) {
-      localStorage.setItem(KEYS.SONIC_REGISTRATIONS, JSON.stringify(INITIAL_SONIC_REGISTRATIONS));
-    }
   }
 
-  // --- USER AUTHENTICATION ---
+  // --- SIGNED-IN USER (mirrored from AuthContext; real auth lives in the PHP API) ---
   public getCurrentUser(): UserAccount | null {
     try {
       const data = localStorage.getItem(KEYS.CURRENT_USER);
@@ -117,70 +73,13 @@ class StorageService {
     }
   }
 
-  public getUsers(): UserAccount[] {
-    try {
-      const data = localStorage.getItem(KEYS.USERS);
-      return data ? JSON.parse(data) : INITIAL_USERS;
-    } catch {
-      return INITIAL_USERS;
-    }
-  }
-
-  public signupUser(name: string, email: string, role: 'user' | 'researcher' | 'admin' = 'user'): UserAccount {
-    const users = this.getUsers();
-    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (existing) {
-      this.setCurrentUser(existing);
-      return existing;
-    }
-
-    const newUser: UserAccount = {
-      id: `usr_${Date.now()}`,
-      name,
-      email,
-      role,
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    localStorage.setItem(KEYS.USERS, JSON.stringify(users));
-    this.setCurrentUser(newUser);
-    this.logAudit('system', name, 'USER_SIGNUP', 'UserAccount', newUser.id, `Signed up as ${role}`);
-    return newUser;
-  }
-
-  public loginUser(email: string, nameFallback?: string): UserAccount {
-    const users = this.getUsers();
-    let user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
-      user = {
-        id: `usr_${Date.now()}`,
-        name: nameFallback || email.split('@')[0],
-        email,
-        role: email.includes('admin') ? 'admin' : email.includes('research') ? 'researcher' : 'user',
-        createdAt: new Date().toISOString(),
-      };
-      users.push(user);
-      localStorage.setItem(KEYS.USERS, JSON.stringify(users));
-    }
-
-    this.setCurrentUser(user);
-    this.logAudit('system', user.name, 'USER_LOGIN', 'UserAccount', user.id, `Role: ${user.role}`);
-    return user;
-  }
-
-  public logoutUser() {
-    this.setCurrentUser(null);
-  }
-
   // --- 60-DAY CHALLENGE REGISTRATIONS ---
   public getChallengeRegistrations(): ChallengeRegistration[] {
     try {
       const data = localStorage.getItem(KEYS.CHALLENGE_REGISTRATIONS);
-      return data ? JSON.parse(data) : INITIAL_CHALLENGE_REGISTRATIONS;
+      return data ? JSON.parse(data) : [];
     } catch {
-      return INITIAL_CHALLENGE_REGISTRATIONS;
+      return [];
     }
   }
 
@@ -282,9 +181,9 @@ class StorageService {
   public getSonicRegistrations(): SonicRegistration[] {
     try {
       const data = localStorage.getItem(KEYS.SONIC_REGISTRATIONS);
-      return data ? JSON.parse(data) : INITIAL_SONIC_REGISTRATIONS;
+      return data ? JSON.parse(data) : [];
     } catch {
-      return INITIAL_SONIC_REGISTRATIONS;
+      return [];
     }
   }
 
@@ -436,7 +335,7 @@ class StorageService {
     }
   }
 
-  public startSession(demographics: Demographics, campaignSlug?: string): TestSession {
+  public startSession(demographics: Demographics): TestSession {
     const sessions = this.getSessions();
     const refId = generateReferenceId();
     const token = generateToken();
@@ -449,7 +348,6 @@ class StorageService {
       referenceId: refId,
       userId: currentUser?.id,
       userEmail: currentUser?.email || demographics.email,
-      campaignSlug,
       status: 'in_progress',
       currentPage: 1,
       consentVersion: 'v1.0',
@@ -467,7 +365,7 @@ class StorageService {
     localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
     localStorage.setItem(KEYS.CURRENT_SESSION_TOKEN, token);
 
-    this.logAudit('system', currentUser?.name || 'System Engine', 'SESSION_START', 'TestSession', refId, `Participant started assessment. Campaign: ${campaignSlug || 'General'}`);
+    this.logAudit('system', currentUser?.name || 'System Engine', 'SESSION_START', 'TestSession', refId, 'Participant started assessment.');
     return newSession;
   }
 
@@ -545,11 +443,6 @@ class StorageService {
     sessions[idx] = completedSession;
     localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
 
-    // Update campaign counter if attached
-    if (completedSession.campaignSlug) {
-      this.incrementCampaignCompletion(completedSession.campaignSlug);
-    }
-
     this.logAudit('system', 'System Engine', 'SESSION_SUBMIT', 'TestSession', session.referenceId, `Participant completed 163-factor assessment. Sten scores computed.`);
     return { session: completedSession };
   }
@@ -566,118 +459,6 @@ class StorageService {
     };
     localStorage.setItem(KEYS.SESSIONS, JSON.stringify(sessions));
     return true;
-  }
-
-  public deleteSessionData(referenceId: string): boolean {
-    const sessions = this.getSessions();
-    const filtered = sessions.filter((s) => s.referenceId.toUpperCase() !== referenceId.trim().toUpperCase());
-    if (filtered.length !== sessions.length) {
-      localStorage.setItem(KEYS.SESSIONS, JSON.stringify(filtered));
-      this.logAudit('admin', 'Super Admin', 'DATA_PURGE', 'TestSession', referenceId, 'Participant data purged in compliance with deletion request.');
-      return true;
-    }
-    return false;
-  }
-
-  // --- RESEARCHERS ---
-  public getResearchers(): Researcher[] {
-    try {
-      const data = localStorage.getItem(KEYS.RESEARCHERS);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  public addResearcher(name: string, email: string, organization: string, country: string, purpose: string): Researcher {
-    const list = this.getResearchers();
-    const settings = this.getSettings();
-    const newRes: Researcher = {
-      id: `res_${Date.now()}`,
-      name,
-      email,
-      organization,
-      country,
-      purpose,
-      status: settings.researcherAutoApprove ? 'approved' : 'pending',
-      createdAt: new Date().toISOString(),
-    };
-    list.push(newRes);
-    localStorage.setItem(KEYS.RESEARCHERS, JSON.stringify(list));
-    this.logAudit('researcher', name, 'RESEARCHER_REGISTER', 'Researcher', newRes.id, `Organization: ${organization}`);
-    return newRes;
-  }
-
-  public updateResearcherStatus(id: string, status: Researcher['status'], reason?: string): boolean {
-    const list = this.getResearchers();
-    const idx = list.findIndex((r) => r.id === id);
-    if (idx === -1) return false;
-    list[idx].status = status;
-    list[idx].statusReason = reason;
-    localStorage.setItem(KEYS.RESEARCHERS, JSON.stringify(list));
-    this.logAudit('admin', 'Super Admin', 'RESEARCHER_STATUS_CHANGE', 'Researcher', id, `Status updated to ${status}. Reason: ${reason || 'N/A'}`);
-    return true;
-  }
-
-  // --- CAMPAIGNS ---
-  public getCampaigns(): Campaign[] {
-    try {
-      const data = localStorage.getItem(KEYS.CAMPAIGNS);
-      const campaigns: Campaign[] = data ? JSON.parse(data) : [];
-      const sessions = this.getSessions();
-
-      // Recalculate dynamic live counts
-      return campaigns.map((camp) => {
-        const campSessions = sessions.filter((s) => s.campaignSlug === camp.slug);
-        return {
-          ...camp,
-          responsesCount: campSessions.length,
-          completedCount: campSessions.filter((s) => s.status === 'completed').length,
-        };
-      });
-    } catch {
-      return [];
-    }
-  }
-
-  public getCampaignBySlug(slug: string): Campaign | undefined {
-    return this.getCampaigns().find((c) => c.slug.toLowerCase() === slug.toLowerCase());
-  }
-
-  public createCampaign(campaign: Omit<Campaign, 'id' | 'createdAt' | 'status'>, autoApprove = false): Campaign {
-    const list = this.getCampaigns();
-    const newCamp: Campaign = {
-      ...campaign,
-      id: `camp_${Date.now()}`,
-      status: autoApprove ? 'live' : 'pending_approval',
-      createdAt: new Date().toISOString(),
-      responsesCount: 0,
-      completedCount: 0,
-    };
-    list.push(newCamp);
-    localStorage.setItem(KEYS.CAMPAIGNS, JSON.stringify(list));
-    this.logAudit('researcher', campaign.researcherName || 'Researcher', 'CAMPAIGN_CREATE', 'Campaign', newCamp.slug, `Title: ${newCamp.title}`);
-    return newCamp;
-  }
-
-  public updateCampaignStatus(id: string, status: Campaign['status'], reason?: string): boolean {
-    const list = this.getCampaigns();
-    const idx = list.findIndex((c) => c.id === id);
-    if (idx === -1) return false;
-    list[idx].status = status;
-    list[idx].statusReason = reason;
-    localStorage.setItem(KEYS.CAMPAIGNS, JSON.stringify(list));
-    this.logAudit('admin', 'Super Admin', 'CAMPAIGN_STATUS_CHANGE', 'Campaign', id, `Status changed to ${status}. Reason: ${reason || 'N/A'}`);
-    return true;
-  }
-
-  private incrementCampaignCompletion(slug: string) {
-    const list = this.getCampaigns();
-    const idx = list.findIndex((c) => c.slug === slug);
-    if (idx !== -1) {
-      list[idx].completedCount = (list[idx].completedCount || 0) + 1;
-      localStorage.setItem(KEYS.CAMPAIGNS, JSON.stringify(list));
-    }
   }
 
   // --- SETTINGS ---
@@ -709,7 +490,7 @@ class StorageService {
   }
 
   public logAudit(
-    actorType: 'admin' | 'researcher' | 'system',
+    actorType: 'admin' | 'system',
     actorName: string,
     action: string,
     entityType: string,
@@ -731,45 +512,6 @@ class StorageService {
     // Keep max 500 logs
     if (logs.length > 500) logs.pop();
     localStorage.setItem(KEYS.AUDIT, JSON.stringify(logs));
-  }
-
-  // --- DELETION REQUESTS ---
-  public getDeletions(): DeletionRequest[] {
-    try {
-      const data = localStorage.getItem(KEYS.DELETIONS);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  public submitDeletionRequest(referenceId: string, email?: string): DeletionRequest {
-    const list = this.getDeletions();
-    const req: DeletionRequest = {
-      id: `del_${Date.now()}`,
-      referenceId: referenceId.trim().toUpperCase(),
-      email,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-    list.unshift(req);
-    localStorage.setItem(KEYS.DELETIONS, JSON.stringify(list));
-    this.logAudit('system', 'System Engine', 'DELETION_REQUEST_SUBMITTED', 'DeletionRequest', referenceId);
-    return req;
-  }
-
-  public approveDeletion(id: string): boolean {
-    const list = this.getDeletions();
-    const req = list.find((d) => d.id === id);
-    if (!req) return false;
-
-    // Purge corresponding session
-    this.deleteSessionData(req.referenceId);
-
-    req.status = 'approved';
-    req.handledAt = new Date().toISOString();
-    localStorage.setItem(KEYS.DELETIONS, JSON.stringify(list));
-    return true;
   }
 
   // --- CONTACT MESSAGES ---
@@ -834,7 +576,6 @@ class StorageService {
     const headers = [
       'Reference ID',
       'Status',
-      'Campaign',
       'Started At',
       'Completed At',
       'Country',
@@ -865,7 +606,6 @@ class StorageService {
       const rowData = [
         s.referenceId,
         s.status,
-        s.campaignSlug || 'General',
         s.startedAt,
         s.completedAt || '',
         s.demographics.country,

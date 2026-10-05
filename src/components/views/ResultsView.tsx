@@ -46,7 +46,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ session, onRetake, onN
   });
 
   const handleShare = () => {
-    const url = `${window.location.origin}/?results=${session.token}`;
+    const url = `${window.location.origin}/results?token=${encodeURIComponent(session.token)}`;
     navigator.clipboard.writeText(url);
     setCopiedShare(true);
     setTimeout(() => setCopiedShare(false), 2000);

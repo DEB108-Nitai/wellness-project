@@ -20,11 +20,11 @@ import {
 import { QUESTIONS_POOL } from '../../data/questionsData';
 import { Demographics, TestSession } from '../../types';
 import { storage } from '../../services/storageService';
+import { useAuth } from '../../context/AuthContext';
 
 interface TestFlowViewProps {
   onComplete: (token: string) => void;
   onNavigate: (view: string) => void;
-  campaignSlug?: string;
 }
 
 const COUNTRIES = [
@@ -47,9 +47,8 @@ const COUNTRIES = [
 export const TestFlowView: React.FC<TestFlowViewProps> = ({
   onComplete,
   onNavigate,
-  campaignSlug,
 }) => {
-  const currentUser = storage.getCurrentUser();
+  const { user: currentUser } = useAuth();
 
   // Steps: 'consent' | 'demographics' | 'questions' | 'review' | 'thankyou'
   const [step, setStep] = useState<'consent' | 'demographics' | 'questions' | 'review' | 'thankyou'>('consent');
@@ -77,8 +76,15 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
 
   // In-progress draft detection (strictly for logged-in user who left an assessment in-between)
   const [draftSession, setDraftSession] = useState<TestSession | undefined>(
-    () => (currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined)
+    () => (currentUser ? storage.getActiveDraftSession(String(currentUser.id)) : undefined)
   );
+
+  // The signed-in user may arrive after the first render (page opened directly at /test).
+  useEffect(() => {
+    if (!currentUser) return;
+    setNickname((n) => n || currentUser.name);
+    setDraftSession((d) => d ?? storage.getActiveDraftSession(String(currentUser.id)));
+  }, [currentUser]);
 
   // Timer & UI helpers
   const [secondsSpent, setSecondsSpent] = useState(0);
@@ -178,7 +184,7 @@ export const TestFlowView: React.FC<TestFlowViewProps> = ({
       occupationField: occupation.trim() || 'General Professional',
     };
 
-    const newSession = storage.startSession(demo, campaignSlug);
+    const newSession = storage.startSession(demo);
     setSession(newSession);
     setAnswers(newSession.draftAnswers || {});
     setStep('questions');

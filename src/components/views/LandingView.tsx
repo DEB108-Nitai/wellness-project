@@ -25,14 +25,17 @@ import { FACTORS_DATA } from '../../data/factorsData';
 import { FactorCard } from '../common/FactorCard';
 import { ChallengeSection } from './ChallengeSection';
 import { storage } from '../../services/storageService';
+import { useAuth } from '../../context/AuthContext';
 
 interface LandingViewProps {
   onNavigate: (view: string, param?: string) => void;
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
-  const currentUser = storage.getCurrentUser();
-  const [activeDraft, setActiveDraft] = useState(() => (currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined));
+  const { user: currentUser } = useAuth();
+  const [draftDiscarded, setDraftDiscarded] = useState(false);
+  // Re-evaluated on every render so it appears as soon as the user signs in.
+  const activeDraft = !draftDiscarded && currentUser ? storage.getActiveDraftSession(String(currentUser.id)) : undefined;
   const draftProgress = activeDraft && activeDraft.answeredCount > 0
     ? Math.round((activeDraft.answeredCount / 163) * 100)
     : 0;
@@ -40,7 +43,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
   const handleStartFresh = () => {
     if (activeDraft) {
       storage.discardDraftSession(activeDraft.token);
-      setActiveDraft(undefined);
+      setDraftDiscarded(true);
     }
     onNavigate('test');
   };

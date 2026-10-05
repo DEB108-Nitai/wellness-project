@@ -14,7 +14,6 @@ import {
   Trash2,
   RefreshCw,
   FileText,
-  Lock,
   Sparkles,
   Award,
   Globe,
@@ -39,32 +38,10 @@ interface AdminPortalViewProps {
 }
 
 export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) => {
-  const currentUser = storage.getCurrentUser();
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(() => currentUser?.role === 'admin');
-  const [adminEmail, setAdminEmail] = useState('admin@wellness.org');
-  const [adminPassword, setAdminPassword] = useState('wellness2026');
-  const [authError, setAuthError] = useState('');
-
+  // Access is enforced by <RequireAdmin> (route) and by the API for every admin endpoint.
   const [activeAdminTab, setActiveAdminTab] = useState<
     'dashboard' | 'participants' | 'challenge-regs' | 'settings' | 'audit' | 'questions'
   >('dashboard');
-
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (adminEmail.trim() && adminPassword.trim()) {
-      storage.loginUser(adminEmail.trim(), 'Super Admin');
-      setIsAdminAuthenticated(true);
-      setAuthError('');
-    } else {
-      setAuthError('Please enter valid administrator credentials.');
-    }
-  };
-
-  const handleQuickDemoAdminLogin = () => {
-    storage.loginUser('admin@wellness.org', 'Super Admin');
-    setIsAdminAuthenticated(true);
-    setAuthError('');
-  };
 
   // Search & Filter states for participants
   const [searchQuery, setSearchQuery] = useState('');
@@ -177,80 +154,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2500);
   };
-
-  if (!isAdminAuthenticated) {
-    return (
-      <div className="min-h-[75vh] flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-8 sm:p-10 max-w-md w-full border border-slate-200 shadow-xl space-y-6">
-          <div className="text-center space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center justify-center mx-auto shadow-inner">
-              <Lock className="w-7 h-7" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 font-heading">Admin Console Login</h2>
-              <p className="text-xs text-slate-500 mt-1">Superadmin credentials required to access platform data.</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleAdminLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Admin Email</label>
-              <input
-                type="email"
-                value={adminEmail}
-                onChange={(e) => setAdminEmail(e.target.value)}
-                placeholder="admin@wellness.org"
-                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Admin Passkey</label>
-              <input
-                type="password"
-                value={adminPassword}
-                onChange={(e) => setAdminPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                required
-              />
-            </div>
-
-            {authError && (
-              <p className="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200">
-                {authError}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all shadow-md cursor-pointer"
-            >
-              Sign In to Console
-            </button>
-
-            <button
-              type="button"
-              onClick={handleQuickDemoAdminLogin}
-              className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-indigo-700 border border-indigo-200 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-            >
-              ⚡ Quick 1-Click Demo Admin Access
-            </button>
-          </form>
-
-          <div className="pt-2 text-center border-t border-slate-100">
-            <button
-              onClick={() => onNavigate('landing')}
-              className="text-xs text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
-            >
-              ← Return to Public Website
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 pb-28">

@@ -1,0 +1,164 @@
+item_code	factor	keyed	text
+A1	A	+	I know how to comfort others
+A2	A	+	I enjoy bringing people together
+A3	A	+	I feel others' emotions
+A4	A	+	I take an interest in other people's lives
+A5	A	+	I cheer people up
+A6	A	+	I make people feel at ease
+A7	A	+	I take time out for others
+A8	A	-	I don't like to get involved in other people's problems
+A9	A	-	I am not really interested in others
+A10	A	-	I try not to think about the needy
+B1	B	+	I make insightful remarks
+B2	B	+	I know the answers to many questions
+B3	B	+	I tend to analyze things
+B4	B	+	I use my brain
+B5	B	+	I learn quickly
+B6	B	+	I counter others' arguments
+B7	B	+	I reflect on things before acting
+B8	B	+	I weigh the pros against the cons
+B9	B	-	I consider myself an average person
+B10	B	-	I get confused easily
+B11	B	-	I know that I am not a special person
+B12	B	-	I have a poor vocabulary
+B13	B	-	I skip difficult words while reading
+C1	C	+	I seldom feel blue
+C2	C	+	I feel comfortable with myself
+C3	C	+	I readily overcome setbacks
+C4	C	+	I am relaxed most of the time
+C5	C	+	I am not easily frustrated
+C6	C	-	I have frequent mood swings
+C7	C	-	I often feel blue
+C8	C	-	I dislike myself
+C9	C	-	I feel desperate
+C10	C	-	I am easily discouraged
+D1	E	+	I take charge
+D2	E	+	I want to be in charge
+D3	E	+	I say what I think
+D4	E	+	I am not afraid of providing criticism
+D5	E	+	I take control of things
+D6	E	+	I can take strong measures
+D7	E	-	I wait for others to lead the way
+D8	E	-	I never challenge things
+D9	E	-	I let others make the decisions
+D10	E	-	I let myself be pushed around
+E1	F	+	I am the life of the party
+E2	F	+	I love large parties
+E3	F	+	I joke around a lot
+E4	F	+	I enjoy being part of a loud crowd
+E5	F	+	I amuse my friends
+E6	F	+	I act wild and crazy
+E7	F	-	I seldom joke around
+E8	F	-	I don't like crowded events
+E9	F	-	I am the last to laugh at a joke
+E10	F	-	I dislike loud music
+F1	G	+	I believe laws should be strictly enforced
+F2	G	+	I try to follow the rules
+F3	G	+	I believe in one true religion
+F4	G	+	I respect authority
+F5	G	+	I like to stand during the national anthem
+F6	G	-	I resist authority
+F7	G	-	I break rules
+F8	G	-	I use swear words
+F9	G	-	I oppose authority
+F10	G	-	I know how to get around the rules
+G1	H	+	I feel comfortable around people
+G2	H	+	I talk to a lot of different people at parties
+G3	H	+	I don't mind being the center of attention
+G4	H	+	I make friends easily
+G5	H	+	I start conversations
+G6	H	-	I find it difficult to approach others
+G7	H	-	I often feel uncomfortable around others
+G8	H	-	I have little to say
+G9	H	-	I am quiet around strangers
+G10	H	-	I keep in the background
+H1	I	+	I like to read
+H2	I	+	I enjoy discussing movies and books with others
+H3	I	+	I read a lot
+H4	I	+	I don't like action movies
+H5	I	+	I cry during movies
+H6	I	+	I love flowers
+H7	I	-	I do not enjoy watching dance performances
+H8	I	-	I do not like poetry
+H9	I	-	I dislike works of fiction
+H10	I	-	I rarely notice my emotional reactions
+I1	L	+	I find it hard to forgive others
+I2	L	+	I suspect hidden motives in others
+I3	L	+	I am wary of others
+I4	L	+	I distrust people
+I5	L	+	I believe that people seldom tell you the whole truth
+I6	L	+	I believe that people are essentially evil
+I7	L	-	I trust what people say
+I8	L	-	I trust others
+I9	L	-	I believe that others have good intentions
+I10	L	-	I believe that people are basically moral
+J1	M	+	I do things that others find strange
+J2	M	+	I like to get lost in thought
+J3	M	+	I enjoy wild flights of fantasy
+J4	M	+	I love to daydream
+J5	M	+	I swim against the current
+J6	M	+	I take deviant positions
+J7	M	+	I do unexpected things
+J8	M	-	I do things by the book
+J9	M	-	I seldom daydream
+J10	M	-	I seldom get lost in thought
+K1	N	+	I reveal little about myself
+K2	N	+	I am hard to get to know
+K3	N	+	I don't talk a lot
+K4	N	+	I bottle up my feelings
+K5	N	+	I keep my thoughts to myself
+K6	N	-	I am open about myself to others
+K7	N	-	I am open about my feelings
+K8	N	-	I disclose my intimate thoughts
+K9	N	-	I show my feelings
+K10	N	-	I am willing to talk about myself
+L1	O	+	I am afraid that I will do the wrong thing
+L2	O	+	I feel threatened easily
+L3	O	+	I am easily hurt
+L4	O	+	I worry about things
+L5	O	+	I spend time thinking about past mistakes
+L6	O	+	I feel guilty when I say 'no'
+L7	O	+	I feel crushed by setbacks
+L8	O	-	I don't worry about things that have already happened
+L9	O	-	I am not easily bothered by things
+L10	O	-	I don't let others discourage me
+M1	Q1	+	I believe in the importance of art
+M2	Q1	+	I love to think up new ways of doing things
+M3	Q1	+	I enjoy hearing new ideas
+M4	Q1	+	I carry the conversation to a higher level
+M5	Q1	+	I prefer variety to routine
+M6	Q1	-	I avoid philosophical discussions
+M7	Q1	-	I rarely look for a deeper meaning in things
+M8	Q1	-	I am not interested in theoretical discussions
+M9	Q1	-	I am not interested in abstract ideas
+M10	Q1	-	I try to avoid complex people
+N1	Q2	+	I want to be left alone
+N2	Q2	+	I prefer to do things by myself
+N3	Q2	+	I enjoy spending time by myself
+N4	Q2	+	I seek quiet
+N5	Q2	+	I don't mind eating alone
+N6	Q2	+	I enjoy silence
+N7	Q2	+	I enjoy my privacy
+N8	Q2	-	I enjoy being part of a group
+N9	Q2	-	I enjoy teamwork
+N10	Q2	-	I can't do without the company of others
+O1	Q3	+	I want everything to be 'just right'
+O2	Q3	+	I get chores done right away
+O3	Q3	+	I like order
+O4	Q3	+	I continue until everything is perfect
+O5	Q3	+	I am exacting in my work
+O6	Q3	-	I am not bothered by messy people
+O7	Q3	-	I am not bothered by disorder
+O8	Q3	-	I leave a mess in my room
+O9	Q3	-	I leave my belongings around
+O10	Q3	-	I put off unpleasant tasks
+P1	Q4	+	I get irritated easily
+P2	Q4	+	I get angry easily
+P3	Q4	+	I am quick to judge others
+P4	Q4	+	I am annoyed by others' mistakes
+P5	Q4	+	I am easily put out
+P6	Q4	+	I can't stand being contradicted
+P7	Q4	+	I judge people by their appearance
+P8	Q4	-	I am not easily annoyed
+P9	Q4	-	I try to forgive and forget
+P10	Q4	-	I have a good word for everyone

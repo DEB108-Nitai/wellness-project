@@ -1,0 +1,55 @@
+-- =============================================================================
+-- Default site settings and FAQ content.
+-- Settings are validated/typed in api/src/Services/SettingsService.php.
+-- =============================================================================
+
+INSERT INTO settings (setting_key, value) VALUES
+('site_name',                   'Wellness'),
+('support_email',               ''),
+('announcement_text',           'Discover your 16 Personality Factors — free, science-based and private. Join our 60-Day Transformation Challenge.'),
+('announcement_active',         '1'),
+('maintenance_mode',            '0'),
+('signup_open',                 '1'),
+('challenge_registration_open', '1'),
+('items_per_page',              '7'),
+('min_age',                     '18'),
+('too_fast_minutes',            '6'),
+('consent_version',             'v1.0');
+
+INSERT INTO faqs (category, question, answer, sort_order, is_published) VALUES
+('Assessment',
+ 'What is the 16 Personality Factors assessment?',
+ 'The 16 Personality Factors assessment measures the 16 primary traits identified by psychologist Raymond Cattell, such as Warmth, Emotional Stability, Dominance and Perfectionism. Our version uses the public-domain scales of the International Personality Item Pool (IPIP), which were developed to measure the same traits, and gives you a clear, holistic picture of your behavioural tendencies.',
+ 1, 1),
+('Assessment',
+ 'How long does the assessment take?',
+ 'There are 166 short statements spread over 24 easy pages. Most people finish in 20 to 25 minutes. Your answers are saved automatically as you go, so you can take a break and resume later — on any device if you are signed in.',
+ 2, 1),
+('Assessment',
+ 'Why do I need an account to see my results?',
+ 'You can take the full assessment as a guest. To view your report we ask you to create a free account, so your results are kept private to you, saved to your history and available whenever you come back.',
+ 3, 1),
+('Science & Scoring',
+ 'How are my scores calculated?',
+ 'Each of your 16 trait scores is compared with the responses of more than 35,000 people who completed the same IPIP scales. Your score is shown as a Sten (Standard Ten) from 1 to 10 with an average of 5.5: 1–3 is the lower pole of a trait, 4–7 is the typical range and 8–10 is the higher pole. We also show the percentage of people who scored lower than you.',
+ 4, 1),
+('Science & Scoring',
+ 'Where do the comparison norms come from?',
+ 'Our norms are calculated from the open research dataset published by Open Psychometrics (openpsychometrics.org), which contains anonymous responses to the IPIP 16-factor scales. We thank Open Psychometrics and the IPIP project for making this research openly available.',
+ 5, 1),
+('Science & Scoring',
+ 'Is this a clinical or medical diagnosis?',
+ 'No. Wellness is an educational, self-development and wellbeing platform. The assessment is not intended to diagnose or treat any psychiatric or psychological condition.',
+ 6, 1),
+('Privacy & Data',
+ 'Is my data private and how is it used?',
+ 'Your responses and results are stored securely and are visible only to you and our administrators. We never sell your data. Responses are kept on an anonymised basis for research, to keep improving the accuracy of the assessment. If you have any question about your personal data, please contact our support team.',
+ 7, 1),
+('60 Days Challenge',
+ 'What are the two 60-Day Transformation Programs?',
+ 'We offer two free 60-day programs: 1) Sonic Therapeutic Intervention (STI), focused on acoustic resonance, mantra chanting and calming the nervous system; and 2) Transcendental Therapeutic Intervention (TTI), focused on breaking unhelpful habit loops, restructuring daily routines and elevating consciousness.',
+ 8, 1),
+('60 Days Challenge',
+ 'How do I join a 60-Day Challenge and does it cost anything?',
+ 'Both programs are completely free. Choose STI or TTI in the 60-Day Challenge section of our home page, fill in the short registration form and you will receive a confirmation with your reference code by email.',
+ 9, 1);

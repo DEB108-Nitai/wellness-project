@@ -85,24 +85,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </ul>
           </div>
 
-          {/* Col 3: Legal & Admin */}
+          {/* Col 3: Legal */}
           <div>
             <h3 className="text-xs font-semibold text-slate-100 uppercase tracking-wider mb-4">
               Platform & Legal
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <button onClick={() => onNavigate('admin')} className="hover:text-white transition-colors cursor-pointer">
-                  Admin Console
-                </button>
-              </li>
-              <li>
-                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => onNavigate('privacy')} className="hover:text-white transition-colors cursor-pointer">
                   Privacy Policy & Data
                 </button>
               </li>
               <li>
-                <button onClick={() => onNavigate('privacy-terms')} className="hover:text-white transition-colors cursor-pointer">
+                <button onClick={() => onNavigate('terms')} className="hover:text-white transition-colors cursor-pointer">
                   Terms of Service
                 </button>
               </li>

@@ -45,7 +45,6 @@ export interface Demographics {
   nickname?: string;
   email?: string;
   emailConsent?: boolean;
-  shareWithCampaign?: boolean;
 }
 
 export interface QualityFlags {
@@ -84,8 +83,6 @@ export interface TestSession {
   referenceId: string; // e.g. WL-7K2Q9X
   userId?: string;
   userEmail?: string;
-  campaignId?: string;
-  campaignSlug?: string;
   status: SessionStatus;
   currentPage: number;
   consentVersion: string;
@@ -108,41 +105,6 @@ export interface TestSession {
   };
 }
 
-export type ResearcherStatus = 'pending' | 'approved' | 'rejected' | 'suspended' | 'banned';
-
-export interface Researcher {
-  id: string;
-  name: string;
-  email: string;
-  organization: string;
-  country: string;
-  purpose: string;
-  status: ResearcherStatus;
-  statusReason?: string;
-  createdAt: string;
-  lastLoginAt?: string;
-}
-
-export type CampaignStatus = 'draft' | 'pending_approval' | 'live' | 'paused' | 'rejected' | 'closed' | 'archived';
-
-export interface Campaign {
-  id: string;
-  researcherId?: string; // null = platform default
-  researcherName?: string;
-  slug: string;
-  title: string;
-  description?: string;
-  welcomeMessage?: string;
-  targetSample?: number;
-  startsAt?: string;
-  endsAt?: string;
-  status: CampaignStatus;
-  statusReason?: string;
-  createdAt: string;
-  responsesCount?: number;
-  completedCount?: number;
-}
-
 export interface SystemSettings {
   maintenanceMode: boolean;
   siteName: string;
@@ -154,29 +116,18 @@ export interface SystemSettings {
   announcementText: string;
   announcementActive: boolean;
   registrationOpen: boolean;
-  researcherAutoApprove: boolean;
   backupJsonEnabled: boolean;
 }
 
 export interface AuditLogEntry {
   id: string;
-  actorType: 'admin' | 'researcher' | 'system';
+  actorType: 'admin' | 'system';
   actorName: string;
   action: string;
   entityType: string;
   entityId: string;
   details?: string;
   createdAt: string;
-}
-
-export interface DeletionRequest {
-  id: string;
-  referenceId: string;
-  email?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'done';
-  reason?: string;
-  createdAt: string;
-  handledAt?: string;
 }
 
 export interface ContactMessage {
@@ -193,7 +144,7 @@ export interface UserAccount {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'researcher' | 'admin';
+  role: 'user' | 'admin';
   avatar?: string;
   createdAt: string;
 }

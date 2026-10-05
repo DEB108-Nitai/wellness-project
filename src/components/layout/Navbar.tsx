@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
 import { Menu, X, ArrowRight, ShieldCheck, UserCheck, BookOpen, BarChart3, HelpCircle, Sparkles, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
 import { storage } from '../../services/storageService';
-import { UserAccount } from '../../types';
-import { AuthModal } from '../auth/AuthModal';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
   currentView: string;
   onNavigate: (view: string, param?: string) => void;
-  activeCampaignSlug?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeCampaignSlug }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
-  const currentUser = storage.getCurrentUser();
+  const { user: currentUser, logout } = useAuth();
   // Draft continuation only applies to a logged-in user who has an active draft
-  const activeDraft = currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined;
+  const activeDraft = currentUser ? storage.getActiveDraftSession(String(currentUser.id)) : undefined;
   const draftProgress = activeDraft && activeDraft.answeredCount > 0
     ? Math.round((activeDraft.answeredCount / 163) * 100)
     : 0;
@@ -50,8 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    storage.logoutUser();
+  const handleLogout = async () => {
+    await logout();
     setUserDropdownOpen(false);
     onNavigate('landing');
   };
@@ -157,6 +154,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
                         </button>
                       )}
 
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          onNavigate('account');
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer border-b border-slate-100"
+                      >
+                        <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>My Account</span>
+                      </button>
+
                       {currentUser.role === 'admin' && (
                         <button
                           onClick={() => {
@@ -182,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
                 </div>
               ) : (
                 <button
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => onNavigate('login')}
                   className="px-3 py-1.5 text-xs font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-300 shadow-2xs transition-colors cursor-pointer"
                 >
                   Sign In
@@ -281,34 +289,36 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
               {!currentUser ? (
                 <button
                   onClick={() => {
-                    setAuthModalOpen(true);
                     setMobileMenuOpen(false);
+                    onNavigate('login');
                   }}
                   className="flex-1 py-2 text-xs font-bold text-center text-teal-800 bg-teal-50 rounded-lg border border-teal-300 shadow-2xs"
                 >
                   Sign In
                 </button>
               ) : (
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 py-2 text-xs font-medium text-center text-rose-600 bg-rose-50 rounded-lg"
-                >
-                  Sign Out
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate('account');
+                    }}
+                    className="flex-1 py-2 text-xs font-medium text-center text-slate-700 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    My Account
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 py-2 text-xs font-medium text-center text-rose-600 bg-rose-50 rounded-lg"
+                  >
+                    Sign Out
+                  </button>
+                </>
               )}
             </div>
           </div>
         )}
       </header>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onAuthSuccess={() => {
-          // Trigger re-render
-        }}
-      />
     </>
   );
 };
