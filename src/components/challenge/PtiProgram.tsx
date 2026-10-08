@@ -7,7 +7,7 @@ import { ProgramPhoto } from './ProgramPhoto';
  * Layout mirrors TTI (header → introduction card → four pillars) in a calm lavender / sky palette.
  */
 export const PtiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister }) => (
-  <div id="philosophical-intervention" className="bg-white rounded-3xl border border-indigo-100 shadow-xl overflow-hidden">
+  <div id="philosophical-intervention" className="scroll-mt-24 bg-white rounded-3xl border border-indigo-100 shadow-xl overflow-hidden">
     <div className="p-6 sm:p-10 lg:p-12 space-y-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-indigo-100 pb-6">

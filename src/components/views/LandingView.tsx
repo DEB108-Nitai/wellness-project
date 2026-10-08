@@ -38,7 +38,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
     if (!location.hash) return;
     const t = window.setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 100);
     return () => window.clearTimeout(t);
-  }, [location.hash]);
+  }, [location.hash, location.key]);
 
   // In-progress assessment for this visitor (account or guest browser), from the API.
   const { active: activeDraft, progress: draftProgress, abandon } = useActiveSession();

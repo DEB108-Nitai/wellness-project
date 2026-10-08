@@ -7,7 +7,7 @@ import { ProgramPhoto } from './ProgramPhoto';
  * layout mirrors TTI (header → introduction card → four pillars) in a calm teal palette.
  */
 export const StiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister }) => (
-  <div id="sonic-therapy" className="bg-white rounded-3xl border border-teal-200/80 shadow-xl overflow-hidden">
+  <div id="sonic-therapy" className="scroll-mt-24 bg-white rounded-3xl border border-teal-200/80 shadow-xl overflow-hidden">
     <div className="p-6 sm:p-10 lg:p-12 space-y-10">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-teal-100 pb-6">

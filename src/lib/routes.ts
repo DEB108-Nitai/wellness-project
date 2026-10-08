@@ -50,6 +50,30 @@ export function useAppNavigate(): (view: string, param?: string) => void {
   );
 }
 
+/** In-page anchors of the three program blocks on the home page (fixed order STI, PTI, TTI). */
+export const PROGRAM_ANCHORS = {
+  STI: 'sonic-therapy',
+  PTI: 'philosophical-intervention',
+  TTI: 'transcendental-intervention',
+} as const;
+
+/**
+ * Go to a section of the home page (`/#id`). LandingView scrolls to the hash once it has
+ * rendered. Every click is a new navigation (new location.key), so clicking the same link
+ * again still scrolls; repeating the current hash replaces the history entry instead of stacking.
+ */
+export function useSectionNavigate(): (sectionId: string) => void {
+  const navigate = useNavigate();
+  const location = useLocation();
+  return useCallback(
+    (sectionId: string) => {
+      const same = location.pathname === '/' && location.hash === `#${sectionId}`;
+      navigate(`/#${sectionId}`, { replace: same });
+    },
+    [navigate, location.pathname, location.hash],
+  );
+}
+
 /** Current path + query, used as the `next` target when sending someone to sign in. */
 export function useCurrentPath(): string {
   const location = useLocation();

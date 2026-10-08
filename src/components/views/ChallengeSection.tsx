@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Sparkles,
   ArrowRight,
@@ -25,6 +26,7 @@ import {
   Sun
 } from 'lucide-react';
 import { ProgramCode } from '../../api/challenge';
+import { PROGRAM_ANCHORS } from '../../lib/routes';
 import { ProgramPhoto } from '../challenge/ProgramPhoto';
 import { StiProgram } from '../challenge/StiProgram';
 import { PtiProgram } from '../challenge/PtiProgram';
@@ -35,8 +37,14 @@ export const ChallengeSection: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'both' | 'sti' | 'pti' | 'tti'>('both');
   const [modalProgram, setModalProgram] = useState<ProgramCode | null>(null);
 
+  // A link to one program (/#sonic-therapy etc.) must find its block even if the filter hides it.
+  const { hash, key } = useLocation();
+  useEffect(() => {
+    if ((Object.values(PROGRAM_ANCHORS) as string[]).includes(hash.slice(1))) setActiveTab('both');
+  }, [hash, key]);
+
   return (
-    <section id="60-days-challenge" className="relative overflow-hidden py-20 bg-gradient-to-b from-[#FAF8F5] via-amber-50/30 to-white border-t border-amber-200/60">
+    <section id="60-days-challenge" className="scroll-mt-18 relative overflow-hidden py-20 bg-gradient-to-b from-[#FAF8F5] via-amber-50/30 to-white border-t border-amber-200/60">
       {/* Decorative Golden & Teal Glows */}
       <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-300/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/3 left-10 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl pointer-events-none" />
@@ -115,7 +123,7 @@ export const ChallengeSection: React.FC = () => {
         {/* PROGRAM 03: TRANSCENDENTAL THERAPEUTIC INTERVENTION (TTI) */}
         {/* ========================================================================= */}
         {(activeTab === 'both' || activeTab === 'tti') && (
-          <div className="bg-white rounded-3xl border border-amber-200/90 shadow-xl overflow-hidden space-y-8">
+          <div id={PROGRAM_ANCHORS.TTI} className="scroll-mt-24 bg-white rounded-3xl border border-amber-200/90 shadow-xl overflow-hidden space-y-8">
             <div className="p-6 sm:p-10 lg:p-12 space-y-10">
               {/* Program Header Badge */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100 pb-6">
