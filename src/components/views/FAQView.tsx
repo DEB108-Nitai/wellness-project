@@ -111,7 +111,7 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
       {/* Contact Prompt */}
       <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 text-center space-y-3">
         <h4 className="text-base font-bold text-slate-900 font-heading">Have a question not covered here?</h4>
-        <p className="text-xs text-slate-600">Our wellness facilitators are happy to assist with any inquiries.</p>
+        <p className="text-xs text-slate-600">Our team is happy to assist with any inquiries.</p>
         <button
           onClick={() => onNavigate('contact')}
           className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"

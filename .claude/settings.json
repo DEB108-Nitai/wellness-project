@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run lint)",
+      "Bash(php api/tests/run.php)",
+      "Bash(php api/tests/run.php *)",
+      "Bash(/c/xampp/php/php.exe api/tests/run.php)",
+      "Bash(/c/xampp/php/php.exe api/tests/run.php *)",
+      "Bash(git status)",
+      "Bash(git diff *)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Edit(.env)",
+      "Edit(.env.*)",
+      "Read(api/config/config.local.php)",
+      "Edit(api/config/config.local.php)"
+    ]
+  }
+}

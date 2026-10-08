@@ -44,12 +44,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
       <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold font-mono text-teal-400 bg-slate-800 px-2.5 py-0.5 rounded">ADMIN CONSOLE · WELLNESS PLATFORM</span>
+            <span className="text-xs font-bold font-mono text-teal-400 bg-slate-800 px-2.5 py-0.5 rounded">ADMIN CONSOLE · TRANSENIGMA</span>
             {settings.maintenance_mode && (
               <span className="text-xs font-bold text-rose-300 bg-rose-900/60 px-2 py-0.5 rounded border border-rose-700">MAINTENANCE MODE ACTIVE</span>
             )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-heading">Wellness Platform Administration</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold font-heading">Transenigma Platform Administration</h1>
           <p className="text-xs sm:text-sm text-slate-400">Assessments, 60-day challenge registrations and platform settings.</p>
         </div>
         <button

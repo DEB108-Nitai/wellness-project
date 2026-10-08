@@ -26,7 +26,7 @@ final class Mailer
     {
         try {
             $message = self::render($template, $vars + [
-                'siteName' => SettingsService::get('site_name') ?: 'Wellness',
+                'siteName' => SettingsService::get('site_name') ?: 'Transenigma',
                 'siteUrl' => rtrim(Config::string('app.url'), '/'),
                 'supportEmail' => SettingsService::get('support_email'),
             ]);
@@ -84,7 +84,7 @@ final class Mailer
         $mail->SMTPSecure = Config::string('mail.encryption', 'tls') === 'ssl' ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Timeout = 15;
         $mail->CharSet = PHPMailer::CHARSET_UTF8;
-        $mail->setFrom(Config::string('mail.from_email'), Config::string('mail.from_name', 'Wellness'));
+        $mail->setFrom(Config::string('mail.from_email'), Config::string('mail.from_name', 'Transenigma'));
         $support = SettingsService::get('support_email');
         if ($support) {
             $mail->addReplyTo($support);

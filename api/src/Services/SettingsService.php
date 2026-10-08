@@ -13,7 +13,7 @@ final class SettingsService
 {
     /** @var array<string, array{type:string, default:mixed, public:bool, min?:int, max?:int}> */
     public const DEFINITIONS = [
-        'site_name' => ['type' => 'string', 'default' => 'Wellness', 'public' => true, 'max' => 60],
+        'site_name' => ['type' => 'string', 'default' => 'Transenigma', 'public' => true, 'max' => 60],
         'support_email' => ['type' => 'email', 'default' => '', 'public' => true],
         'announcement_text' => ['type' => 'string', 'default' => '', 'public' => true, 'max' => 200],
         'announcement_active' => ['type' => 'bool', 'default' => false, 'public' => true],

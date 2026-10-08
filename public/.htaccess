@@ -1,5 +1,5 @@
 # =============================================================================
-# Wellness — web root rules (copied into dist/ by Vite; deploy dist/* to the
+# Transenigma — web root rules (copied into dist/ by Vite; deploy dist/* to the
 # domain's root folder on DreamHost, with the api/ folder beside index.html).
 # =============================================================================
 Options -Indexes -MultiViews

@@ -1,5 +1,5 @@
 /**
- * Wellness 16 Personality Factors Platform - Type Definitions
+ * Transenigma — 16 Personality Factors assessment - Type Definitions
  * Based on IPIP 16-Factor Model & PRD v1.0
  */
 

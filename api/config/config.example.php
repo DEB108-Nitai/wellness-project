@@ -54,7 +54,7 @@ return [
         'username' => '',
         'password' => '',
         'from_email' => '',
-        'from_name' => 'Wellness',
+        'from_name' => 'Transenigma',
     ],
 
     'google' => [

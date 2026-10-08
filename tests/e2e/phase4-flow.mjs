@@ -95,7 +95,7 @@ try {
   await page.fill('input[type=email]', ADMIN.email);
   await page.fill('input[autocomplete=current-password]', ADMIN.password);
   await page.clickText('Sign in', 'button');
-  await page.waitText('Wellness Platform Administration');
+  await page.waitText('Transenigma Platform Administration');
   await page.waitText('Latest 60-Day registrations');
   await page.screenshot(`${OUT}15-admin-overview.png`);
   await page.clickText('60-Day Challenge Registrations', '[role=tab]');

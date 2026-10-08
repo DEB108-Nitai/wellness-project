@@ -1,5 +1,5 @@
 /**
- * Wellness 16 Personality Factors Platform
+ * Transenigma — company site, 16 Personality Factors assessment and 60-Day programs
  * Main React Application Root — real URLs via react-router (PRD SITE-6).
  */
 
@@ -51,7 +51,7 @@ function SiteLayout() {
           <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto" />
           <h2 className="text-2xl font-bold font-heading">Maintenance in Progress</h2>
           <p className="text-sm text-slate-300 leading-relaxed">
-            The Wellness platform is undergoing scheduled maintenance. Please check back shortly.
+            The Transenigma website is undergoing scheduled maintenance. Please check back shortly.
           </p>
           <Link to="/login?next=/admin" className="text-sm text-teal-400 hover:underline pt-2 inline-block">
             Administrator sign-in →

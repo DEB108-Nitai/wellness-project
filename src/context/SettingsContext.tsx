@@ -14,7 +14,7 @@ export interface PublicSettings {
 }
 
 const DEFAULTS: PublicSettings = {
-  site_name: 'Wellness',
+  site_name: 'Transenigma',
   support_email: '',
   announcement_text: '',
   announcement_active: false,

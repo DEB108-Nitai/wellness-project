@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Menu, X, ArrowRight, ShieldCheck, UserCheck, BookOpen, BarChart3, HelpCircle, Sparkles, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useAuth } from '../../context/AuthContext';
+import { BRAND } from '../../lib/brand';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface NavbarProps {
   currentView: string;
@@ -59,16 +61,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             <div className="flex items-center shrink-0">
               <button
                 onClick={() => handleNavClick('landing')}
-                className="flex items-center gap-2.5 text-left group focus:outline-hidden cursor-pointer"
+                aria-label={`${BRAND.name} home`}
+                className="flex items-center text-left rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 cursor-pointer"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-teal-600 via-indigo-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-teal-700/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
-                  <span className="font-bold text-base sm:text-lg font-heading">W</span>
-                </div>
-                <div>
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 group-hover:text-teal-700 transition-colors">
-                    Wellness
-                  </span>
-                </div>
+                <BrandLogo className="h-6 sm:h-7" />
               </button>
             </div>
 

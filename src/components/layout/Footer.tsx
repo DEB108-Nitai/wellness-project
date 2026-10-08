@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react';
 import { ApiError } from '../../api/client';
 import { siteApi } from '../../api/site';
 import { Mail, CheckCircle2, Shield, Heart, Sparkles, Volume2 } from 'lucide-react';
+import { BRAND } from '../../lib/brand';
+import { BrandLogo } from '../common/BrandLogo';
 
 interface FooterProps {
   onNavigate: (view: string) => void;
@@ -37,12 +39,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800">
           {/* Col 1: Brand & Mission */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-500 via-indigo-600 to-amber-500 flex items-center justify-center text-white font-bold text-base">
-                W
-              </div>
-              <span className="text-xl font-bold tracking-tight text-white">Wellness</span>
-            </div>
+            <BrandLogo onDark className="h-7" />
             <p className="text-sm text-slate-400 leading-relaxed max-w-sm">
               Standardized 16 Personality Factors assessment and holistic 60-Day Life Transformation programs. Empowering deep self-awareness, cognitive mastery, and conscious living.
             </p>
@@ -178,7 +175,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </p>
           </div>
           <div className="text-slate-500">
-            © {new Date().getFullYear()} Wellness Platform. All rights reserved.
+            © {new Date().getFullYear()} {BRAND.legalName}. All rights reserved.
           </div>
         </div>
       </div>

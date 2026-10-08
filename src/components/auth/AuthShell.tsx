@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, BarChart3, LineChart, ShieldCheck, Sparkles } from 'lucide-react';
+import { BRAND } from '../../lib/brand';
+import { BrandLogo } from '../common/BrandLogo';
 
 /**
  * Full-page onboarding layout for sign-in / sign-up / password flows:
@@ -22,11 +24,8 @@ export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; ch
       <div aria-hidden="true" className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl" />
       <div aria-hidden="true" className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full bg-teal-300/20 blur-3xl" />
 
-      <Link to="/" className="relative flex items-center gap-3 w-fit group">
-        <span className="w-11 h-11 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center font-bold text-lg font-heading group-hover:bg-white/25 transition-colors">
-          W
-        </span>
-        <span className="text-2xl font-bold tracking-tight">Wellness</span>
+      <Link to="/" aria-label={`${BRAND.name} home`} className="relative w-fit">
+        <BrandLogo onDark className="h-8" />
       </Link>
 
       <div className="relative space-y-8 max-w-md">
@@ -64,11 +63,8 @@ export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; ch
     {/* Form panel */}
     <main className="flex flex-col min-h-screen">
       <div className="flex items-center justify-between px-5 sm:px-10 pt-6">
-        <Link to="/" className="lg:hidden flex items-center gap-2">
-          <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-600 via-indigo-600 to-amber-600 flex items-center justify-center text-white font-bold font-heading">
-            W
-          </span>
-          <span className="text-lg font-bold text-slate-900">Wellness</span>
+        <Link to="/" aria-label={`${BRAND.name} home`} className="lg:hidden">
+          <BrandLogo className="h-6" />
         </Link>
         <Link
           to="/"
