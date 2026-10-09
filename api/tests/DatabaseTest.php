@@ -12,7 +12,8 @@ test('migrations create the full schema in the test database', function () {
     $tables = Database::pdo()->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
     foreach (['users', 'auth_tokens', 'items', 'factor_norms', 'factor_percentiles', 'domain_norms', 'test_sessions',
         'session_answers', 'session_factor_scores', 'session_domain_scores', 'challenge_registrations',
-        'contact_messages', 'newsletter_subscribers', 'faqs', 'settings', 'audit_logs', 'email_log', 'schema_migrations'] as $t) {
+        'contact_messages', 'newsletter_subscribers', 'faqs', 'settings', 'audit_logs', 'email_log', 'schema_migrations',
+        'team_members', 'research_categories', 'publications', 'consultancy_groups', 'consultancy_projects', 'ventures'] as $t) {
         assertTrue(in_array($t, $tables, true), "missing table $t");
     }
     assertSame(Config::string('db_test.name'), Database::value('SELECT DATABASE()'));

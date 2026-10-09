@@ -21,7 +21,7 @@ const DISCIPLINES = [
     icon: Cpu,
     label: 'Consultancy',
     title: 'Technology, delivered.',
-    stat: '10+ client projects',
+    stat: '9 client projects',
     text: 'Enterprise platforms, web and mobile apps and IoT systems for Mjunction (TATA-SAIL), SALPG (HPCL–Total), Oil India, ISKCON and the Centre for Quantum Technologies, NUS.',
     tone: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
   },

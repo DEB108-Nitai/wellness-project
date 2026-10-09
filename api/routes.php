@@ -12,6 +12,7 @@ use Wellness\Controllers\AdminController;
 use Wellness\Controllers\AssessmentController;
 use Wellness\Controllers\AuthController;
 use Wellness\Controllers\ChallengeController;
+use Wellness\Controllers\ContentController;
 use Wellness\Controllers\GoogleAuthController;
 use Wellness\Controllers\HealthController;
 use Wellness\Controllers\ResultsController;
@@ -66,6 +67,12 @@ return static function (Router $r): void {
     $r->post('/newsletter/subscribe', [SiteController::class, 'subscribe']);
     $r->post('/newsletter/unsubscribe', [SiteController::class, 'unsubscribe']);
     $r->get('/faqs', [SiteController::class, 'faqs']);
+
+    // --- Transenigma company content (slice S5) ---------------------------------
+    $r->get('/content/team', [ContentController::class, 'team']);
+    $r->get('/content/research', [ContentController::class, 'research']);
+    $r->get('/content/consultancy', [ContentController::class, 'consultancy']);
+    $r->get('/content/ventures', [ContentController::class, 'ventures']);
 
     // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
     $admin = ['auth' => 'admin', 'maintenance' => false];
