@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, BookOpen, Check, CheckCircle2, Loader2, Send, Sparkles, Volume2, X } from 'lucide-react';
+import { AlertCircle, BookOpen, Check, CheckCircle2, Compass, Loader2, Send, Volume2, X } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { challengeApi, CohortTiming, ProgramCode, PROGRAMS, STRUGGLES } from '../../api/challenge';
 import { useAuth } from '../../context/AuthContext';
@@ -13,7 +13,7 @@ interface Props {
 const PROGRAM_BUTTONS: { code: ProgramCode; icon: React.ElementType; active: string }[] = [
   { code: 'STI', icon: Volume2, active: 'bg-teal-700 text-white shadow-xs' },
   { code: 'PTI', icon: BookOpen, active: 'bg-indigo-600 text-white shadow-xs' },
-  { code: 'TTI', icon: Sparkles, active: 'bg-amber-600 text-white shadow-xs' },
+  { code: 'TTI', icon: Compass, active: 'bg-amber-600 text-white shadow-xs' },
 ];
 
 const input = 'w-full px-3 py-2 text-xs bg-slate-50 border rounded-xl text-slate-900 focus:bg-white focus:outline-hidden focus:border-teal-500';

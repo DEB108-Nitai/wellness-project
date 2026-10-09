@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BarChart3, LineChart, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowLeft, BarChart3, LineChart, ShieldCheck } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -31,7 +31,7 @@ export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; ch
       <div className="relative space-y-8 max-w-md">
         <div className="space-y-3">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-200">
-            <Sparkles className="w-4 h-4" /> 16 Personality Factors · 60-Day Transformation
+            16 Personality Factors · 60-Day Transformation
           </p>
           <h2 className="text-4xl xl:text-5xl font-bold leading-tight font-heading">
             Understand yourself.

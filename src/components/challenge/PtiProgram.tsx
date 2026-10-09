@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, BookOpen, Brain, Compass, Gem, Library, Lightbulb, Repeat, ShieldCheck, Sparkles, Users, Waves } from 'lucide-react';
+import { ArrowRight, BookOpen, Brain, Compass, Gem, Library, Lightbulb, Repeat, ShieldCheck, Users, Waves } from 'lucide-react';
 import { ProgramPhoto } from './ProgramPhoto';
 
 /**
@@ -23,7 +23,7 @@ export const PtiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
           </p>
         </div>
         <span className="shrink-0 self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 text-white font-bold text-xs shadow-xs uppercase flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5" /> 60-Day Mindset Upgrade
+          60-Day Mindset Upgrade
         </span>
       </div>
 

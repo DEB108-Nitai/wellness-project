@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, CheckCircle2, Clock, Sparkles, Shield, BarChart3, Users, Award, BookOpen } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Shield, BarChart3, Users, Award, BookOpen } from 'lucide-react';
 
 interface HowItWorksViewProps {
   onNavigate: (view: string) => void;

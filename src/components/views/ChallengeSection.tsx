@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-  Sparkles,
   ArrowRight,
   CheckCircle2,
   Clock,
@@ -53,7 +52,6 @@ export const ChallengeSection: React.FC = () => {
         {/* SECTION HEADER */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-100 to-teal-100 border border-amber-300 text-slate-800 text-xs font-bold tracking-wider uppercase shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
             <span>60 Days Life Transformation Programs</span>
           </div>
 
@@ -107,7 +105,6 @@ export const ChallengeSection: React.FC = () => {
                   : 'bg-white text-amber-900 border border-amber-200 hover:bg-amber-50'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
               <span>Transcendental (TTI)</span>
             </button>
           </div>
@@ -129,7 +126,6 @@ export const ChallengeSection: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-100 pb-6">
                 <div className="space-y-1.5">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider border border-amber-300">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     <span>Program 03 · 60 Days Challenge</span>
                   </div>
                   <h3 className="text-2xl sm:text-4xl font-black text-slate-900 font-heading">
@@ -195,7 +191,6 @@ export const ChallengeSection: React.FC = () => {
                 <div className="lg:col-span-7 bg-gradient-to-br from-amber-50/80 via-white to-teal-50/50 p-6 sm:p-8 flex flex-col justify-between space-y-6">
                   <div className="space-y-5">
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider border border-amber-300">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                       <span>60 Days of Transformed Living</span>
                     </div>
 

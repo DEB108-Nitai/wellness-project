@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, Sparkles } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
 import { adminApi, RegistrationPage } from '../../api/admin';
 import { PROGRAMS, ProgramCode } from '../../api/challenge';
 import { useSettings } from '../../context/SettingsContext';
@@ -104,7 +104,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({ onNavigate }) 
             <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-amber-600" /> Latest 60-Day registrations
+                  Latest 60-Day registrations
                 </h3>
                 <button onClick={() => setTab('challenge-regs')} className="text-xs font-semibold text-indigo-700 hover:underline cursor-pointer">
                   View all →

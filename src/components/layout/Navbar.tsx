@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, X, ArrowRight, BarChart3, Sparkles, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
+import { Menu, X, ArrowRight, BarChart3, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useAuth } from '../../context/AuthContext';
 import { PROGRAMS } from '../../api/challenge';
@@ -49,15 +49,6 @@ const NAV_ITEMS: NavItem[] = [
   },
   { id: 'research', label: 'Research', view: 'research', ready: false },
   { id: 'consultancy', label: 'Consultancy', view: 'consultancy', ready: false },
-  {
-    id: 'workshops',
-    label: 'Workshops',
-    ready: false,
-    children: [
-      { label: 'Solution Tech Workshop', view: 'workshop-solution-tech' },
-      { label: 'Science & Research Workshop', view: 'workshop-science-research' },
-    ],
-  },
   { id: 'team', label: 'Our Team', view: 'team', ready: false },
   { id: 'contact', label: 'Contact', view: 'contact' },
 ];
@@ -210,7 +201,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                       onClick={() => setOpenMenu(open ? null : item.id)}
                       className={tabClass}
                     >
-                      {item.highlight && <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />}
                       <span>{item.label}</span>
                       <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
                     </button>
@@ -428,7 +418,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                 return (
                   <div key={item.id}>
                     <button onClick={() => toggleMobileGroup(item.id)} aria-expanded={expanded} aria-controls={groupId} className={rowClass}>
-                      {item.highlight && <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
                       <span className="flex-1">{item.label}</span>
                       <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
                     </button>

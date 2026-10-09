@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { ApiError } from '../../api/client';
 import { siteApi } from '../../api/site';
-import { Mail, CheckCircle2, Shield, Heart, Sparkles, Volume2 } from 'lucide-react';
+import { Mail, CheckCircle2, Shield, Heart, Volume2 } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -69,7 +69,6 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   }}
                   className="text-amber-400 hover:text-amber-300 font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
                   <span>60 Days Challenges</span>
                 </button>
               </li>

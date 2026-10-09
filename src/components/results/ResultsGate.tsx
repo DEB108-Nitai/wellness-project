@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Sparkles } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 /**
  * Shown to guests who finished the assessment (TEST-9): the report is ready but
@@ -42,7 +42,7 @@ export const ResultsGate: React.FC<{ reference: string }> = ({ reference }) => {
               to={`/signup?next=${next}`}
               className="flex h-12 items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold"
             >
-              <Sparkles className="w-4 h-4" /> Create free account & see results
+              Create free account & see results
             </Link>
             <Link
               to={`/login?next=${next}`}

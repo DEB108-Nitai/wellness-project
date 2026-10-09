@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Headphones, Heart, Sparkles, Sun, Users, Volume2, Waves } from 'lucide-react';
+import { ArrowRight, Headphones, Heart, Sun, Users, Volume2, Waves } from 'lucide-react';
 import { ProgramPhoto } from './ProgramPhoto';
 
 /**
@@ -53,7 +53,6 @@ export const StiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
 
           <div className="pt-4 border-t border-slate-700 flex items-center justify-between gap-3 text-xs font-mono">
             <span className="text-teal-300/90">Chant • Reflect • Progress</span>
-            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
           </div>
         </div>
 

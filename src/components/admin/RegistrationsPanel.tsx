@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, Loader2, Search, Sparkles, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, Loader2, Search, X } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { PROGRAMS, ProgramCode } from '../../api/challenge';
 import { AdminRegistration, adminApi, REGISTRATION_STATUSES, RegistrationPage, RegistrationStatus } from '../../api/admin';
@@ -66,7 +66,7 @@ export const RegistrationsPanel: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="space-y-1">
           <h2 className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-600" /> 60-Day Challenge Registrations
+            60-Day Challenge Registrations
           </h2>
           <p className="text-xs text-slate-500">Sonic (STI), Philosophical (PTI) and Transcendental (TTI) — newest first.</p>
         </div>

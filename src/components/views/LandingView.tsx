@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ShieldCheck,
   Clock,
-  Sparkles,
   BarChart3,
   Users,
   Compass,
@@ -22,9 +21,9 @@ import {
   PlayCircle,
   RotateCcw
 } from 'lucide-react';
-import { FACTORS_DATA } from '../../data/factorsData';
-import { FactorCard } from '../common/FactorCard';
 import { ChallengeSection } from './ChallengeSection';
+import { CompanyHero } from './CompanyHero';
+import { FoundationSection } from './FoundationSection';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 
 interface LandingViewProps {
@@ -53,7 +52,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
     }
     onNavigate('test');
   };
-  const factorList = Object.values(FACTORS_DATA);
 
   // Key uses matching the user's reference image
   const benefits = [
@@ -109,23 +107,29 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
 
   return (
     <div className="space-y-20 pb-20">
-      {/* SECTION 1: HERO */}
-      <section className="relative overflow-hidden pt-12 pb-16 lg:py-24 bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 text-white">
+      {/* COMPANY INTRO (compact dark band) + RESEARCH / CONSULTANCY / PROGRAMS; the page stays light from here on */}
+      <div className="-mb-20">
+        <CompanyHero onNavigate={onNavigate} />
+        <FoundationSection />
+      </div>
+
+      {/* SECTION 1: 16PF ASSESSMENT HERO */}
+      <section id="assessment" className="scroll-mt-18 relative overflow-hidden pt-16 pb-16 lg:py-24 bg-gradient-to-b from-teal-50/80 via-white to-white">
         {/* Abstract background decorative grid */}
-        <div className="absolute inset-0 bg-[radial-gradient(#14b8a6_1px,transparent_1px)] [background-size:24px_24px] opacity-15" />
-        
+        <div className="absolute inset-0 bg-[radial-gradient(#0d9488_1px,transparent_1px)] [background-size:24px_24px] opacity-[0.07]" />
+        <div aria-hidden="true" className="absolute -top-24 left-1/2 -translate-x-1/2 w-[40rem] h-72 rounded-full bg-teal-200/30 blur-3xl" />
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-6">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-teal-500/15 border border-teal-400/30 text-teal-300 text-xs font-semibold tracking-wide">
-              <Sparkles className="w-3.5 h-3.5 text-teal-300" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-teal-200 text-teal-800 text-xs font-semibold tracking-wide shadow-2xs">
               <span>Scientific Well-Being & Holistic Transformation</span>
             </div>
 
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-white font-heading">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-slate-900 font-heading">
               Scientific 16 Personality Factors Assessment
-            </h1>
+            </h2>
 
-            <p className="text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto font-normal">
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto font-normal">
               Empowering deep self-understanding and sustainable life transformation. Complete your standardized personality profile or join our flagship 60-day transformation challenges.
             </p>
 
@@ -135,14 +139,14 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                 <>
                   <button
                     onClick={() => onNavigate('test')}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-base shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-teal-300"
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-teal-200"
                   >
-                    <PlayCircle className="w-5 h-5 text-slate-950" />
+                    <PlayCircle className="w-5 h-5 text-white" />
                     <span>Continue Assessment ({draftProgress}% Done)</span>
                   </button>
                   <button
                     onClick={handleStartFresh}
-                    className="text-xs text-slate-300 hover:text-white px-4 py-2 flex items-center gap-1.5 transition-colors underline cursor-pointer"
+                    className="text-xs text-slate-600 hover:text-slate-900 px-4 py-2 flex items-center gap-1.5 transition-colors underline cursor-pointer"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
                     <span>or Start Over</span>
@@ -151,7 +155,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               ) : (
                 <button
                   onClick={() => onNavigate('test')}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-500 hover:bg-teal-400 active:bg-teal-600 text-slate-950 font-bold text-base shadow-lg shadow-teal-500/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
                 >
                   <span>Start Free Assessment</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -160,21 +164,21 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
             </div>
 
             {/* Trust Chips */}
-            <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
+            <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-600 font-medium">
               <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-teal-400" />
+                <Clock className="w-4 h-4 text-teal-600" />
                 <span>~20–25 Minutes</span>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-teal-400" />
+                <ShieldCheck className="w-4 h-4 text-teal-600" />
                 <span>100% Free & Confidential</span>
               </div>
               <div className="flex items-center gap-2">
-                <Lock className="w-4 h-4 text-teal-400" />
+                <Lock className="w-4 h-4 text-teal-600" />
                 <span>GDPR & DPDP Compliant</span>
               </div>
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-teal-400" />
+                <BarChart3 className="w-4 h-4 text-teal-600" />
                 <span>Instant Sten (1-10) Visual Profile</span>
               </div>
             </div>
@@ -222,31 +226,6 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               ))}
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: THE 16 PERSONALITY FACTORS GRID (Matching 4x4 cards) */}
-      <section id="factors-grid" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
-        <div className="text-center max-w-2xl mx-auto space-y-3">
-          <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">
-            Dimensional Spectrum
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-bold text-slate-900 font-heading">
-            The 16 Personality Factors
-          </h2>
-          <p className="text-sm text-slate-600">
-            Click on any card to flip and explore the opposing behavioral poles and psychological definitions.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
-          {factorList.map((factor) => (
-            <FactorCard
-              key={factor.code}
-              factor={factor}
-              onExplore={(code) => onNavigate('factors', code)}
-            />
-          ))}
         </div>
       </section>
 

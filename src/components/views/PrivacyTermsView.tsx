@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, CheckCircle2, FileText, Sparkles } from 'lucide-react';
+import { Shield, Lock, CheckCircle2, FileText } from 'lucide-react';
 
 interface PrivacyTermsViewProps {
   initialTab?: 'privacy' | 'terms';

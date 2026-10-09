@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { ArrowLeft, ArrowRight, Check, Clock, CloudOff, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Clock, CloudOff, Loader2 } from 'lucide-react';
 import { TestItem } from '../../api/assessment';
 import { SaveStatus } from '../../hooks/useAutosave';
 
@@ -125,7 +125,6 @@ export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalI
       {progress >= 50 && progress < 55 && (
         <div className="max-w-3xl mx-auto px-4 pt-4">
           <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-teal-900 text-sm flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-teal-600 shrink-0" />
             <span className="font-semibold">Halfway there! Keep going with your first natural instinct.</span>
           </div>
         </div>

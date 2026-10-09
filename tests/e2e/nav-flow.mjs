@@ -59,7 +59,7 @@ try {
   await sleep(200);
   await page.clickText('(PTI)', '#nav-menu-programs button');
   await page.waitFor(`location.pathname === '/' && location.hash === '#philosophical-intervention'`);
-  await sleep(1500);
+  await sleep(2500);
   check(await inView('philosophical-intervention'), 'Programs › PTI scrolls to the PTI block');
 
   // Filter to STI, then ask for TTI: the filter resets so TTI is found.
@@ -69,7 +69,7 @@ try {
   await page.eval(`${trigger('Programs')}.click()`);
   await sleep(200);
   await page.clickText('(TTI)', '#nav-menu-programs button');
-  await sleep(1500);
+  await sleep(2500);
   check(await inView('transcendental-intervention'), 'Programs › TTI resets the filter and scrolls to TTI');
 
   // Same link twice still scrolls.
@@ -78,7 +78,7 @@ try {
   await page.eval(`${trigger('Programs')}.click()`);
   await sleep(200);
   await page.clickText('(TTI)', '#nav-menu-programs button');
-  await sleep(1500);
+  await sleep(2500);
   check(await inView('transcendental-intervention'), 'clicking the same program again scrolls again');
 
   // Keyboard: Down opens on the first link, Down moves, Esc closes and returns focus.
@@ -121,7 +121,7 @@ try {
   check(await page.eval(`!!document.getElementById('mobile-nav-programs') && !!document.getElementById('mobile-nav-16pf')`), 'mobile groups expand');
   await page.screenshot(`${SHOTS}nav-mobile-drawer.png`);
   await page.clickText('(STI)', '#mobile-nav-programs button');
-  await sleep(1500);
+  await sleep(2500);
   check(await inView('sonic-therapy'), 'mobile Programs › STI scrolls to STI');
   check(await page.eval(`!document.getElementById('mobile-nav-programs')`), 'drawer closes after choosing a link');
 
