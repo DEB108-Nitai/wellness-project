@@ -33,7 +33,7 @@ try {
   await sleep(500);
 
   const tabs = await page.eval(`[...document.querySelectorAll('header nav[aria-label=Main] > *')].map(e => e.innerText.trim())`);
-  check(JSON.stringify(tabs) === JSON.stringify(['Home', 'Programs', '16PF Test', 'Contact']), `desktop tabs: ${tabs.join(' · ')}`);
+  check(JSON.stringify(tabs) === JSON.stringify(['Home', 'Programs', '16PF Test', 'Our Team', 'Contact']), `desktop tabs: ${tabs.join(' · ')}`);
   check(await page.eval(`!!document.querySelector('header')?.innerText.includes('Sign In')`), 'Sign In button still in the header');
   check(await page.eval(`${trigger('16PF Test')}.className.includes('border-teal-600')`), '16PF Test tab is active on /factors');
 

@@ -8,6 +8,7 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 | Script | What it checks |
 |---|---|
 | `guest-flow.mjs` | Guest takes the test → reload and resume → submit → results gate → sign up → report → share link → My Results |
+| `team-page.mjs` | Our Team page: six people in the old-homepage order, all photos load, 3/2/1 per row at 1440/768/390 px, no overflow, nav tab active, Contact button. Read-only |
 | `home-top.mjs` | Home page order: dark Transenigma intro → Research · Consultancy · Programs → 16PF assessment (no factor grid, no workshops, no sparkle icons) → 60-day programs; one h1; assessment button before programs; no duplicate program cards; no page overflow at 1440/768/390/360 px; intro buttons. Read-only |
 | `nav-flow.mjs` | Main navigation: Programs and 16PF Test dropdowns (hover, click, keyboard, outside click), program links scrolling to STI/PTI/TTI (also when the challenge filter hides them), mobile drawer groups. Read-only, creates no rows |
 | `phase4-flow.mjs <adminEmail> <adminPassword>` | STI → PTI → TTI order; PTI registration ("Registered successfully"); duplicate refused; joining a second program; contact form; newsletter; FAQs; admin registrations filter and status change; maintenance toggle |
@@ -16,6 +17,7 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 node tests/e2e/guest-flow.mjs
 node tests/e2e/nav-flow.mjs
 node tests/e2e/home-top.mjs
+node tests/e2e/team-page.mjs
 node tests/e2e/phase4-flow.mjs admin@example.com "<password>"
 ```
 

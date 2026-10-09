@@ -14,6 +14,7 @@ const VIEW_PATHS: Record<string, string> = {
   benefits: '/benefits',
   faq: '/faq',
   contact: '/contact',
+  team: '/team',
   'privacy-terms': '/privacy',
   privacy: '/privacy',
   terms: '/terms',
