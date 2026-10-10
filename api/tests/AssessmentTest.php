@@ -165,6 +165,32 @@ test('guest submits, results stay locked until sign-up, then the session follows
     assertSame('IN', $report['country']);
 });
 
+test('nobody else can resume, read or change an in-progress draft (account or guest)', function () {
+    useTestDatabase();
+    // An account's draft.
+    asGuest();
+    signUpUser('Draft Owner');
+    $acct = AssessmentService::start(demographics(), testRequest());
+    $acctRow = sessionRow($acct['ref']);
+    // A guest's draft, owned only through its private HttpOnly cookie.
+    asGuest();
+    $guest = AssessmentService::start(demographics(), testRequest());
+    $guestRow = sessionRow($guest['ref']);
+
+    // Another visitor in a fresh browser and another signed-in account.
+    foreach (['a new guest' => fn () => asGuest(), 'another account' => function () { asGuest(); signUpUser('Someone Else'); }] as $who => $become) {
+        $become();
+        $me = AssessmentService::owner(testRequest());
+        assertSame(null, AssessmentService::active($me), "$who has no draft to resume");
+        foreach ([$acctRow, $guestRow] as $row) {
+            assertSame(false, AssessmentService::owns($row, $me), "$who does not own {$row['public_ref']}");
+            assertSame(404, assertThrows(HttpException::class, fn () => AssessmentService::findOwnedByRef($row['public_ref'], $me))->status, "$who gets 404 for {$row['public_ref']}");
+        }
+    }
+    // The drafts are untouched.
+    assertSame(0, (int) Database::one('SELECT COUNT(*) AS n FROM session_answers WHERE session_id IN (?, ?)', [$acctRow['id'], $guestRow['id']])['n']);
+});
+
 test('another user cannot see the report (fault 4) but an admin can', function () {
     useTestDatabase();
     asGuest();

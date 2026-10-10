@@ -29,7 +29,7 @@ PHP is XAMPP's: `C:\xampp\php\php.exe` (also `php` if on PATH).
 | Daily housekeeping | `php api/bin/cron-daily.php` |
 | Browser E2E (needs XAMPP + `npm run dev` + Chrome) | `node tests/e2e/guest-flow.mjs`, `node tests/e2e/phase4-flow.mjs <adminEmail> <pw>` |
 
-E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clean them up afterwards (see `docs/PROGRESS.md`). If Apache serves the project elsewhere, set `TRANSENIGMA_API_TARGET` in `.env.local`. Full setup: `docs/DEVELOPMENT.md`.
+E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clean them up afterwards (see `docs/PROGRESS.md`). If Apache serves the project elsewhere, set `TRANSENIGMA_API_TARGET` in `.env.local`. Full setup: `docs/DEVELOPMENT.md`. Deploying to DreamHost: `docs/DEPLOY.md`.
 
 ## Architecture
 
