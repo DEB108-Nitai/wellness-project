@@ -9,6 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigate, viewForPath } from './lib/routes';
+import { applyPageMeta } from './lib/pageMeta';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { AnnouncementBar } from './components/layout/AnnouncementBar';
@@ -66,7 +67,6 @@ function SiteLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#1E2430]">
-      <ScrollToTop />
       {settings.announcement_active && settings.announcement_text && <AnnouncementBar text={settings.announcement_text} />}
       <Navbar currentView={viewForPath(location.pathname)} onNavigate={onNavigate} />
       <VerifyEmailBanner />
@@ -94,6 +94,13 @@ function ScrollToTop() {
   return null;
 }
 
+/** Per-page title, description, canonical URL and robots rule (src/lib/pageMeta.ts). */
+function PageMeta() {
+  const { pathname } = useLocation();
+  React.useEffect(() => applyPageMeta(pathname), [pathname]);
+  return null;
+}
+
 function FactorsRoute() {
   const { code } = useParams();
   const onNavigate = useAppNavigate();
@@ -111,6 +118,10 @@ function WithNavigate<P extends { onNavigate: (view: string, param?: string) => 
 
 export default function App() {
   return (
+    <>
+    {/* Every page, including the full-screen sign-in pages */}
+    <ScrollToTop />
+    <PageMeta />
     <Routes>
       {/* Focused onboarding screens (no site chrome) */}
       <Route path="/login" element={<LoginPage />} />
@@ -164,5 +175,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </>
   );
 }

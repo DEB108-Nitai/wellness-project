@@ -3,7 +3,7 @@
 The single document to restart this project from scratch if all context is lost. **Update it at the end of every phase.**
 Related: [PRD.md](PRD.md) (the agreed specification) · [DEVELOPMENT.md](DEVELOPMENT.md) (local setup and commands) · [`tests/e2e/README.md`](../tests/e2e/README.md) (browser tests)
 
-_Last updated: 2026-10-05. **Phases 0–4 complete and committed.** Next: Phase 5 (admin console), which the owner scheduled to start on 2026-10-06._
+_Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). Next: CodeRabbit review → DreamHost deploy (Phase 7) → auth completion (live SMTP/Google) → admin console (Phase 5)._
 
 ---
 
@@ -18,7 +18,7 @@ _Last updated: 2026-10-05. **Phases 0–4 complete and committed.** Next: Phase 
 3. **Start the local environment** (Windows + XAMPP; Apache and MySQL must be running):
    ```
    C:\xampp\php\php.exe api\bin\migrate.php      # apply new migrations
-   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (54 at last count)
+   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (60 at last count)
    npm run lint                                  # TypeScript check
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
@@ -103,6 +103,14 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 004 | `users.session_version` (sign out all devices on password change) |
 | 005 | `challenge_registrations.program` gains `PTI` |
 | 006 | FAQs updated for three programs; new FAQs "Can I join more than one program?" and "Do I need any background … to join PTI?" |
+| 007 | Transenigma site name and FAQ wording |
+| 008–010 | Company content tables (team, research categories + publications, consultancy groups + projects, ventures) and their seed from the old site |
+| 011 | Result codes WL- → TE- |
+| 012–015 | Publication fixes: missing year, 26 verified links, punctuation, full titles and journals |
+| 016 | `research_categories.tagline` for the homepage cards |
+| 017–018 | Depression Prediction Engine image: distressing old image removed, owner-supplied illustration |
+| 019 | `support_email` support@transenigma.com; Dr. Mayank Bhasin "CEO and Founder" |
+| 020 | `linkedin_url` setting (company LinkedIn page) |
 
 ---
 
@@ -142,6 +150,36 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
   - Account page lists the user's challenge registrations.
   - Admin: server-backed Registrations tab (program and status filters, search, detail view, status and notes, CSV export) and Settings tab. Other tabs show "Phase 5" notices.
   - The browser-storage layer (`storageService.ts`, `initialData.ts`) is deleted; the site has no client-side data store left.
+
+## 4b. Transenigma company site (owner decision 2026-10-08)
+
+The product became the company website of Transenigma Pvt Ltd, replacing transenigma.com. It was built in owner-approved slices on top of Phases 0–4. The plan is in `~/.claude/plans/unified-mapping-moore.md`.
+
+| Slice | Scope | Commit |
+|---|---|---|
+| S1–S2 | Name, SVG logo and icon, teal logo | `4aab61e`, `76830db` |
+| S3 | Navigation: Programs ▾ and 16PF Test ▾ dropdowns, mobile drawer | `2320168` |
+| S4 | Homepage: dark intro, "Three disciplines" cards, 16PF content, programs; no sparkle icons; workshops dropped | `44af262` |
+| S5 | Content tables + API (`/api/content/{team,research,consultancy,ventures}`), migrations 008–010 | `41c11ec` |
+| S6 | Our Team `/team` | `cbee41c` |
+| S7 | Research `/research`: 15 fields, 97 publications, search, deep links, scroll-spy | `50ba1ea` |
+| — | Code rename Wellness → Transenigma (namespace, DBs, `te_` cookies, `TE-` codes, migration 011) | `8a216c4` |
+| — | Publication data: year, 26 verified links (Crossref/DOI), full titles (012–015) | `a2791a2` |
+| S7b | Homepage research field cards (CSS marquee, taglines, migration 016) | `29ac677` |
+| S8 | Consultancy `/consultancy` (017–018: distressing old image replaced) | `d03f10c` |
+| S9 | Company footer, Contact copy, `linkedin_url` setting, scroll-to-top on page change (019–020) | `3fe4bcf` |
+| S10 | 301 redirects from old URLs, per-page titles/descriptions/canonical/noindex, robots.txt, sitemap.xml | this slice |
+
+**Old URLs → new** (in `public/.htaccess`; checked by `tests/e2e/redirects.mjs`):
+- `/index` → `/`.
+- `/portfolio`, `/services` and `/mvppoc` → `/consultancy`.
+- `/enterprise` → `/consultancy#enterprise`; `/webmobile` → `#web-mobile`; `/iot` → `#iot`.
+- `research.php`, `consultancy.php`, `contact.php` and `team.php` → their new pages; `/about` → `/team`.
+- `/workshop/…` → `/`.
+
+**Waiting on the owner (company):**
+- registered office address, CIN and phone number for the footer and Contact page (ask after every phase);
+- final OK of the teal logo.
 
 ---
 
@@ -241,7 +279,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 ---
 
 ## 10. Testing
-- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **54 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
+- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **60 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
 - **Browser:** `tests/e2e/guest-flow.mjs` and `tests/e2e/phase4-flow.mjs`. Both passed at the end of their phases. `tests/e2e/challenge-shots.mjs` captures the three program blocks at desktop and phone widths for a visual check.
 - **Frontend:** `npm run lint` (TypeScript) and `npm run build`.
 

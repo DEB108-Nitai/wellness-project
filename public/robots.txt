@@ -1,0 +1,16 @@
+# Transenigma (slice S10). Public pages are listed in the sitemap; private areas are not for search engines.
+User-agent: *
+Disallow: /api/
+Disallow: /admin
+Disallow: /account
+Disallow: /my-results
+Disallow: /results/
+Disallow: /r/
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /unsubscribe
+
+Sitemap: https://transenigma.com/sitemap.xml
