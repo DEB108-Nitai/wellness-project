@@ -37,7 +37,7 @@ final class Mailer
 
             if (self::$transport !== null) {
                 (self::$transport)($to, $message);
-            } elseif (Config::string('mail.host') !== '') {
+            } elseif (Config::string('mail.host') !== '' && !self::isReservedTestAddress($to)) {
                 self::sendSmtp($to, $message);
             } else {
                 self::writeToLog($to, $template, $message);
@@ -74,6 +74,16 @@ final class Mailer
         })($vars, $message);
 
         return ['subject' => $message['subject'], 'html' => $layout, 'text' => $message['text']];
+    }
+
+    /**
+     * Addresses at domains reserved for testing (RFC 2606 / 6761) can never be delivered.
+     * They are written to the mail folder instead, so test runs never bounce back to support@.
+     */
+    public static function isReservedTestAddress(string $to): bool
+    {
+        $domain = strtolower(substr(strrchr($to, '@') ?: '', 1));
+        return preg_match('/(^|\.)(example\.(com|net|org)|test|example|invalid|localhost)$/', $domain) === 1;
     }
 
     private static function sendSmtp(string $to, array $message): void

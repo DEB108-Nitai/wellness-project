@@ -346,6 +346,15 @@ test('an active user\'s session cookie is renewed at most once a day', function 
 });
 
 // ------------------------------------------------------------------ email templates
+test('mail to reserved test domains is never sent over SMTP', function () {
+    foreach (['a@example.com', 'a@EXAMPLE.org', 'a@sub.example.net', 'a@x.test', 'a@site.invalid', 'a@localhost'] as $to) {
+        assertTrue(Mailer::isReservedTestAddress($to), "$to must be treated as a test address");
+    }
+    foreach (['a@gmail.com', 'support@transenigma.com', 'a@example.co.uk', 'a@mytest.com', 'a@examples.com'] as $to) {
+        assertTrue(!Mailer::isReservedTestAddress($to), "$to is a real address");
+    }
+});
+
 test('email templates render escaped HTML and plain text', function () {
     useTestDatabase();
     $msg = Mailer::render('verify-email', ['name' => '<script>x</script>', 'url' => 'https://example.com/verify-email?token=a&b', 'siteName' => 'Transenigma', 'siteUrl' => 'https://example.com', 'supportEmail' => 'help@example.com']);
