@@ -26,7 +26,7 @@ This guide takes the site from this repository to **https://transenigma.com** on
 ```
 npm ci
 npm run lint
-php api/tests/run.php                      # all tests must pass
+php api/tests/run.php                      # all tests must pass (WIPES the db_test database: keep it disposable)
 npm run build                              # creates dist/
 node tests/e2e/redirects.mjs               # old-URL redirects against XAMPP + dist/
 ```
@@ -115,7 +115,7 @@ cd ~/transenigma.com
 | Job | Schedule | Command |
 |---|---|---|
 | Housekeeping | daily, 03:00 | `/usr/local/php82/bin/php /home/<user>/transenigma.com/api/bin/cron-daily.php` |
-| Database backup (14 days kept) | daily, 03:30 | `mkdir -p ~/backups && mysqldump --defaults-extra-file=$HOME/.my.cnf transenigma \| gzip > ~/backups/transenigma-$(date +\%F).sql.gz && find ~/backups -name 'transenigma-*.sql.gz' -mtime +14 -delete` |
+| Database backup (14 days kept) | daily, 03:30 | `bash $HOME/bin/backup-db.sh` (script below) |
 
 For the backup, create `~/.my.cnf` (mode 600) so the password is not in the cron line:
 ```
@@ -124,6 +124,26 @@ host=mysql.transenigma.com
 user=transenigma_app
 password=...
 ```
+
+Then create `~/bin/backup-db.sh`. It fails loudly instead of hiding a broken dump, and it only deletes old backups after a new one has been checked:
+```bash
+#!/bin/bash
+# Daily MySQL backup for Transenigma: fail on any error, verify, then rotate (14 days).
+set -euo pipefail                      # a failed mysqldump fails the whole pipeline
+umask 077                              # backups readable by this user only
+mkdir -p "$HOME/backups" && chmod 700 "$HOME/backups"
+out="$HOME/backups/transenigma-$(date +%F).sql.gz"
+tmp="$out.tmp"
+mysqldump --defaults-extra-file="$HOME/.my.cnf" --single-transaction transenigma | gzip > "$tmp"
+gzip -t "$tmp"                                          # the archive is readable
+zcat "$tmp" | tail -n 1 | grep -q "Dump completed"      # mysqldump finished the dump
+mv "$tmp" "$out"
+find "$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete   # only after a good backup
+```
+
+- **Set up:** run `chmod 700 ~/bin/backup-db.sh`, then run the script once by hand and check that a `.sql.gz` file appears in `~/backups`.
+- **Before relying on it:** test a restore into a scratch database (§9).
+- **If a run fails:** cron emails the error (set the cron job's email address in the panel), and the existing backups are kept.
 
 ---
 
@@ -158,10 +178,10 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 
 1. On a developer machine: pull, `npm ci`, tests, `npm run build`.
 2. Upload the new `dist/` contents (replace `assets/`; old hashed files can be deleted), plus any changed `api/` files and new `database/migrations/` files.
-3. Over SSH: `php api/bin/migrate.php` (applies only the new migrations).
+3. Over SSH: `/usr/local/php82/bin/php api/bin/migrate.php` (applies only the new migrations).
 
 ## 9. Rolling back
 
 - **Frontend:** re-upload the previous `dist/`.
-- **Database:** restore last night's backup: `gunzip -c ~/backups/transenigma-YYYY-MM-DD.sql.gz | mysql transenigma`.
+- **Database:** restore last night's backup: `gunzip -c ~/backups/transenigma-YYYY-MM-DD.sql.gz | mysql --defaults-extra-file=$HOME/.my.cnf transenigma`.
 - **Whole site:** point the domain back at the old site's backup (§2).

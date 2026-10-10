@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ExternalLink, Search, X } from 'lucide-react';
 import { contentApi, Research, ResearchCategory } from '../../api/content';
+import { hashId } from '../../lib/routes';
 
 /**
  * Research (/research): TERF publications from GET /api/content/research.
@@ -46,7 +47,7 @@ export const ResearchView: React.FC = () => {
   const landed = useRef(false);
   useEffect(() => {
     if (!data || !location.hash) return;
-    const id = decodeURIComponent(location.hash.slice(1));
+    const id = hashId(location.hash);
     const behavior: ScrollBehavior = landed.current ? 'smooth' : 'auto';
     const t = window.setTimeout(() => {
       document.getElementById(id)?.scrollIntoView({ behavior });

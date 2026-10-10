@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { contentApi, Consultancy, ConsultancyGroup, ConsultancyProject } from '../../api/content';
+import { hashId } from '../../lib/routes';
 
 /**
  * Consultancy (/consultancy, slice S8, owner-approved copy 2026-10-10): service areas with their client
@@ -108,7 +109,7 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
   // Land on /consultancy#<area> once the sections exist.
   useEffect(() => {
     if (!data || !location.hash) return;
-    const id = decodeURIComponent(location.hash.slice(1));
+    const id = hashId(location.hash);
     const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView(), 80);
     return () => window.clearTimeout(t);
   }, [data, location.hash, location.key]);

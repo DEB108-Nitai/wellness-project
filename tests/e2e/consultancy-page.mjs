@@ -72,6 +72,10 @@ try {
   await page.clickText('See our work', 'button');
   await page.waitFor(`location.pathname === '/consultancy'`);
   check(true, 'homepage "See our work" opens /consultancy');
+  // A malformed link such as /consultancy#% must not crash the page (hash decoding is guarded).
+  await page.goto(`${BASE}/consultancy#%`);
+  await page.waitText("Depression Prediction Engine", 8000).catch(() => {});
+  check(await page.eval(`document.body.innerText.includes("Depression Prediction Engine") && !!document.querySelector('h1')`), '/consultancy#% still renders');
 } finally {
   await page.close();
 }

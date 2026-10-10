@@ -56,6 +56,25 @@ test('the same email cannot register twice for the same program, but can join ot
     ChallengeService::register(registration(['email' => $email, 'program' => 'STI']), authReq());
 });
 
+test('my registrations include guest registrations by email only after the email is verified', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $email = uniqueEmail();
+    $guestReg = ChallengeService::register(registration(['email' => $email, 'program' => 'STI']), authReq());
+
+    // Someone signs up with that address but has not proven they own the inbox.
+    $account = \Transenigma\Services\AuthService::register('Not The Owner', $email, GOOD_PASSWORD, authReq());
+    $user = \Transenigma\Repositories\UserRepository::find((int) $account['id']);
+    assertSame(null, $user['email_verified_at']);
+    assertSame([], ChallengeService::forUser($user), 'unverified account sees nothing registered under that email');
+
+    // After verification the guest registration appears.
+    Database::run('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [$account['id']]);
+    $refs = array_column(ChallengeService::forUser(\Transenigma\Repositories\UserRepository::find((int) $account['id'])), 'ref');
+    assertSame([$guestReg['ref']], $refs);
+});
+
 test('registration validates phone, age, struggles and respects the open/closed setting', function () {
     useTestDatabase();
     asGuest();

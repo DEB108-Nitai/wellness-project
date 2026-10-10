@@ -51,6 +51,20 @@ final class UserRepository
         Database::run('UPDATE users SET email_verified_at = COALESCE(email_verified_at, UTC_TIMESTAMP()) WHERE id = ?', [$id]);
     }
 
+    /**
+     * Before Google links to an account whose email was never verified: whoever set its password never
+     * proved they own the inbox (possible pre-registration by someone else), so the password is removed
+     * and every existing session is signed out. Returns true when anything was dropped.
+     */
+    public static function dropUnprovenPassword(int $id): bool
+    {
+        return Database::run(
+            'UPDATE users SET password_hash = NULL, session_version = session_version + 1
+             WHERE id = ? AND email_verified_at IS NULL AND password_hash IS NOT NULL',
+            [$id]
+        )->rowCount() > 0;
+    }
+
     public static function linkGoogle(int $id, string $sub): void
     {
         Database::run('UPDATE users SET google_sub = ?, email_verified_at = COALESCE(email_verified_at, UTC_TIMESTAMP()) WHERE id = ?', [$sub, $id]);

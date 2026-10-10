@@ -131,6 +131,11 @@ final class GoogleOAuth
 
         $user = UserRepository::findByEmail($claims['email']);
         if ($user !== null) {
+            // Google has just proven who owns this inbox. A password set on a never-verified account was
+            // not, so it is dropped (and its sessions ended) to stop account pre-hijacking.
+            if (UserRepository::dropUnprovenPassword((int) $user['id'])) {
+                AuditService::log('AUTH_UNPROVEN_PASSWORD_REMOVED', 'user', (int) $user['id'], 'user', $user['id'], ['via' => 'google'], $request);
+            }
             UserRepository::linkGoogle((int) $user['id'], $claims['sub']);
             AuditService::log('AUTH_GOOGLE_LINKED', 'user', (int) $user['id'], 'user', $user['id'], [], $request);
             return UserRepository::find((int) $user['id']);

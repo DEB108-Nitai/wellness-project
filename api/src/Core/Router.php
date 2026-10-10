@@ -55,11 +55,25 @@ final class Router
         );
         $this->routes[] = [
             'method' => strtoupper($method),
+            'pattern' => $pattern,
             'regex' => '#^' . $regex . '$#',
             'params' => $params,
             'handler' => $handler,
             'options' => $options + ['auth' => null, 'maintenance' => true, 'csrf' => true],
         ];
+    }
+
+    /**
+     * The registered routes (method, pattern, effective options), e.g. for tests that check every
+     * admin route requires the admin role.
+     * @return list<array{method:string, pattern:string, options:array}>
+     */
+    public function routes(): array
+    {
+        return array_map(
+            static fn (array $r): array => ['method' => $r['method'], 'pattern' => $r['pattern'], 'options' => $r['options']],
+            $this->routes
+        );
     }
 
     /**

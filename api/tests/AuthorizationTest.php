@@ -41,10 +41,12 @@ test('user routes: guests get 401', function () {
 });
 
 test('every admin route in the route table requires the admin role', function () {
-    $src = file_get_contents(dirname(__DIR__) . '/routes.php');
-    preg_match_all("#->(get|post|put|patch|delete)\('(/admin[^']*)',[^\n]*#", $src, $m, PREG_SET_ORDER);
-    assertTrue(count($m) >= 5, 'admin routes found');
-    foreach ($m as [$line, , $path]) {
-        assertTrue(str_contains($line, '$admin') || str_contains($line, "'auth' => 'admin'"), "$path is admin-only");
+    // Read the routes as the Router registered them (not the source text), so no declaration style slips through.
+    $router = new Router();
+    (require dirname(__DIR__) . '/routes.php')($router);
+    $admin = array_filter($router->routes(), static fn (array $r): bool => str_starts_with($r['pattern'], '/admin'));
+    assertTrue(count($admin) >= 5, 'admin routes found');
+    foreach ($admin as $r) {
+        assertSame('admin', $r['options']['auth'], "{$r['method']} {$r['pattern']} is admin-only");
     }
 });

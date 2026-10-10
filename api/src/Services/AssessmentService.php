@@ -167,6 +167,9 @@ final class AssessmentService
         $seconds = max(0, min(self::MAX_PAGE_SECONDS, $pageSeconds));
 
         Database::transaction(static function () use ($session, $clean, $page, $seconds): void {
+            // Lock the session row and re-check: a submit or "start over" in another tab may have closed it
+            // since $session was read. Submit takes the same lock, so answers can't change while it scores.
+            self::lockOpenSession((int) $session['id'], 'This assessment has already been submitted.');
             if ($clean !== []) {
                 $rows = implode(', ', array_fill(0, count($clean), '(?, ?, ?, UTC_TIMESTAMP())'));
                 $params = [];
@@ -198,13 +201,26 @@ final class AssessmentService
         ];
     }
 
+    /** Inside a transaction: lock the session row and require it to still be in progress. */
+    private static function lockOpenSession(int $id, string $closedMessage): void
+    {
+        $status = Database::value('SELECT status FROM test_sessions WHERE id = ? FOR UPDATE', [$id]);
+        if ($status !== 'in_progress') {
+            throw HttpException::conflict($closedMessage, 'SESSION_CLOSED');
+        }
+    }
+
     /** TEST-4: "start over" keeps the old session for research but marks it abandoned. */
     public static function abandon(array $session, Request $request): void
     {
         if ($session['status'] !== 'in_progress') {
             return;
         }
-        Database::run("UPDATE test_sessions SET status = 'abandoned' WHERE id = ?", [$session['id']]);
+        // Only an open session can be abandoned; never overwrite one completed meanwhile in another tab.
+        $changed = Database::run("UPDATE test_sessions SET status = 'abandoned' WHERE id = ? AND status = 'in_progress'", [$session['id']])->rowCount();
+        if ($changed === 0) {
+            return;
+        }
         AuditService::log('SESSION_ABANDONED', $session['user_id'] ? 'user' : 'guest', $session['user_id'] ? (int) $session['user_id'] : null, 'test_session', $session['public_ref'], [], $request);
     }
 
@@ -219,31 +235,39 @@ final class AssessmentService
         }
 
         $items = PsychometricRepository::items($session['item_set_version']);
-        $answers = [];
-        foreach (Database::all('SELECT item_id, value FROM session_answers WHERE session_id = ?', [$session['id']]) as $row) {
-            $answers[(int) $row['item_id']] = (int) $row['value'];
-        }
-        $missing = array_values(array_diff_key($items, $answers));
-        if ($missing !== []) {
-            throw new HttpException(422, 'INCOMPLETE', sprintf('Please answer all statements before submitting (%d remaining).', count($missing)), [
-                'firstMissingPosition' => (string) $missing[0]['position'],
-                'missingCount' => (string) count($missing),
-            ]);
-        }
-
         $normVersion = PsychometricRepository::activeNormVersion();
-        $scores = ScoringService::score($answers, $session['item_set_version'], $normVersion);
-        $active = (int) $session['active_seconds'];
-        if ($active === 0) { // client never reported page time — fall back to wall-clock duration
-            $active = max(0, time() - strtotime($session['started_at'] . ' UTC'));
-        }
-        $quality = QualityService::evaluate($answers, $items, $active, SettingsService::int('too_fast_minutes'));
+        $tooFast = SettingsService::int('too_fast_minutes');
 
-        Database::transaction(static function () use ($session, $scores, $quality, $normVersion): void {
-            $locked = Database::one('SELECT status FROM test_sessions WHERE id = ? FOR UPDATE', [$session['id']]);
-            if ($locked['status'] !== 'in_progress') {
-                return; // a concurrent submit already completed it
+        // Everything below runs on the locked session row: status, answers and scores come from one consistent
+        // state, and autosave (which takes the same lock) can't change answers while they are being scored.
+        $quality = Database::transaction(static function () use ($session, $items, $normVersion, $tooFast): ?array {
+            $locked = Database::one('SELECT status, active_seconds, started_at FROM test_sessions WHERE id = ? FOR UPDATE', [$session['id']]);
+            if ($locked['status'] === 'completed') {
+                return null; // a concurrent submit already completed it
             }
+            if ($locked['status'] !== 'in_progress') {
+                throw HttpException::conflict('This assessment can no longer be submitted.', 'SESSION_CLOSED');
+            }
+
+            $answers = [];
+            foreach (Database::all('SELECT item_id, value FROM session_answers WHERE session_id = ?', [$session['id']]) as $row) {
+                $answers[(int) $row['item_id']] = (int) $row['value'];
+            }
+            $missing = array_values(array_diff_key($items, $answers));
+            if ($missing !== []) {
+                throw new HttpException(422, 'INCOMPLETE', sprintf('Please answer all statements before submitting (%d remaining).', count($missing)), [
+                    'firstMissingPosition' => (string) $missing[0]['position'],
+                    'missingCount' => (string) count($missing),
+                ]);
+            }
+
+            $scores = ScoringService::score($answers, $session['item_set_version'], $normVersion);
+            $active = (int) $locked['active_seconds'];
+            if ($active === 0) { // client never reported page time — fall back to wall-clock duration
+                $active = max(0, time() - strtotime($locked['started_at'] . ' UTC'));
+            }
+            $quality = QualityService::evaluate($answers, $items, $active, $tooFast);
+
             foreach ($scores['factors'] as $code => $f) {
                 Database::run(
                     'INSERT INTO session_factor_scores (session_id, factor_code, raw_score, z_score, sten, percentile, band) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -261,7 +285,11 @@ final class AssessmentService
                     quality_flagged = ?, quality_details = ?, last_activity_at = UTC_TIMESTAMP() WHERE id = ?",
                 [$normVersion, $quality['flagged'] ? 1 : 0, json_encode($quality), $session['id']]
             );
+            return $quality;
         });
+        if ($quality === null) {
+            return ['ref' => $session['public_ref'], 'status' => 'completed'];
+        }
 
         AuditService::log('SESSION_COMPLETED', $session['user_id'] ? 'user' : 'guest', $session['user_id'] ? (int) $session['user_id'] : null,
             'test_session', $session['public_ref'], ['flagged' => $quality['flagged']], $request);

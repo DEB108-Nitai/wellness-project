@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use Transenigma\Controllers\AssessmentController;
 use Transenigma\Core\Cookies;
 use Transenigma\Core\Database;
 use Transenigma\Core\HttpException;
@@ -176,6 +177,7 @@ test('nobody else can resume, read or change an in-progress draft (account or gu
     asGuest();
     $guest = AssessmentService::start(demographics(), testRequest());
     $guestRow = sessionRow($guest['ref']);
+    $firstItem = array_key_first(PsychometricRepository::items($acctRow['item_set_version']));
 
     // Another visitor in a fresh browser and another signed-in account.
     foreach (['a new guest' => fn () => asGuest(), 'another account' => function () { asGuest(); signUpUser('Someone Else'); }] as $who => $become) {
@@ -186,9 +188,43 @@ test('nobody else can resume, read or change an in-progress draft (account or gu
             assertSame(false, AssessmentService::owns($row, $me), "$who does not own {$row['public_ref']}");
             assertSame(404, assertThrows(HttpException::class, fn () => AssessmentService::findOwnedByRef($row['public_ref'], $me))->status, "$who gets 404 for {$row['public_ref']}");
         }
+        // The real autosave endpoint takes no draft reference: it only ever writes to the caller's own draft.
+        $write = new Request('PUT', '/test/session/answers', [], ['REMOTE_ADDR' => '10.20.30.40', 'CONTENT_TYPE' => 'application/json'],
+            json_encode(['page' => 1, 'answers' => [$firstItem => 1]], JSON_THROW_ON_ERROR), Cookies::$jar);
+        assertSame(404, assertThrows(HttpException::class, fn () => (new AssessmentController())->saveAnswers($write))->status, "$who cannot autosave answers");
     }
     // The drafts are untouched.
     assertSame(0, (int) Database::one('SELECT COUNT(*) AS n FROM session_answers WHERE session_id IN (?, ?)', [$acctRow['id'], $guestRow['id']])['n']);
+});
+
+test('a second tab with an old copy of the session cannot change a submitted or abandoned test', function () {
+    useTestDatabase();
+    asGuest();
+    signUpUser('Two Tabs');
+    $state = AssessmentService::start(demographics(), testRequest());
+    $staleTab = sessionRow($state['ref']);               // tab B loaded the session while it was in progress
+    answerAll(sessionRow($state['ref']));
+    AssessmentService::submit(sessionRow($state['ref']), testRequest()); // tab A submits
+    $answers = Database::all('SELECT item_id, value FROM session_answers WHERE session_id = ? ORDER BY item_id', [$staleTab['id']]);
+
+    // Tab B autosaves with its old copy: refused, answers unchanged.
+    $firstItem = (int) $answers[0]['item_id'];
+    $e = assertThrows(HttpException::class, fn () => AssessmentService::saveAnswers($staleTab, [$firstItem => ((int) $answers[0]['value'] % 5) + 1], 1, 10, testRequest()));
+    assertSame('SESSION_CLOSED', $e->errorCode);
+    assertSame($answers, Database::all('SELECT item_id, value FROM session_answers WHERE session_id = ? ORDER BY item_id', [$staleTab['id']]));
+
+    // Tab B clicks "start over" with its old copy: the completed test stays completed.
+    AssessmentService::abandon($staleTab, testRequest());
+    assertSame('completed', sessionRow($state['ref'])['status']);
+
+    // And the reverse: a test abandoned in one tab can't be submitted from another.
+    $state2 = AssessmentService::start(demographics(), testRequest());
+    $stale2 = sessionRow($state2['ref']);
+    answerAll($stale2);
+    AssessmentService::abandon(sessionRow($state2['ref']), testRequest());
+    assertSame('SESSION_CLOSED', assertThrows(HttpException::class, fn () => AssessmentService::submit($stale2, testRequest()))->errorCode);
+    assertSame('abandoned', sessionRow($state2['ref'])['status']);
+    assertSame(0, (int) Database::value('SELECT COUNT(*) FROM session_factor_scores WHERE session_id = ?', [$stale2['id']]));
 });
 
 test('another user cannot see the report (fault 4) but an admin can', function () {

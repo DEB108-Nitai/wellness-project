@@ -77,6 +77,19 @@ export function useSectionNavigate(): (sectionId: string) => void {
   );
 }
 
+/**
+ * The section id from a URL hash ("#drug-discovery" → "drug-discovery"). A malformed escape such as "#%"
+ * would make decodeURIComponent throw and crash the page, so it falls back to the raw text.
+ */
+export function hashId(hash: string): string {
+  const raw = hash.replace(/^#/, '');
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 /** Current path + query, used as the `next` target when sending someone to sign in. */
 export function useCurrentPath(): string {
   const location = useLocation();

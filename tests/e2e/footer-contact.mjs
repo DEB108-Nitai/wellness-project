@@ -44,16 +44,17 @@ try {
   // New pages open at the top, also from links at the bottom of a long page.
   await toBottom();
   await page.eval(`${F}.querySelector('a[href="/research"]').click()`);
-  await page.waitFor(`location.pathname === '/research'`);
-  await sleep(500);
+  await page.waitFor(`location.pathname === '/research' && document.querySelector('h1')?.innerText === 'Our research'`);
+  await page.waitFor(`scrollY < 50`, 3000).catch(() => {});
   check((await page.eval(`scrollY`)) < 50, 'footer link opens the new page at the top');
   await page.goto(`${BASE}/`);
   await page.waitText('See all research');
   await page.eval(`document.querySelector('section[aria-labelledby="research-fields-title"]').scrollIntoView()`);
   await sleep(400);
   await page.eval(`[...document.querySelectorAll('a')].find(a => a.innerText.includes('See all research')).click()`);
-  await page.waitFor(`location.pathname === '/research'`);
-  await sleep(500);
+  // The address changes first and React renders the new page a moment later, so wait for the page itself.
+  await page.waitFor(`location.pathname === '/research' && document.querySelector('h1')?.innerText === 'Our research'`);
+  await page.waitFor(`scrollY < 50`, 3000).catch(() => {});
   check((await page.eval(`scrollY`)) < 50, 'homepage "See all research" opens /research at the top');
   await toBottom();
   await page.eval(`${F}.querySelector('a[href="/#60-days-challenge"]').click()`);

@@ -21,7 +21,7 @@
       <tr><td style="height:6px;background:linear-gradient(90deg,#0d9488,#4f46e5,#d97706);background-color:#0d9488;"></td></tr>
       <tr><td style="padding:28px 32px 8px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="width:36px;height:36px;border-radius:10px;background:#0d9488;color:#ffffff;font-weight:700;font-size:18px;text-align:center;vertical-align:middle;">W</td>
+          <td style="width:36px;height:36px;border-radius:10px;background:#0d9488;color:#ffffff;font-weight:700;font-size:16px;letter-spacing:-0.5px;text-align:center;vertical-align:middle;">te</td>
           <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;"><?= $e($vars['siteName']) ?></td>
         </tr></table>
       </td></tr>

@@ -97,13 +97,16 @@ final class ChallengeService
         return self::toPublic(Database::one('SELECT * FROM challenge_registrations WHERE id = ?', [$id]));
     }
 
-    /** The signed-in user's registrations (account page). */
+    /**
+     * The signed-in user's registrations (account page). Registrations made as a guest are matched by
+     * email only once the account has proven it owns that inbox; otherwise anyone could sign up with
+     * someone else's address and see their program enrolments.
+     */
     public static function forUser(array $user): array
     {
-        $rows = Database::all(
-            'SELECT * FROM challenge_registrations WHERE user_id = ? OR email = ? ORDER BY created_at DESC',
-            [$user['id'], $user['email']]
-        );
+        $rows = ($user['email_verified_at'] ?? null) !== null
+            ? Database::all('SELECT * FROM challenge_registrations WHERE user_id = ? OR email = ? ORDER BY created_at DESC', [$user['id'], $user['email']])
+            : Database::all('SELECT * FROM challenge_registrations WHERE user_id = ? ORDER BY created_at DESC', [$user['id']]);
         return array_map([self::class, 'toPublic'], $rows);
     }
 

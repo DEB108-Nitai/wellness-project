@@ -263,17 +263,45 @@ test('google sign-in creates a verified account, then signs the same person in a
     assertSame((int) $user['id'], (int) AuthService::user()['id']);
 });
 
-test('google sign-in links to an existing account with the same verified email', function () {
+test('google sign-in links to an existing verified account and keeps its password', function () {
     useTestDatabase();
     freshSession();
     captureMail();
     $email = uniqueEmail();
     $existing = AuthService::register('Existing Person', $email, GOOD_PASSWORD, authReq());
+    Database::run('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [$existing['id']]);
     freshSession();
 
     runGoogleFlow(googleClaims(['email' => $email]));
     assertSame((int) $existing['id'], (int) AuthService::user()['id']);
     assertTrue(UserRepository::find((int) $existing['id'])['google_sub'] !== null);
+    freshSession();
+    assertSame((int) $existing['id'], (int) AuthService::attempt($email, GOOD_PASSWORD, authReq())['id'], 'password still works');
+});
+
+test('google sign-in to a never-verified account drops the unproven password and its sessions (pre-hijack)', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    // Someone pre-registers the victim's email with a password they chose, and never verifies it.
+    $email = uniqueEmail();
+    $squatter = AuthService::register('Squatter', $email, GOOD_PASSWORD, authReq());
+    $before = UserRepository::find((int) $squatter['id']);
+    assertSame(null, $before['email_verified_at']);
+    freshSession();
+
+    // The real owner proves the inbox with Google.
+    runGoogleFlow(googleClaims(['email' => $email]));
+    $after = UserRepository::find((int) $squatter['id']);
+    assertSame((int) $squatter['id'], (int) AuthService::user()['id'], 'the owner is signed in');
+    assertSame(null, $after['password_hash'], 'unproven password removed');
+    assertSame((int) $before['session_version'] + 1, (int) $after['session_version'], 'earlier sessions signed out');
+    assertTrue($after['email_verified_at'] !== null);
+    assertSame(1, (int) Database::value("SELECT COUNT(*) FROM audit_logs WHERE action = 'AUTH_UNPROVEN_PASSWORD_REMOVED' AND entity_id = ?", [(string) $squatter['id']]));
+
+    // The squatter's password no longer signs in.
+    freshSession();
+    assertSame(401, assertThrows(HttpException::class, fn () => AuthService::attempt($email, GOOD_PASSWORD, authReq()))->status);
 });
 
 test('google callback rejects bad state, wrong audience, unverified email and open redirects', function () {

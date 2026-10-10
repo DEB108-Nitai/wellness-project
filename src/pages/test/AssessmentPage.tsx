@@ -203,7 +203,8 @@ export const AssessmentPage: React.FC = () => {
       if (err instanceof ApiError && err.code === 'INCOMPLETE') {
         const position = Number(err.fields.firstMissingPosition);
         setSubmitError(err.message);
-        if (position) setPage(Math.ceil(position / perPage));
+        // Back from the review screen to the page with the first missing statement (goToPage also saves and scrolls).
+        if (position) goToPage(Math.ceil(position / perPage));
       } else {
         setSubmitError(err instanceof ApiError ? err.message : 'Could not submit. Please try again.');
       }

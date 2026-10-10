@@ -121,6 +121,10 @@ try {
   await spy('phone');
 
   check(page.consoleErrors.length === 0, `no console errors${page.consoleErrors.length ? ': ' + page.consoleErrors.join(' | ') : ''}`);
+  // A malformed link such as /research#% must not crash the page (hash decoding is guarded).
+  await page.goto(`${BASE}/research#%`);
+  await page.waitText("Drug Discovery", 8000).catch(() => {});
+  check(await page.eval(`document.body.innerText.includes("Drug Discovery") && !!document.querySelector('h1')`), '/research#% still renders');
 } finally {
   await page.close();
 }

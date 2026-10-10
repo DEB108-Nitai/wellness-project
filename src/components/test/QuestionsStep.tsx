@@ -64,7 +64,10 @@ export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalI
   // Keyboard: 1–5 answers the first unanswered statement on the page, Enter goes to the next page.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement || e.metaKey || e.ctrlKey || e.altKey) return;
+      // Enter on a focused button or link already activates it (an answer, Back…); don't also change page.
+      if (e.key === 'Enter' && (t instanceof HTMLButtonElement || t instanceof HTMLAnchorElement)) return;
       if (/^[1-5]$/.test(e.key)) {
         const next = items.find((q) => !answers[q.id]);
         if (next) onAnswer(next.id, Number(e.key));
