@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 /**
  * Hardened cookie writes (HttpOnly, SameSite=Lax, Secure in production).

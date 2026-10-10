@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Database;
+use Transenigma\Core\Database;
 
 /**
  * Typed access to the `settings` table. Every setting is declared here with its
@@ -115,7 +115,7 @@ final class SettingsService
                     $clean[$key] = $value;
                     break;
                 default:
-                    $value = is_string($value) ? \Wellness\Core\Validator::cleanString($value) : '';
+                    $value = is_string($value) ? \Transenigma\Core\Validator::cleanString($value) : '';
                     if (mb_strlen($value) > ($def['max'] ?? 255) || ($key === 'site_name' && $value === '')) {
                         $errors[$key] = 'Please enter a valid value (max ' . ($def['max'] ?? 255) . ' characters).';
                         continue 2;
@@ -124,7 +124,7 @@ final class SettingsService
             }
         }
         if ($errors) {
-            throw \Wellness\Core\HttpException::validation($errors);
+            throw \Transenigma\Core\HttpException::validation($errors);
         }
         foreach ($clean as $key => $value) {
             Database::run(

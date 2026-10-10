@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 use RuntimeException;
 
 /**
  * Loads config.php. Lookup order (PRD §6.2):
- *   1. path in the WELLNESS_CONFIG environment variable
- *   2. ../../wellness-config/config.php  (sibling of the web root — production)
+ *   1. path in the TRANSENIGMA_CONFIG environment variable
+ *   2. ../../transenigma-config/config.php  (sibling of the web root — production)
  *   3. api/config/config.local.php       (local development; denied by .htaccess)
  */
 final class Config
@@ -19,8 +19,8 @@ final class Config
     public static function load(): void
     {
         $candidates = array_filter([
-            getenv('WELLNESS_CONFIG') ?: null,
-            dirname(API_ROOT, 2) . '/wellness-config/config.php',
+            getenv('TRANSENIGMA_CONFIG') ?: null,
+            dirname(API_ROOT, 2) . '/transenigma-config/config.php',
             API_ROOT . '/config/config.local.php',
         ]);
 

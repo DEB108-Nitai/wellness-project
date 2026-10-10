@@ -16,9 +16,9 @@ if (PHP_SAPI !== 'cli') {
 
 require dirname(__DIR__) . '/bootstrap.php';
 
-use Wellness\Repositories\UserRepository;
-use Wellness\Services\AuditService;
-use Wellness\Services\PasswordPolicy;
+use Transenigma\Repositories\UserRepository;
+use Transenigma\Services\AuditService;
+use Transenigma\Services\PasswordPolicy;
 
 $email = mb_strtolower(trim($argv[1] ?? ''));
 $name = trim($argv[2] ?? '');

@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Validator;
-use Wellness\Services\AuthService;
-use Wellness\Services\ChallengeService;
-use Wellness\Services\SpamGuard;
-use Wellness\Support\Countries;
-use Wellness\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Validator;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\ChallengeService;
+use Transenigma\Services\SpamGuard;
+use Transenigma\Support\Countries;
+use Transenigma\Core\HttpException;
 
 final class ChallengeController
 {

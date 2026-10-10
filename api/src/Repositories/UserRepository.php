@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Repositories;
+namespace Transenigma\Repositories;
 
-use Wellness\Core\Database;
+use Transenigma\Core\Database;
 
 final class UserRepository
 {

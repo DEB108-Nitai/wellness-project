@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 /**
  * Splits a migration file into individual statements on ';' while respecting

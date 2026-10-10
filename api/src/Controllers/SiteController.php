@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Validator;
-use Wellness\Services\SiteService;
-use Wellness\Services\SpamGuard;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Validator;
+use Transenigma\Services\SiteService;
+use Transenigma\Services\SpamGuard;
 
 final class SiteController
 {

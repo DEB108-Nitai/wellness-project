@@ -5,8 +5,10 @@ import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, process.cwd(), '');
-  // Where XAMPP serves the PHP API locally. Production serves the SPA and /api from the same domain.
-  const apiTarget = env.WELLNESS_API_TARGET || 'http://localhost/wellness-project-1';
+  // Where XAMPP serves the PHP API locally: http://localhost/<this project's folder name>, so it keeps
+  // working if the folder is renamed. Override with TRANSENIGMA_API_TARGET (e.g. in .env.local).
+  // Production serves the SPA and /api from the same domain.
+  const apiTarget = env.TRANSENIGMA_API_TARGET || `http://localhost/${path.basename(__dirname)}`;
 
   return {
     plugins: [react(), tailwindcss()],

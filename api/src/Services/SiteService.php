@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Config;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
+use Transenigma\Core\Config;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
 
 /**
  * Contact form, newsletter and FAQ (PRD §4.5 SITE-1 … SITE-3).

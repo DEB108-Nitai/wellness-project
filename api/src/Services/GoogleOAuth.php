@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 use RuntimeException;
-use Wellness\Core\Config;
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Core\Session;
-use Wellness\Repositories\UserRepository;
+use Transenigma\Core\Config;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Core\Session;
+use Transenigma\Repositories\UserRepository;
 
 /**
  * "Continue with Google" — OAuth 2.0 Authorization Code flow with state + PKCE,

@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Validator;
-use Wellness\Services\AuthService;
-use Wellness\Services\PasswordPolicy;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Validator;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\PasswordPolicy;
 
 final class AuthController
 {

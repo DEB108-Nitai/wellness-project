@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 use Throwable;
-use Wellness\Services\SettingsService;
+use Transenigma\Services\SettingsService;
 
 /**
  * Runs a request through the route's guards (maintenance → CSRF → auth),

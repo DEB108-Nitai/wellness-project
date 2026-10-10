@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\Config;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Core\Session;
-use Wellness\Repositories\UserRepository;
-use Wellness\Services\AuthService;
-use Wellness\Services\GoogleOAuth;
-use Wellness\Services\Mailer;
-use Wellness\Services\PasswordPolicy;
-use Wellness\Services\TokenService;
+use Transenigma\Core\Config;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Core\Session;
+use Transenigma\Repositories\UserRepository;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\GoogleOAuth;
+use Transenigma\Services\Mailer;
+use Transenigma\Services\PasswordPolicy;
+use Transenigma\Services\TokenService;
 
 // ------------------------------------------------------------------ password policy
 test('password policy rejects short, common, repetitive and email passwords', function () {
@@ -211,12 +211,12 @@ test('sign-up respects the signup_open setting', function () {
     useTestDatabase();
     freshSession();
     Database::run("UPDATE settings SET value = '0' WHERE setting_key = 'signup_open'");
-    \Wellness\Services\SettingsService::flush();
+    \Transenigma\Services\SettingsService::flush();
     try {
         assertSame('SIGNUP_CLOSED', assertThrows(HttpException::class, fn () => AuthService::register('Closed', uniqueEmail(), GOOD_PASSWORD, authReq()))->errorCode);
     } finally {
         Database::run("UPDATE settings SET value = '1' WHERE setting_key = 'signup_open'");
-        \Wellness\Services\SettingsService::flush();
+        \Transenigma\Services\SettingsService::flush();
     }
 });
 
@@ -295,19 +295,19 @@ test('google callback rejects bad state, wrong audience, unverified email and op
     assertSame('/', GoogleOAuth::safeNext('//evil.example/path'));
     assertSame('/', GoogleOAuth::safeNext('https://evil.example'));
     assertSame('/', GoogleOAuth::safeNext('/\\evil.example'));
-    assertSame('/results/WL-ABC123?x=1', GoogleOAuth::safeNext('/results/WL-ABC123?x=1'));
+    assertSame('/results/TE-ABC123?x=1', GoogleOAuth::safeNext('/results/TE-ABC123?x=1'));
 });
 
 // ------------------------------------------------------------------ email templates
 test('email templates render escaped HTML and plain text', function () {
     useTestDatabase();
-    $msg = Mailer::render('verify-email', ['name' => '<script>x</script>', 'url' => 'https://example.com/verify-email?token=a&b', 'siteName' => 'Wellness', 'siteUrl' => 'https://example.com', 'supportEmail' => 'help@example.com']);
+    $msg = Mailer::render('verify-email', ['name' => '<script>x</script>', 'url' => 'https://example.com/verify-email?token=a&b', 'siteName' => 'Transenigma', 'siteUrl' => 'https://example.com', 'supportEmail' => 'help@example.com']);
     assertTrue(!str_contains($msg['html'], '<script>x</script>'), 'name must be escaped');
     assertTrue(str_contains($msg['html'], '&lt;script&gt;'));
     assertTrue(str_contains($msg['html'], 'token=a&amp;b'));
     assertTrue(str_contains($msg['text'], 'https://example.com/verify-email?token=a&b'));
     foreach (['reset-password', 'password-changed'] as $t) {
-        $m = Mailer::render($t, ['name' => 'A', 'url' => 'https://x', 'siteName' => 'Wellness', 'siteUrl' => 'https://x', 'supportEmail' => '']);
+        $m = Mailer::render($t, ['name' => 'A', 'url' => 'https://x', 'siteName' => 'Transenigma', 'siteUrl' => 'https://x', 'supportEmail' => '']);
         assertTrue($m['subject'] !== '' && $m['text'] !== '' && str_contains($m['html'], '<html'));
     }
     assertThrows(RuntimeException::class, fn () => Mailer::render('../config/config.local', []));

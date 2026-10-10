@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 /**
  * Password rules (PRD AUTH-1): 8–128 characters, not a commonly used password,

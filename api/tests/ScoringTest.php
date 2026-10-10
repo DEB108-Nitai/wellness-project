@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Repositories\PsychometricRepository;
-use Wellness\Services\QualityService;
-use Wellness\Services\ScoringService;
+use Transenigma\Repositories\PsychometricRepository;
+use Transenigma\Services\QualityService;
+use Transenigma\Services\ScoringService;
 
 /** item_code => item id for the active item set */
 function itemIdsByCode(): array

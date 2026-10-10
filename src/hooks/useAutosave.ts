@@ -7,7 +7,7 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
 const DEBOUNCE_MS = 800;
 const RETRY_MS = 15_000;
 const MAX_PER_REQUEST = 60; // matches the API limit
-const pendingKey = (ref: string) => `wl_pending_${ref}`;
+const pendingKey = (ref: string) => `te_pending_${ref}`;
 
 function readPending(ref: string): Record<string, number> {
   try {

@@ -23,4 +23,4 @@ node tests/e2e/research-page.mjs
 node tests/e2e/phase4-flow.mjs admin@example.com "<password>"
 ```
 
-The scripts create real records in the local `wellness16pf` database (accounts with `@example.com` addresses). Delete them afterwards; see `docs/PROGRESS.md` §8.
+The scripts create real records in the local `transenigma` database (accounts with `@example.com` addresses). Delete them afterwards; see `docs/PROGRESS.md` §8.

@@ -4,13 +4,13 @@
  */
 declare(strict_types=1);
 
-use Wellness\Core\HttpException;
-use Wellness\Core\Kernel;
-use Wellness\Core\Logger;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Router;
-use Wellness\Services\AuthService;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Kernel;
+use Transenigma\Core\Logger;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Router;
+use Transenigma\Services\AuthService;
 
 try {
     require __DIR__ . '/bootstrap.php';

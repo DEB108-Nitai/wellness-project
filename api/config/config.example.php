@@ -1,10 +1,10 @@
 <?php
 /**
- * Wellness API configuration — TEMPLATE.
+ * Transenigma API configuration — TEMPLATE.
  *
  * Local (XAMPP):  copy to api/config/config.local.php
- * Production:     copy to ../wellness-config/config.php  (one level ABOVE the web root,
- *                 e.g. /home/<user>/wellness-config/config.php next to /home/<user>/<domain>/)
+ * Production:     copy to ../transenigma-config/config.php  (one level ABOVE the web root,
+ *                 e.g. /home/<user>/transenigma-config/config.php next to /home/<user>/<domain>/)
  *
  * Never commit the real file. Generate secrets with:
  *   php -r "echo bin2hex(random_bytes(32)), PHP_EOL;"
@@ -22,14 +22,14 @@ return [
     'db' => [
         'host' => 'localhost',                  // DreamHost: e.g. mysql.yourdomain.com
         'port' => 3306,
-        'name' => 'wellness16pf',
-        'user' => 'wellness16pf_app',
+        'name' => 'transenigma',
+        'user' => 'transenigma_app',
         'pass' => '',
     ],
 
     // Separate database used only by `php api/tests/run.php` (wiped on every run).
     'db_test' => [
-        'name' => 'wellness16pf_test',
+        'name' => 'transenigma_test',
     ],
 
     'session' => [

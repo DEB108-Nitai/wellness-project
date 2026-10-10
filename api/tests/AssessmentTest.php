@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\Cookies;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Repositories\PsychometricRepository;
-use Wellness\Repositories\UserRepository;
-use Wellness\Services\AssessmentService;
-use Wellness\Services\AuthService;
-use Wellness\Services\ResultsService;
+use Transenigma\Core\Cookies;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Repositories\PsychometricRepository;
+use Transenigma\Repositories\UserRepository;
+use Transenigma\Services\AssessmentService;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\ResultsService;
 
 // ------------------------------------------------------------------ helpers
 function asGuest(): void
@@ -66,7 +66,7 @@ test('a guest can start, gets an HttpOnly guest cookie, and resumes the same ses
     useTestDatabase();
     asGuest();
     $state = AssessmentService::start(demographics(), testRequest());
-    assertTrue((bool) preg_match('/^WL-[2-9A-HJ-NP-Z]{6}$/', $state['ref']));
+    assertTrue((bool) preg_match('/^TE-[2-9A-HJ-NP-Z]{6}$/', $state['ref']));
     assertTrue(isset(Cookies::$jar[AssessmentService::GUEST_COOKIE]), 'guest cookie not set');
     assertSame(166, $state['totalItems']);
 

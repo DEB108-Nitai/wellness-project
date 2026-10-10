@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 /**
  * Allow-list input validation. Every API input passes through here (PRD §5.1).

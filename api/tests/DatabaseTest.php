@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\Config;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Services\SettingsService;
+use Transenigma\Core\Config;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Services\SettingsService;
 
 test('migrations create the full schema in the test database', function () {
     useTestDatabase();

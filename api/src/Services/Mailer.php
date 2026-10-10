@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 use PHPMailer\PHPMailer\PHPMailer;
 use RuntimeException;
 use Throwable;
-use Wellness\Core\Config;
-use Wellness\Core\Database;
-use Wellness\Core\Logger;
+use Transenigma\Core\Config;
+use Transenigma\Core\Database;
+use Transenigma\Core\Logger;
 
 /**
  * Sends templated emails (api/templates/email/*.php).

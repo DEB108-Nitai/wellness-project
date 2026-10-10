@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Validator;
-use Wellness\Repositories\PsychometricRepository;
-use Wellness\Services\AssessmentService;
-use Wellness\Services\AuthService;
-use Wellness\Services\SettingsService;
-use Wellness\Support\Countries;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Validator;
+use Transenigma\Repositories\PsychometricRepository;
+use Transenigma\Services\AssessmentService;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\SettingsService;
+use Transenigma\Support\Countries;
 
 final class AssessmentController
 {

@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\HttpException;
+use Transenigma\Core\HttpException;
 
 /**
  * Lightweight bot protection for public forms (PRD SITE-1): a hidden honeypot

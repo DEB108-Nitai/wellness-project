@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Database;
+use Transenigma\Core\Database;
 
 /**
  * Public Transenigma company content: Our Team, TERF research and consultancy projects.

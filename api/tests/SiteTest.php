@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Services\ChallengeService;
-use Wellness\Services\SettingsService;
-use Wellness\Services\SiteService;
-use Wellness\Services\SpamGuard;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Services\ChallengeService;
+use Transenigma\Services\SettingsService;
+use Transenigma\Services\SiteService;
+use Transenigma\Services\SpamGuard;
 
 function registration(array $overrides = []): array
 {

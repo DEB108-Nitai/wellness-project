@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\HttpException;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Services\AssessmentService;
-use Wellness\Services\AuditService;
-use Wellness\Services\AuthService;
-use Wellness\Services\ResultsService;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Services\AssessmentService;
+use Transenigma\Services\AuditService;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\ResultsService;
 
 final class ResultsController
 {

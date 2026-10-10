@@ -8,7 +8,7 @@ const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function launch(port = 9333) {
-  const profile = mkdtempSync(join(tmpdir(), 'wl-e2e-'));
+  const profile = mkdtempSync(join(tmpdir(), 'te-e2e-'));
   const proc = spawn(CHROME, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--window-size=1280,900', 'about:blank',

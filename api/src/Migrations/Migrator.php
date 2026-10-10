@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Migrations;
+namespace Transenigma\Migrations;
 
 use RuntimeException;
 use Throwable;
-use Wellness\Core\Database;
-use Wellness\Core\SqlSplitter;
+use Transenigma\Core\Database;
+use Transenigma\Core\SqlSplitter;
 
 final class Migrator
 {

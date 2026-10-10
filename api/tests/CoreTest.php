@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\HttpException;
-use Wellness\Core\Router;
-use Wellness\Core\SqlSplitter;
-use Wellness\Core\Validator;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Router;
+use Transenigma\Core\SqlSplitter;
+use Transenigma\Core\Validator;
 
 // ------------------------------------------------------------------ Validator
 test('validator cleans, lower-cases email and drops unknown keys', function () {
@@ -47,16 +47,16 @@ test('validator enforces string length on multibyte text', function () {
 // ------------------------------------------------------------------ Router
 test('router matches params, 404s unknown paths and 405s wrong methods', function () {
     $r = new Router();
-    $r->get('/results/{ref:WL-[A-Z0-9]{6}}', fn () => 'ok', ['auth' => 'user']);
+    $r->get('/results/{ref:TE-[A-Z0-9]{6}}', fn () => 'ok', ['auth' => 'user']);
     $r->post('/contact', fn () => 'ok');
 
-    $m = $r->match('GET', '/results/WL-AB12CD');
-    assertSame(['ref' => 'WL-AB12CD'], $m['params']);
+    $m = $r->match('GET', '/results/TE-AB12CD');
+    assertSame(['ref' => 'TE-AB12CD'], $m['params']);
     assertSame('user', $m['options']['auth']);
     assertSame(true, $m['options']['csrf']);
 
     assertSame(404, assertThrows(HttpException::class, fn () => $r->match('GET', '/results/../etc'))->status);
-    assertSame(404, assertThrows(HttpException::class, fn () => $r->match('GET', '/results/WL-short'))->status);
+    assertSame(404, assertThrows(HttpException::class, fn () => $r->match('GET', '/results/TE-short'))->status);
     $e = assertThrows(HttpException::class, fn () => $r->match('GET', '/contact'));
     assertSame(405, $e->status);
     assertSame('POST', $e->headers['Allow']);

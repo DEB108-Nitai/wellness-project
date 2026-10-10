@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Database;
+use Transenigma\Core\Database;
 
 /**
  * Single-use emailed tokens (verify email, reset password). Only a SHA-256 hash

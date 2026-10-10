@@ -91,7 +91,7 @@ try {
   await page.screenshot(`${OUT}05-review.png`);
   await page.clickText('Submit and calculate my profile', 'button');
   await page.waitText('Your profile is ready', 20000);
-  const ref = await page.eval(`document.body.innerText.match(/WL-[2-9A-HJ-NP-Z]{6}/)[0]`);
+  const ref = await page.eval(`document.body.innerText.match(/TE-[2-9A-HJ-NP-Z]{6}/)[0]`);
   await page.screenshot(`${OUT}06-completed-gate.png`, true);
   step(`submitted ${ref}; results locked for guest`);
 

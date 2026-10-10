@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Validator;
-use Wellness\Services\AuditService;
-use Wellness\Services\AuthService;
-use Wellness\Services\ChallengeService;
-use Wellness\Services\SettingsService;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Validator;
+use Transenigma\Services\AuditService;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\ChallengeService;
+use Transenigma\Services\SettingsService;
 
 /**
  * Admin endpoints delivered in Phase 4 (registrations + settings).

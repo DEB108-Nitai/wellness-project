@@ -1,4 +1,4 @@
-# Wellness — Project Status & Handover
+# Transenigma — Project Status & Handover
 
 The single document to restart this project from scratch if all context is lost. **Update it at the end of every phase.**
 Related: [PRD.md](PRD.md) (the agreed specification) · [DEVELOPMENT.md](DEVELOPMENT.md) (local setup and commands) · [`tests/e2e/README.md`](../tests/e2e/README.md) (browser tests)
@@ -23,7 +23,7 @@ _Last updated: 2026-10-05. **Phases 0–4 complete and committed.** Next: Phase 
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
 4. **Git:** branch `feature/backend-foundation-auth`. Commits: `e128497` (Phases 1–2), `a1e342b` (Phase 3), then the Phase 4 commit ("feat: 60-day challenges STI/PTI/TTI…", see `git log`).
-5. **Local databases:** `wellness16pf` (app) and `wellness16pf_test` (wiped by every test run). **Never touch** `wellness` / `wellness_test`; they belong to the separate older folder `htdocs/wellness-project`.
+5. **Local databases:** `transenigma` (app) and `transenigma_test` (wiped by every test run). **Never touch** `wellness` / `wellness_test`; they belong to the separate older folder `htdocs/wellness-project`. The old `wellness16pf` / `wellness16pf_test` are a pre-rename backup (2026-10-09).
 6. **Local admin account:** created by the owner with `api/bin/create-admin.php` (id 1). Test data from browser runs is always deleted afterwards.
 
 ---
@@ -241,7 +241,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 ---
 
 ## 10. Testing
-- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **54 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `wellness16pf_test` database, which is wiped on every run.
+- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **54 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
 - **Browser:** `tests/e2e/guest-flow.mjs` and `tests/e2e/phase4-flow.mjs`. Both passed at the end of their phases. `tests/e2e/challenge-shots.mjs` captures the three program blocks at desktop and phone widths for a visual check.
 - **Frontend:** `npm run lint` (TypeScript) and `npm run build`.
 

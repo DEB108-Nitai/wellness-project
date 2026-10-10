@@ -16,9 +16,9 @@ if (PHP_SAPI !== 'cli') {
 
 require dirname(__DIR__) . '/bootstrap.php';
 
-use Wellness\Core\Config;
-use Wellness\Core\Database;
-use Wellness\Migrations\Migrator;
+use Transenigma\Core\Config;
+use Transenigma\Core\Database;
+use Transenigma\Migrations\Migrator;
 
 // ------------------------------------------------------------------ test API
 final class AssertionFailed extends RuntimeException

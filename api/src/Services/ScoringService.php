@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 use RuntimeException;
-use Wellness\Repositories\PsychometricRepository;
+use Transenigma\Repositories\PsychometricRepository;
 
 /**
  * 16PF scoring (PRD §3.3). Runs only on the server; the browser never computes scores.

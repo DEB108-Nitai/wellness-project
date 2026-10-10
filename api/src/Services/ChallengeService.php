@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 use PDOException;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
 
 /**
  * 60-Day Challenge registrations for STI, TTI and PTI (PRD §4.4 CH-1 … CH-8).

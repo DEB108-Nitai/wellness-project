@@ -13,7 +13,7 @@ if (PHP_VERSION_ID < 80200) {
 
 spl_autoload_register(static function (string $class): void {
     $map = [
-        'Wellness\\' => API_ROOT . '/src/',
+        'Transenigma\\' => API_ROOT . '/src/',
         'PHPMailer\\PHPMailer\\' => API_ROOT . '/lib/PHPMailer/', // bundled, see lib/PHPMailer/VERSION
     ];
     foreach ($map as $prefix => $dir) {
@@ -38,8 +38,8 @@ set_error_handler(static function (int $severity, string $message, string $file,
     throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
-\Wellness\Core\Config::load();
+\Transenigma\Core\Config::load();
 
-ini_set('display_errors', \Wellness\Core\Config::bool('app.debug') && PHP_SAPI === 'cli' ? '1' : '0');
+ini_set('display_errors', \Transenigma\Core\Config::bool('app.debug') && PHP_SAPI === 'cli' ? '1' : '0');
 ini_set('log_errors', '1');
-ini_set('error_log', \Wellness\Core\Config::path('logs') . '/php-error.log');
+ini_set('error_log', \Transenigma\Core\Config::path('logs') . '/php-error.log');

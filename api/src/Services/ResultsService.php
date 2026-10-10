@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Repositories\PsychometricRepository;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Repositories\PsychometricRepository;
 
 /**
  * Results reports, history and share links (PRD §4.3 RES-1 … RES-5).

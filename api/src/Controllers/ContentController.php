@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Services\ContentService;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Services\ContentService;
 
 /** Public Transenigma company content (slice S5). */
 final class ContentController

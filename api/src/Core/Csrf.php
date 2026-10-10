@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 /**
  * Synchronizer-token CSRF protection (PRD AUTH-8).

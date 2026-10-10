@@ -2,8 +2,10 @@ import React, { useRef, useState } from 'react';
 import { Mail, Send, CheckCircle2, MessageSquare, Shield, Clock } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { siteApi } from '../../api/site';
+import { useSettings } from '../../context/SettingsContext';
 
 export const ContactView: React.FC = () => {
+  const { settings } = useSettings();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -63,13 +65,17 @@ export const ContactView: React.FC = () => {
           </p>
 
           <div className="space-y-4 text-xs text-slate-300 pt-2 border-t border-slate-800">
-            <div className="flex items-start gap-3">
-              <Mail className="w-4 h-4 text-teal-400 mt-0.5" />
-              <div>
-                <span className="font-semibold text-white block">Email Support</span>
-                <span>support@wellness16pf.org</span>
+            {settings.support_email && (
+              <div className="flex items-start gap-3">
+                <Mail className="w-4 h-4 text-teal-400 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-white block">Email Support</span>
+                  <a href={`mailto:${settings.support_email}`} className="hover:text-white underline-offset-4 hover:underline">
+                    {settings.support_email}
+                  </a>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="flex items-start gap-3">
               <Clock className="w-4 h-4 text-teal-400 mt-0.5" />

@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Wellness\Core\Database;
-use Wellness\Services\ContentService;
+use Transenigma\Core\Database;
+use Transenigma\Services\ContentService;
 
 test('team lists the 6 people from the old homepage, in order, with photos and credentials', function () {
     useTestDatabase();

@@ -5,14 +5,14 @@ export const CookieNotice: React.FC = () => {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const accepted = localStorage.getItem('wellness_cookies_accepted');
+    const accepted = localStorage.getItem('te_cookies_accepted');
     if (!accepted) {
       setVisible(true);
     }
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem('wellness_cookies_accepted', 'true');
+    localStorage.setItem('te_cookies_accepted', 'true');
     setVisible(false);
   };
 

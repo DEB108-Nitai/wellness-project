@@ -1,8 +1,8 @@
-# Wellness — Product Requirements Document (PRD)
+# Transenigma — Product Requirements Document (PRD)
 
 | | |
 |---|---|
-| **Product** | Wellness: 16 Personality Factors assessment + 60-Day Transformation Challenges (STI, PTI & TTI) |
+| **Product** | Transenigma (formerly "Wellness"): 16 Personality Factors assessment + 60-Day Transformation Challenges (STI, PTI & TTI) |
 | **Version** | 1.3 (third program PTI added — owner request 2026-10-05) |
 | **Date** | 2026-10-03 |
 | **Stack** | React 19 + Vite + Tailwind (static build) · PHP 8.2+ (plain, no framework) · MySQL 8 / MariaDB 10.4+ |
@@ -147,7 +147,7 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 | AUTH-4 | **Google sign-in:** OAuth 2.0 Authorization Code flow with `state` and PKCE, handled entirely by PHP (`/api/auth/google/start` → Google → `/api/auth/google/callback`). The `id_token` claims (`iss`, `aud`, `exp`, `email_verified`) are validated. The account is matched by `google_sub` first, then by verified email; if neither matches, a new account is created. A Google-only account has no password until the user sets one through "forgot password". **(F3)** |
 | AUTH-5 | **Email verification:** a link is emailed at sign-up (single use, valid 48 h). It does **not** block use of the site (see open point O-1). Users can request a new link from their account. |
 | AUTH-6 | **Forgot / reset password:** always responds "If an account exists, we've emailed a link". The emailed token is single use, valid 60 minutes, and stored only as a SHA-256 hash. A successful reset signs out all of that user's other sessions. **(F6)** |
-| AUTH-7 | **Sessions:** native PHP sessions stored server-side. Cookie `wl_sid` has `HttpOnly`, `Secure` (in production) and `SameSite=Lax`. The session ID is regenerated at sign-in. Lifetime is 30 days, renewed on activity; admins have a 12 h idle timeout. |
+| AUTH-7 | **Sessions:** native PHP sessions stored server-side. Cookie `te_sid` has `HttpOnly`, `Secure` (in production) and `SameSite=Lax`. The session ID is regenerated at sign-in. Lifetime is 30 days, renewed on activity; admins have a 12 h idle timeout. |
 | AUTH-8 | **CSRF:** a token is issued per session (returned by `GET /api/auth/me`) and must be sent as the `X-CSRF-Token` header on every request that changes data. The `Origin` header must match the site. |
 | AUTH-9 | **Sign out** destroys the server session. The UI updates immediately through a global auth context. **(F20)** |
 | AUTH-10 | **Roles:** `user` or `admin`. The first admin is created from the command line (`php api/bin/create-admin.php you@domain.com`). After that, admins can promote or demote users from the console. No email pattern ever grants a role. **(F2)** |
@@ -160,7 +160,7 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 |---|---|
 | TEST-1 | **Consent step:** two required checkboxes (terms/privacy; "not a clinical diagnosis") plus a clear notice that **anonymised responses are retained for research**. The consent version and timestamp are stored. The Terms and Privacy links open in a modal or new tab so the person doesn't lose their place. **(F14)** |
 | TEST-2 | **Demographics:** country (full ISO 3166 list), age (18 up to 100; the `min_age` setting cannot go below 18), gender (+ optional self-describe text), optional nickname, education and occupation. All are validated on the server. **(F10)** |
-| TEST-3 | **Start:** creates a `test_session` with a public reference `WL-XXXXXX` (6 characters from a 32-character alphabet that avoids lookalikes such as 0/O and 1/I, generated with a cryptographically secure random function and guaranteed unique). For a guest, a random 32-byte guest token is set in the `wl_guest` cookie (HttpOnly, 30 days) and stored only as a hash. For a signed-in user, the session is linked to `user_id`. |
+| TEST-3 | **Start:** creates a `test_session` with a public reference `TE-XXXXXX` (6 characters from a 32-character alphabet that avoids lookalikes such as 0/O and 1/I, generated with a cryptographically secure random function and guaranteed unique). For a guest, a random 32-byte guest token is set in the `te_guest` cookie (HttpOnly, 30 days) and stored only as a hash. For a signed-in user, the session is linked to `user_id`. |
 | TEST-4 | **One active session:** each user or guest has at most one `in_progress` session. Opening `/test` with one in progress offers **Resume (x %)** or **Start over**. "Start over" marks the old session `abandoned`; it is kept, not deleted. **(F12, F13)** |
 | TEST-5 | **Autosave:** answers are sent in batches (about 800 ms after the last click, and immediately when the page changes) to `PUT /api/test/session/answers`, together with the current page and the real seconds spent on it. The server accepts only values 1–5 and item IDs from the session's item set, and only for the session's owner. The UI shows "Saving… / Saved ✓ / Offline – will retry". Unsent answers are queued in the browser and retried once the connection is back. **(F13)** |
 | TEST-6 | **Resume:** a signed-in user can resume on any device. A guest can resume on the same browser through the cookie. If a guest signs in mid-test, the guest session is attached to their account. |
@@ -264,7 +264,7 @@ All lists are paginated, searched and filtered **on the server** (25 per page by
 
 ### 6.1 Repository layout
 ```
-wellness-project-1/
+transenigma/
 ├─ src/                      React app (existing, refactored)
 │  ├─ api/                   typed API client (fetch wrapper, CSRF, errors)
 │  ├─ context/               AuthContext, SettingsContext
@@ -292,8 +292,8 @@ wellness-project-1/
 
 ### 6.2 Request flow
 - **Production:** `https://domain/` serves the built SPA (`dist/`); any unknown path falls back to `index.html`. `https://domain/api/...` is handled by `api/index.php`.
-- **Local:** Vite dev server (port 3000) proxies `/api` to `http://localhost/wellness-project-1/api` (XAMPP Apache). The same PHP code runs locally and in production.
-- **Config file:** `config.php` is found in this order: the `WELLNESS_CONFIG` env var path, then `../wellness-config/config.php` (outside the web root), then `api/config/config.local.php` (local development only; blocked by `.htaccess`).
+- **Local:** Vite dev server (port 3000) proxies `/api` to `http://localhost/transenigma/api` (XAMPP Apache). The same PHP code runs locally and in production.
+- **Config file:** `config.php` is found in this order: the `TRANSENIGMA_CONFIG` env var path, then `../transenigma-config/config.php` (outside the web root), then `api/config/config.local.php` (local development only; blocked by `.htaccess`).
 
 ### 6.3 API conventions
 - JSON in and out; UTF-8. Success: `{ "ok": true, "data": … }`. Error: `{ "ok": false, "error": { "code": "VALIDATION_ERROR", "message": "…", "fields": { "email": "…" } } }`.

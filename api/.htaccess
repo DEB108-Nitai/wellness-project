@@ -1,4 +1,4 @@
-# Wellness API — route every request to the front controller.
+# Transenigma API — route every request to the front controller.
 Options -Indexes -MultiViews
 DirectoryIndex index.php
 

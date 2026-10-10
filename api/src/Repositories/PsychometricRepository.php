@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Repositories;
+namespace Transenigma\Repositories;
 
 use RuntimeException;
-use Wellness\Core\Database;
+use Transenigma\Core\Database;
 
 /**
  * Read-only access to item sets, factor metadata and norms (cached per request).

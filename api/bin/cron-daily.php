@@ -12,9 +12,9 @@ if (PHP_SAPI !== 'cli') {
 
 require dirname(__DIR__) . '/bootstrap.php';
 
-use Wellness\Core\Database;
-use Wellness\Core\Logger;
-use Wellness\Services\AssessmentService;
+use Transenigma\Core\Database;
+use Transenigma\Core\Logger;
+use Transenigma\Services\AssessmentService;
 
 $expired = AssessmentService::expireInactive();
 $tokens = Database::run('DELETE FROM auth_tokens WHERE expires_at < UTC_TIMESTAMP() - INTERVAL 7 DAY')->rowCount();

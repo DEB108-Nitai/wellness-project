@@ -7,11 +7,11 @@
 ## First-time setup
 1. Create the databases and a dedicated user (MySQL `root` has no password on a default XAMPP):
    ```sql
-   CREATE DATABASE wellness16pf      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE DATABASE wellness16pf_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'wellness16pf_app'@'localhost' IDENTIFIED BY '<password>';
-   GRANT ALL PRIVILEGES ON wellness16pf.*      TO 'wellness16pf_app'@'localhost';
-   GRANT ALL PRIVILEGES ON wellness16pf_test.* TO 'wellness16pf_app'@'localhost';
+   CREATE DATABASE transenigma      CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE DATABASE transenigma_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'transenigma_app'@'localhost' IDENTIFIED BY '<password>';
+   GRANT ALL PRIVILEGES ON transenigma.*      TO 'transenigma_app'@'localhost';
+   GRANT ALL PRIVILEGES ON transenigma_test.* TO 'transenigma_app'@'localhost';
    ```
 2. Copy `api/config/config.example.php` to `api/config/config.local.php`. Set `db.pass`, and set `app.secret` to the output of
    `php -r "echo bin2hex(random_bytes(32));"`.
@@ -36,17 +36,17 @@
 | Task | Command |
 |---|---|
 | Frontend dev server (http://localhost:3000; `/api` is proxied to XAMPP) | `npm run dev` |
-| API directly through Apache | http://localhost/wellness-project-1/api/health |
+| API directly through Apache | http://localhost/transenigma/api/health |
 | Apply new migrations | `C:\xampp\php\php.exe api\bin\migrate.php` |
 | Migration status | `C:\xampp\php\php.exe api\bin\migrate.php --status` |
 | Rebuild the local DB from scratch | `C:\xampp\php\php.exe api\bin\migrate.php --fresh` |
-| API tests (uses `wellness16pf_test`, wiped each run) | `C:\xampp\php\php.exe api\tests\run.php` |
+| API tests (uses `transenigma_test`, wiped each run) | `C:\xampp\php\php.exe api\tests\run.php` |
 | Daily housekeeping (expire stale tests, purge old tokens) | `C:\xampp\php\php.exe api\bin\cron-daily.php` |
 | Type-check the frontend | `npm run lint` |
 | Browser end-to-end tests (dev server must be running) | see `tests/e2e/README.md` |
 | Production build (outputs `dist/`, including `.htaccess`) | `npm run build` |
 
-If XAMPP serves the project from a different URL, set `WELLNESS_API_TARGET` (for example in `.env.local`) to that URL without the `/api` suffix.
+If XAMPP serves the project from a different URL, set `TRANSENIGMA_API_TARGET` (for example in `.env.local`) to that URL without the `/api` suffix.
 
 ## Regenerating psychometric reference data
 `database/migrations/002_reference_data.sql` is generated. Do not edit it by hand.

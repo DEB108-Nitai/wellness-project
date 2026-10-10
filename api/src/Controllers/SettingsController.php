@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Services\SettingsService;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Services\SettingsService;
 
 final class SettingsController
 {

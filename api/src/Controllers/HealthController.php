@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
 use Throwable;
-use Wellness\Core\Database;
-use Wellness\Core\Logger;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
+use Transenigma\Core\Database;
+use Transenigma\Core\Logger;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
 
 final class HealthController
 {

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Core;
+namespace Transenigma\Core;
 
 /**
  * Server-side PHP session with hardened cookie settings (PRD AUTH-7).
@@ -9,7 +9,7 @@ namespace Wellness\Core;
  */
 final class Session
 {
-    public const COOKIE = 'wl_sid';
+    public const COOKIE = 'te_sid';
 
     private static bool $started = false;
 

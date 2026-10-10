@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 /**
  * Response-quality flags (PRD §3.4). A flagged session is still scored.

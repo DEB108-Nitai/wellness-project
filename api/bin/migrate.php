@@ -16,8 +16,8 @@ if (PHP_SAPI !== 'cli') {
 
 require dirname(__DIR__) . '/bootstrap.php';
 
-use Wellness\Core\Config;
-use Wellness\Migrations\Migrator;
+use Transenigma\Core\Config;
+use Transenigma\Migrations\Migrator;
 
 $args = array_slice($argv, 1);
 if (in_array('--test', $args, true)) {

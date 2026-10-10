@@ -1,26 +1,26 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
 use PDOException;
-use Wellness\Core\Cookies;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
-use Wellness\Repositories\PsychometricRepository;
+use Transenigma\Core\Cookies;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
+use Transenigma\Repositories\PsychometricRepository;
 
 /**
  * Assessment session lifecycle (PRD §4.2 TEST-1 … TEST-12).
  *
  * Ownership: a signed-in user owns sessions with their user_id; a guest owns
- * sessions whose guest_token_hash matches the HttpOnly `wl_guest` cookie.
+ * sessions whose guest_token_hash matches the HttpOnly `te_guest` cookie.
  * Guest sessions are attached to the account when the guest signs in (TEST-9).
  */
 final class AssessmentService
 {
-    public const GUEST_COOKIE = 'wl_guest';
+    public const GUEST_COOKIE = 'te_guest';
     private const GUEST_COOKIE_DAYS = 30;
     private const INACTIVE_DAYS = 30;
     private const MAX_PAGE_SECONDS = 900;      // per save; idle time beyond this is not counted
@@ -78,7 +78,7 @@ final class AssessmentService
 
     public static function byRef(string $ref): ?array
     {
-        if (!preg_match('/^WL-[' . self::REF_ALPHABET . ']{6}$/', $ref)) {
+        if (!preg_match('/^TE-[' . self::REF_ALPHABET . ']{6}$/', $ref)) {
             return null;
         }
         return Database::one('SELECT * FROM test_sessions WHERE public_ref = ?', [$ref]);
@@ -353,7 +353,7 @@ final class AssessmentService
 
     private static function newRef(): string
     {
-        $ref = 'WL-';
+        $ref = 'TE-';
         for ($i = 0; $i < 6; $i++) {
             $ref .= self::REF_ALPHABET[random_int(0, strlen(self::REF_ALPHABET) - 1)];
         }

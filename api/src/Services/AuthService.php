@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Services;
+namespace Transenigma\Services;
 
-use Wellness\Core\Config;
-use Wellness\Core\Csrf;
-use Wellness\Core\Database;
-use Wellness\Core\HttpException;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
-use Wellness\Core\Session;
-use Wellness\Repositories\UserRepository;
+use Transenigma\Core\Config;
+use Transenigma\Core\Csrf;
+use Transenigma\Core\Database;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
+use Transenigma\Core\Session;
+use Transenigma\Repositories\UserRepository;
 
 /**
  * Accounts and sign-in (PRD §4.1, AUTH-1 … AUTH-13).

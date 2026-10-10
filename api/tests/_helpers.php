@@ -2,9 +2,9 @@
 /** Shared helpers for the test files (loaded by run.php before any *Test.php). */
 declare(strict_types=1);
 
-use Wellness\Core\Request;
-use Wellness\Services\AuthService;
-use Wellness\Services\Mailer;
+use Transenigma\Core\Request;
+use Transenigma\Services\AuthService;
+use Transenigma\Services\Mailer;
 
 function authReq(?string $ip = null): Request
 {

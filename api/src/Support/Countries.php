@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Support;
+namespace Transenigma\Support;
 
 /**
  * ISO 3166-1 alpha-2 country codes (source: github.com/datasets/country-list, ODC-PDDL).

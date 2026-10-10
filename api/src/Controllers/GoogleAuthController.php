@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Wellness\Controllers;
+namespace Transenigma\Controllers;
 
 use Throwable;
-use Wellness\Core\Config;
-use Wellness\Core\HttpException;
-use Wellness\Core\Logger;
-use Wellness\Core\RateLimiter;
-use Wellness\Core\Request;
-use Wellness\Core\Response;
-use Wellness\Core\Session;
-use Wellness\Services\GoogleOAuth;
+use Transenigma\Core\Config;
+use Transenigma\Core\HttpException;
+use Transenigma\Core\Logger;
+use Transenigma\Core\RateLimiter;
+use Transenigma\Core\Request;
+use Transenigma\Core\Response;
+use Transenigma\Core\Session;
+use Transenigma\Services\GoogleOAuth;
 
 /**
  * Browser-redirect endpoints (not JSON): the SPA links to /api/auth/google/start

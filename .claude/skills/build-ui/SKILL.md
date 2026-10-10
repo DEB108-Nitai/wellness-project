@@ -1,6 +1,6 @@
 ---
 name: build-ui
-description: Build or update user-facing UI for the Wellness 16PF site (React 19 + Vite + Tailwind 4) using the existing teal/slate design language, shared components, API modules and responsive conventions. Use when creating or significantly changing pages, home-page sections, the test flow, results/report screens, 60-Day Challenge blocks, auth/account screens or admin panels.
+description: Build or update user-facing UI for the Transenigma company site (60-Day Programs, 16PF test, Research, Our Team) (React 19 + Vite + Tailwind 4) using the existing teal/slate design language, shared components, API modules and responsive conventions. Use when creating or significantly changing pages, home-page sections, the test flow, results/report screens, 60-Day Challenge blocks, auth/account screens or admin panels.
 argument-hint: <what to build or change>
 ---
 Build or update the following UI:
