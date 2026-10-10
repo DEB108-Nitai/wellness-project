@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, CheckCircle2, FileText, Sparkles } from 'lucide-react';
+import { Shield, Lock, CheckCircle2, FileText } from 'lucide-react';
 
 interface PrivacyTermsViewProps {
   initialTab?: 'privacy' | 'terms';
@@ -52,10 +52,10 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
               <span>1. Data Collection & Processing Scope</span>
             </h2>
             <p>
-              When you participate in the Wellness 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic Therapeutic Intervention & Transcendental Therapeutic Intervention), we collect and store:
+              When you participate in the Transenigma 16 Personality Factors assessment or enroll in our 60-Day Transformation Challenges (Sonic, Philosophical and Transcendental Therapeutic Interventions), we collect and store:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-600">
-              <li>Item response scores across the 163 personality questionnaire statements.</li>
+              <li>Item response scores across the 166 personality questionnaire statements.</li>
               <li>Calculated Sten scale scores (1-10), z-scores, and 5 global domain profiles.</li>
               <li>Basic demographics (age group, gender, country) for benchmark calibration.</li>
               <li>Challenge registration information (name, contact details, preferred cohort timing, and stated goals).</li>
@@ -65,7 +65,7 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900 font-heading">2. Utilization of Data</h2>
             <p>
-              All collected information is retained and utilized by the Wellness platform to:
+              All collected information is retained and utilized by Transenigma to:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-slate-600">
               <li>Generate and deliver your interactive, downloadable 16-factor visual personality report.</li>
@@ -100,14 +100,14 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
               <span>1. Purpose of Assessment & 60-Day Programs</span>
             </h2>
             <p>
-              Wellness provides behavioral self-insight tools based on the scientific International Personality Item Pool (IPIP) and holistic lifestyle transformation methodologies. Our programs are designed to cultivate self-awareness, cognitive balance, habit discipline, and conscious personal growth.
+              Transenigma provides behavioral self-insight tools based on the scientific International Personality Item Pool (IPIP) and holistic lifestyle transformation methodologies. Our programs are designed to cultivate self-awareness, cognitive balance, habit discipline, and conscious personal growth.
             </p>
           </div>
 
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900 font-heading">2. Educational & Non-Clinical Disclaimer</h2>
             <p>
-              The 16 Personality Factors assessment and the 60-Day Challenges (STI and TTI) are educational and self-developmental frameworks. They do not constitute medical, clinical psychiatric, or diagnostic services.
+              The 16 Personality Factors assessment and the 60-Day Challenges (STI, PTI and TTI) are educational and self-developmental frameworks. They do not constitute medical, clinical psychiatric, or diagnostic services.
             </p>
           </div>
 
@@ -121,7 +121,7 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
           <div className="space-y-2">
             <h2 className="text-lg font-bold text-slate-900 font-heading">4. Intellectual Property</h2>
             <p>
-              "Wellness" personality algorithms, presentation layouts, and 60-Day Challenge curriculums are proprietary. The underlying 16-factor item pool is utilized in accordance with the public-domain IPIP terms (ipip.ori.org).
+              Transenigma personality algorithms, presentation layouts, and 60-Day Challenge curriculums are proprietary. The underlying 16-factor item pool is utilized in accordance with the public-domain IPIP terms (ipip.ori.org).
             </p>
           </div>
         </div>

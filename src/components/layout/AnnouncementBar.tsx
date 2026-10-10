@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface AnnouncementBarProps {
   text: string;
@@ -13,7 +13,6 @@ export const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ text }) => {
   return (
     <div className="bg-[#1E2430] text-slate-100 text-xs sm:text-sm py-2 px-4 relative flex items-center justify-between border-b border-slate-800 z-50">
       <div className="flex items-center justify-center gap-2 mx-auto text-center px-4 font-medium">
-        <Sparkles className="w-3.5 h-3.5 text-teal-400 shrink-0 hidden sm:inline" />
         <span className="text-slate-200">{text}</span>
       </div>
       <button

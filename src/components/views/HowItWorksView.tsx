@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, CheckCircle2, Clock, Sparkles, Shield, BarChart3, Users, Award, BookOpen } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, Shield, BarChart3, Users, Award, BookOpen } from 'lucide-react';
 
 interface HowItWorksViewProps {
   onNavigate: (view: string) => void;
@@ -32,9 +32,9 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) =>
           },
           {
             step: '02',
-            title: '163 Calibrated Statements on a 5-Point Bipolar Scale',
-            desc: 'Participants respond to 163 clear, behavioral statements divided into 24 digestible screens (7 items per page). The circular agreement scale captures fine gradations of self-reported behavior without forcing false dichotomies.',
-            points: ['Auto-scroll to next statement for rapid completion', 'Continuous local storage autosave prevents data loss', 'Embedded attention checks ensure high data fidelity'],
+            title: '166 Research-Based Statements on a 5-Point Scale',
+            desc: 'Participants respond to 166 clear, behavioral statements divided into 24 digestible screens (7 items per page). The circular agreement scale captures fine gradations of self-reported behavior without forcing false dichotomies.',
+            points: ['Auto-scroll to next statement for rapid completion', 'Answers save automatically — resume on any device', 'Embedded attention checks ensure high data fidelity'],
           },
           {
             step: '03',

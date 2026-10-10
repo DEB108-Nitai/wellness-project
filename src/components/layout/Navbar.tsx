@@ -1,57 +1,145 @@
-import React, { useState } from 'react';
-import { Menu, X, ArrowRight, ShieldCheck, UserCheck, BookOpen, BarChart3, HelpCircle, Sparkles, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
-import { storage } from '../../services/storageService';
-import { UserAccount } from '../../types';
-import { AuthModal } from '../auth/AuthModal';
+import React, { useEffect, useRef, useState } from 'react';
+import { Menu, X, ArrowRight, BarChart3, User, LogOut, ChevronDown, PlayCircle, Shield } from 'lucide-react';
+import { useActiveSession } from '../../context/ActiveSessionContext';
+import { useAuth } from '../../context/AuthContext';
+import { PROGRAMS } from '../../api/challenge';
+import { BRAND } from '../../lib/brand';
+import { PROGRAM_ANCHORS, useSectionNavigate } from '../../lib/routes';
+import { BrandLogo } from '../common/BrandLogo';
+
+/** A destination: a routed view (onNavigate) or a section of the home page (/#id). */
+interface NavLink {
+  label: string;
+  view?: string;
+  section?: string;
+  hint?: string;
+}
+
+interface NavItem extends NavLink {
+  id: string;
+  children?: NavLink[];
+  highlight?: boolean;
+  /** false = the page is not built yet; the tab stays hidden until its slice ships. */
+  ready?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Home', view: 'landing' },
+  {
+    id: 'programs',
+    label: 'Programs',
+    highlight: true,
+    children: [
+      { label: 'All 60-Day Programs', section: '60-days-challenge', hint: 'Compare STI, PTI and TTI' },
+      { label: `${PROGRAMS.STI.name} (STI)`, section: PROGRAM_ANCHORS.STI, hint: 'Program 01' },
+      { label: `${PROGRAMS.PTI.name} (PTI)`, section: PROGRAM_ANCHORS.PTI, hint: 'Program 02' },
+      { label: `${PROGRAMS.TTI.name} (TTI)`, section: PROGRAM_ANCHORS.TTI, hint: 'Program 03' },
+    ],
+  },
+  {
+    id: '16pf',
+    label: '16PF Test',
+    children: [
+      { label: 'Take the test', view: 'test', hint: 'Free · about 20–25 minutes' },
+      { label: 'How it works', view: 'how-it-works' },
+      { label: 'The 16 factors', view: 'factors' },
+      { label: 'Benefits', view: 'benefits' },
+      { label: 'FAQ', view: 'faq' },
+    ],
+  },
+  { id: 'research', label: 'Research', view: 'research' },
+  { id: 'consultancy', label: 'Consultancy', view: 'consultancy' },
+  { id: 'team', label: 'Our Team', view: 'team' },
+  { id: 'contact', label: 'Contact', view: 'contact' },
+];
+
+const VISIBLE_ITEMS = NAV_ITEMS.filter((item) => item.ready !== false);
+
+const isItemActive = (item: NavItem, currentView: string): boolean =>
+  item.children ? item.children.some((c) => c.view === currentView) : item.view === currentView;
 
 interface NavbarProps {
   currentView: string;
   onNavigate: (view: string, param?: string) => void;
-  activeCampaignSlug?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeCampaignSlug }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
-  const currentUser = storage.getCurrentUser();
-  // Draft continuation only applies to a logged-in user who has an active draft
-  const activeDraft = currentUser ? storage.getActiveDraftSession(currentUser.id) : undefined;
-  const draftProgress = activeDraft && activeDraft.answeredCount > 0
-    ? Math.round((activeDraft.answeredCount / 163) * 100)
-    : 0;
+  const { user: currentUser, logout } = useAuth();
+  // In-progress assessment for this visitor (account or guest browser), from the API.
+  const { active: activeDraft, progress: draftProgress } = useActiveSession();
+  const goToSection = useSectionNavigate();
 
-  const navItems = [
-    { id: 'landing', label: 'Home' },
-    { id: 'challenge', label: '60 Days Challenge', isHighlight: true },
-    { id: 'factors', label: 'The 16 Factors' },
-    { id: 'how-it-works', label: 'How It Works' },
-    { id: 'benefits', label: 'Benefits' },
-    { id: 'faq', label: 'FAQ' },
-    { id: 'contact', label: 'Contact' },
-  ];
+  // Desktop dropdown that is open (by id), and the expanded groups in the mobile drawer.
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [mobileGroups, setMobileGroups] = useState<string[]>([]);
+  const navRef = useRef<HTMLElement>(null);
+  const closeTimer = useRef<number | undefined>(undefined);
 
-  const handleNavClick = (id: string) => {
-    if (id === 'challenge') {
-      if (currentView !== 'landing') {
-        onNavigate('landing');
-        setTimeout(() => {
-          const el = document.getElementById('60-days-challenge');
-          el?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-      } else {
-        const el = document.getElementById('60-days-challenge');
-        el?.scrollIntoView({ behavior: 'smooth' });
-      }
-    } else {
-      onNavigate(id);
-    }
+  // Close everything after a page change, and close a dropdown on an outside click.
+  useEffect(() => {
+    setOpenMenu(null);
+    setMobileMenuOpen(false);
+  }, [currentView]);
+  useEffect(() => {
+    if (!openMenu) return;
+    const onDown = (e: MouseEvent) => {
+      if (!navRef.current?.contains(e.target as Node)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [openMenu]);
+  useEffect(() => () => window.clearTimeout(closeTimer.current), []);
+
+  const go = (link: NavLink) => {
+    if (link.section) goToSection(link.section);
+    else if (link.view) onNavigate(link.view);
+    setOpenMenu(null);
     setMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    storage.logoutUser();
+  const handleNavClick = (view: string) => go({ label: view, view });
+
+  // Hover opens a dropdown at once and closes it after a short grace period,
+  // so moving the pointer from the tab into the panel does not close it.
+  const hoverOpen = (id: string) => {
+    window.clearTimeout(closeTimer.current);
+    setOpenMenu(id);
+  };
+  const hoverClose = () => {
+    window.clearTimeout(closeTimer.current);
+    closeTimer.current = window.setTimeout(() => setOpenMenu(null), 150);
+  };
+
+  // Keyboard: Down opens the menu on its first link, Up/Down move, Esc closes and returns focus.
+  const onMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>, id: string) => {
+    const root = e.currentTarget;
+    const links = Array.from(root.querySelectorAll<HTMLElement>('[data-menu-link]'));
+    const index = links.indexOf(document.activeElement as HTMLElement);
+    if (e.key === 'Escape') {
+      setOpenMenu(null);
+      root.querySelector<HTMLElement>('[data-menu-trigger]')?.focus();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (openMenu !== id) setOpenMenu(id);
+      window.requestAnimationFrame(() => {
+        const fresh = Array.from(root.querySelectorAll<HTMLElement>('[data-menu-link]'));
+        fresh[index < 0 ? 0 : Math.min(index + 1, fresh.length - 1)]?.focus();
+      });
+    } else if (e.key === 'ArrowUp' && index >= 0) {
+      e.preventDefault();
+      if (index === 0) root.querySelector<HTMLElement>('[data-menu-trigger]')?.focus();
+      else links[index - 1]?.focus();
+    }
+  };
+
+  const toggleMobileGroup = (id: string) =>
+    setMobileGroups((open) => (open.includes(id) ? open.filter((g) => g !== id) : [...open, id]));
+
+  const handleLogout = async () => {
+    await logout();
     setUserDropdownOpen(false);
     onNavigate('landing');
   };
@@ -64,38 +152,87 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
             {/* Zone 1: Brand Wordmark */}
             <div className="flex items-center shrink-0">
               <button
-                onClick={() => handleNavClick('landing')}
-                className="flex items-center gap-2.5 text-left group focus:outline-hidden cursor-pointer"
+                onClick={() => go({ label: 'Home', view: 'landing' })}
+                aria-label={`${BRAND.name} home`}
+                className="flex items-center text-left rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 cursor-pointer"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-teal-600 via-indigo-600 to-amber-600 flex items-center justify-center text-white shadow-md shadow-teal-700/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
-                  <span className="font-bold text-base sm:text-lg font-heading">W</span>
-                </div>
-                <div>
-                  <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 group-hover:text-teal-700 transition-colors">
-                    Wellness
-                  </span>
-                </div>
+                <BrandLogo className="h-6 sm:h-7" />
               </button>
             </div>
 
             {/* Zone 2: Navigation Links (Evenly & judiciously spaced) */}
-            <nav className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-3 2xl:gap-5 text-xs xl:text-[13px] font-medium text-slate-600 min-w-0">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`transition-colors py-1 px-1.5 xl:px-2.5 cursor-pointer flex items-center gap-1 whitespace-nowrap rounded-lg ${
-                    item.isHighlight
-                      ? 'text-amber-800 font-bold bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-200 shadow-2xs'
-                      : currentView === item.id
-                      ? 'text-teal-700 font-semibold border-b-2 border-teal-600'
-                      : 'hover:text-teal-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {item.isHighlight && <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />}
-                  <span>{item.label}</span>
-                </button>
-              ))}
+            <nav
+              ref={navRef}
+              aria-label="Main"
+              className="hidden lg:flex items-center justify-center flex-1 gap-1 xl:gap-3 2xl:gap-5 text-xs xl:text-[13px] font-medium text-slate-600 min-w-0"
+            >
+              {VISIBLE_ITEMS.map((item) => {
+                const active = isItemActive(item, currentView);
+                const tabClass = `transition-colors py-1 px-1.5 xl:px-2.5 cursor-pointer flex items-center gap-1 whitespace-nowrap rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 ${
+                  item.highlight
+                    ? 'text-amber-800 font-bold bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-200 shadow-2xs'
+                    : active
+                    ? 'text-teal-700 font-semibold border-b-2 border-teal-600 rounded-b-none'
+                    : 'hover:text-teal-700 hover:bg-slate-50'
+                }`;
+
+                if (!item.children) {
+                  return (
+                    <button key={item.id} onClick={() => go(item)} aria-current={active ? 'page' : undefined} className={tabClass}>
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                }
+
+                const open = openMenu === item.id;
+                const panelId = `nav-menu-${item.id}`;
+                return (
+                  <div
+                    key={item.id}
+                    className="relative"
+                    onMouseEnter={() => hoverOpen(item.id)}
+                    onMouseLeave={hoverClose}
+                    onKeyDown={(e) => onMenuKeyDown(e, item.id)}
+                  >
+                    <button
+                      data-menu-trigger
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      onClick={() => setOpenMenu(open ? null : item.id)}
+                      className={tabClass}
+                    >
+                      <span>{item.label}</span>
+                      <ChevronDown className={`w-3 h-3 shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {open && (
+                      // pt-2 bridges the gap under the tab so hovering into the panel keeps it open.
+                      <div id={panelId} className="absolute left-1/2 -translate-x-1/2 top-full pt-2 z-50">
+                        <ul className="w-max min-w-56 bg-white rounded-2xl shadow-xl border border-slate-200 p-1.5 animate-in fade-in-50 duration-150">
+                          {item.children.map((child) => {
+                            const current = !!child.view && child.view === currentView;
+                            return (
+                              <li key={child.label}>
+                                <button
+                                  data-menu-link
+                                  onClick={() => go(child)}
+                                  aria-current={current ? 'page' : undefined}
+                                  className={`w-full text-left px-3 py-2 rounded-xl transition-colors cursor-pointer focus:outline-hidden focus-visible:bg-teal-50 ${
+                                    current ? 'bg-teal-50' : 'hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <span className={`block whitespace-nowrap text-[13px] font-semibold ${current ? 'text-teal-700' : 'text-slate-800'}`}>{child.label}</span>
+                                  {child.hint && <span className="block text-[11px] text-slate-500 mt-0.5">{child.hint}</span>}
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
 
             {/* Zone 3: Auth & Primary CTA (Desktop >= 1024px) */}
@@ -157,6 +294,28 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
                         </button>
                       )}
 
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          onNavigate('account');
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer border-b border-slate-100"
+                      >
+                        <User className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>My Account</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          onNavigate('my-results');
+                        }}
+                        className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2 transition-colors cursor-pointer border-b border-slate-100"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <span>My Results</span>
+                      </button>
+
                       {currentUser.role === 'admin' && (
                         <button
                           onClick={() => {
@@ -182,7 +341,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
                 </div>
               ) : (
                 <button
-                  onClick={() => setAuthModalOpen(true)}
+                  onClick={() => onNavigate('login')}
                   className="px-3 py-1.5 text-xs font-bold text-teal-800 bg-teal-50 hover:bg-teal-100 rounded-xl border border-teal-300 shadow-2xs transition-colors cursor-pointer"
                 >
                   Sign In
@@ -235,24 +394,57 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
         {/* Mobile Drawer */}
         {mobileMenuOpen && (
           <div className="lg:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3 shadow-lg animate-in slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-2 gap-2 pb-3 border-b border-slate-100">
-              {navItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => handleNavClick(item.id)}
-                  className={`text-left px-3 py-2 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
-                    item.isHighlight
-                      ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200'
-                      : currentView === item.id
-                      ? 'bg-teal-50 text-teal-700 font-semibold'
-                      : 'text-slate-700 hover:bg-slate-50'
-                  }`}
-                >
-                  {item.isHighlight && <Sparkles className="w-3 h-3 text-amber-600 shrink-0" />}
-                  <span>{item.label}</span>
-                </button>
-              ))}
-            </div>
+            <nav aria-label="Main" className="pb-3 border-b border-slate-100 space-y-1">
+              {VISIBLE_ITEMS.map((item) => {
+                const active = isItemActive(item, currentView);
+                const rowClass = `w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-colors flex items-center gap-2 ${
+                  item.highlight
+                    ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200'
+                    : active
+                    ? 'bg-teal-50 text-teal-700 font-semibold'
+                    : 'text-slate-700 hover:bg-slate-50'
+                }`;
+
+                if (!item.children) {
+                  return (
+                    <button key={item.id} onClick={() => go(item)} aria-current={active ? 'page' : undefined} className={rowClass}>
+                      {item.label}
+                    </button>
+                  );
+                }
+
+                const expanded = mobileGroups.includes(item.id);
+                const groupId = `mobile-nav-${item.id}`;
+                return (
+                  <div key={item.id}>
+                    <button onClick={() => toggleMobileGroup(item.id)} aria-expanded={expanded} aria-controls={groupId} className={rowClass}>
+                      <span className="flex-1">{item.label}</span>
+                      <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`} />
+                    </button>
+                    {expanded && (
+                      <ul id={groupId} className="mt-1 mb-2 ml-3 pl-3 border-l-2 border-slate-100 space-y-0.5">
+                        {item.children.map((child) => {
+                          const current = !!child.view && child.view === currentView;
+                          return (
+                            <li key={child.label}>
+                              <button
+                                onClick={() => go(child)}
+                                aria-current={current ? 'page' : undefined}
+                                className={`w-full text-left px-3 py-2 text-[13px] rounded-lg transition-colors ${
+                                  current ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {child.label}
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })}
+            </nav>
 
             {activeDraft && activeDraft.answeredCount > 0 && (
               <button
@@ -281,34 +473,45 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, activeC
               {!currentUser ? (
                 <button
                   onClick={() => {
-                    setAuthModalOpen(true);
                     setMobileMenuOpen(false);
+                    onNavigate('login');
                   }}
                   className="flex-1 py-2 text-xs font-bold text-center text-teal-800 bg-teal-50 rounded-lg border border-teal-300 shadow-2xs"
                 >
                   Sign In
                 </button>
               ) : (
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 py-2 text-xs font-medium text-center text-rose-600 bg-rose-50 rounded-lg"
-                >
-                  Sign Out
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate('my-results');
+                    }}
+                    className="flex-1 py-2 text-xs font-medium text-center text-slate-700 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    My Results
+                  </button>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      onNavigate('account');
+                    }}
+                    className="flex-1 py-2 text-xs font-medium text-center text-slate-700 bg-slate-50 rounded-lg border border-slate-200"
+                  >
+                    My Account
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="flex-1 py-2 text-xs font-medium text-center text-rose-600 bg-rose-50 rounded-lg"
+                  >
+                    Sign Out
+                  </button>
+                </>
               )}
             </div>
           </div>
         )}
       </header>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={authModalOpen}
-        onClose={() => setAuthModalOpen(false)}
-        onAuthSuccess={() => {
-          // Trigger re-render
-        }}
-      />
     </>
   );
 };

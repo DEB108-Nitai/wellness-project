@@ -1,0 +1,84 @@
+<?php
+/**
+ * API route table (PRD §6.4). Each phase adds its routes here.
+ *
+ * Options: 'auth' => null|'user'|'admin', 'maintenance' => bool (blocked during
+ * maintenance, default true), 'csrf' => bool (checked on non-GET, default true).
+ */
+declare(strict_types=1);
+
+use Transenigma\Controllers\AccountController;
+use Transenigma\Controllers\AdminController;
+use Transenigma\Controllers\AssessmentController;
+use Transenigma\Controllers\AuthController;
+use Transenigma\Controllers\ChallengeController;
+use Transenigma\Controllers\ContentController;
+use Transenigma\Controllers\GoogleAuthController;
+use Transenigma\Controllers\HealthController;
+use Transenigma\Controllers\ResultsController;
+use Transenigma\Controllers\SettingsController;
+use Transenigma\Controllers\SiteController;
+use Transenigma\Core\Router;
+
+return static function (Router $r): void {
+    $open = ['maintenance' => false]; // must keep working while the site is in maintenance (admin sign-in)
+
+    // --- System -------------------------------------------------------------
+    $r->get('/health', [HealthController::class, 'show'], $open);
+    $r->get('/settings/public', [SettingsController::class, 'public'], $open);
+
+    // --- Authentication (Phase 2) -------------------------------------------
+    $r->get('/auth/me', [AuthController::class, 'me'], $open);
+    $r->post('/auth/login', [AuthController::class, 'login'], $open);
+    $r->post('/auth/logout', [AuthController::class, 'logout'], $open);
+    $r->post('/auth/signup', [AuthController::class, 'signup']);
+    $r->post('/auth/forgot-password', [AuthController::class, 'forgotPassword']);
+    $r->post('/auth/reset-password', [AuthController::class, 'resetPassword']);
+    $r->post('/auth/verify-email', [AuthController::class, 'verifyEmail']);
+    $r->post('/auth/resend-verification', [AuthController::class, 'resendVerification'], ['auth' => 'user']);
+    $r->get('/auth/google/start', [GoogleAuthController::class, 'start'], $open);
+    $r->get('/auth/google/callback', [GoogleAuthController::class, 'callback'], $open);
+
+    // --- Account ------------------------------------------------------------
+    $r->patch('/account', [AccountController::class, 'update'], ['auth' => 'user']);
+    $r->post('/account/password', [AccountController::class, 'changePassword'], ['auth' => 'user']);
+
+    // --- Assessment (Phase 3) — guests and users ------------------------------
+    $r->get('/test/items', [AssessmentController::class, 'items']);
+    $r->get('/test/session', [AssessmentController::class, 'current']);
+    $r->post('/test/session', [AssessmentController::class, 'start']);
+    $r->put('/test/session/answers', [AssessmentController::class, 'saveAnswers']);
+    $r->post('/test/session/abandon', [AssessmentController::class, 'abandon']);
+    $r->post('/test/session/submit', [AssessmentController::class, 'submit']);
+    $r->post('/test/session/review', [AssessmentController::class, 'review']);
+
+    // --- Results ------------------------------------------------------------
+    $ref = '{ref:TE-[2-9A-HJ-NP-Z]{6}}';
+    $r->get('/results', [ResultsController::class, 'index'], ['auth' => 'user']);
+    $r->get("/results/$ref", [ResultsController::class, 'show']); // 401 RESULTS_LOCKED for guests
+    $r->post("/results/$ref/share", [ResultsController::class, 'share'], ['auth' => 'user']);
+    $r->delete("/results/$ref/share", [ResultsController::class, 'unshare'], ['auth' => 'user']);
+    $r->get('/shared/{token:[A-Za-z0-9]{32}}', [ResultsController::class, 'shared']);
+
+    // --- 60-Day Challenge & site forms (Phase 4) ------------------------------
+    $r->post('/challenge/registrations', [ChallengeController::class, 'register']);
+    $r->get('/challenge/my-registrations', [ChallengeController::class, 'mine'], ['auth' => 'user']);
+    $r->post('/contact', [SiteController::class, 'contact']);
+    $r->post('/newsletter/subscribe', [SiteController::class, 'subscribe']);
+    $r->post('/newsletter/unsubscribe', [SiteController::class, 'unsubscribe']);
+    $r->get('/faqs', [SiteController::class, 'faqs']);
+
+    // --- Transenigma company content (slice S5) ---------------------------------
+    $r->get('/content/team', [ContentController::class, 'team']);
+    $r->get('/content/research', [ContentController::class, 'research']);
+    $r->get('/content/consultancy', [ContentController::class, 'consultancy']);
+    $r->get('/content/ventures', [ContentController::class, 'ventures']);
+
+    // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
+    $admin = ['auth' => 'admin', 'maintenance' => false];
+    $r->get('/admin/registrations', [AdminController::class, 'registrations'], $admin);
+    $r->patch('/admin/registrations/{id:[0-9]+}', [AdminController::class, 'updateRegistration'], $admin);
+    $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
+    $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);
+    $r->put('/admin/settings', [AdminController::class, 'updateSettings'], $admin);
+};

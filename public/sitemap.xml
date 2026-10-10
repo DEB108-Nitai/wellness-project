@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Transenigma public pages (slice S10). Keep in step with src/lib/pageMeta.ts. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://transenigma.com/</loc><lastmod>2026-10-10</lastmod><priority>1.0</priority></url>
+  <url><loc>https://transenigma.com/research</loc><lastmod>2026-10-10</lastmod><priority>0.9</priority></url>
+  <url><loc>https://transenigma.com/consultancy</loc><lastmod>2026-10-10</lastmod><priority>0.9</priority></url>
+  <url><loc>https://transenigma.com/test</loc><lastmod>2026-10-10</lastmod><priority>0.9</priority></url>
+  <url><loc>https://transenigma.com/team</loc><lastmod>2026-10-10</lastmod><priority>0.7</priority></url>
+  <url><loc>https://transenigma.com/contact</loc><lastmod>2026-10-10</lastmod><priority>0.7</priority></url>
+  <url><loc>https://transenigma.com/how-it-works</loc><lastmod>2026-10-10</lastmod><priority>0.6</priority></url>
+  <url><loc>https://transenigma.com/factors</loc><lastmod>2026-10-10</lastmod><priority>0.6</priority></url>
+  <url><loc>https://transenigma.com/benefits</loc><lastmod>2026-10-10</lastmod><priority>0.6</priority></url>
+  <url><loc>https://transenigma.com/faq</loc><lastmod>2026-10-10</lastmod><priority>0.6</priority></url>
+  <url><loc>https://transenigma.com/privacy</loc><lastmod>2026-10-10</lastmod><priority>0.3</priority></url>
+  <url><loc>https://transenigma.com/terms</loc><lastmod>2026-10-10</lastmod><priority>0.3</priority></url>
+</urlset>

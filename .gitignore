@@ -6,3 +6,14 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# PHP API — local secrets and runtime files
+api/config/config.local.php
+api/storage/logs/*
+api/storage/sessions/*
+api/storage/cache/*
+api/storage/mail/*
+!api/storage/**/.gitkeep
+
+# E2E screenshots
+tests/e2e/shots/

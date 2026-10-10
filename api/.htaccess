@@ -1,0 +1,22 @@
+# Transenigma API — route every request to the front controller.
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Internal folders are never reachable over HTTP.
+    RewriteRule ^(src|config|bin|tests|storage|lib|templates)(/|$) - [F,L]
+
+    # Only index.php is executable; every other path (existing file or not) goes through it.
+    RewriteCond %{REQUEST_URI} !/index\.php$
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Defence in depth: deny any other PHP file and dotfiles even if rewrites are disabled.
+<FilesMatch "^(?!index\.php$).*\.php$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

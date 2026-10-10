@@ -1,0 +1,75 @@
+# =============================================================================
+# Transenigma — web root rules (copied into dist/ by Vite; deploy dist/* to the
+# domain's root folder on DreamHost, with the api/ folder beside index.html).
+# =============================================================================
+Options -Indexes -MultiViews
+DirectoryIndex index.html
+AddDefaultCharset utf-8
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Force HTTPS in production (skipped on localhost).
+    RewriteCond %{HTTPS} off
+    RewriteCond %{HTTP:X-Forwarded-Proto} !https
+    RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$ [NC]
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+    # Old transenigma.com addresses → their new pages, permanently (slice S10), so bookmarks and search
+    # results keep working and search engines move their ranking across. Each accepts the old ".php" form,
+    # a trailing slash and any capitalisation. NE keeps the "#" in targets that open a section.
+    RewriteRule ^index(\.php)?/?$ / [R=301,L,NC]
+    RewriteRule ^(portfolio|services|mvppoc)(\.php)?/?$ /consultancy [R=301,L,NC]
+    RewriteRule ^enterprise(\.php)?/?$ /consultancy#enterprise [R=301,L,NC,NE]
+    RewriteRule ^webmobile(\.php)?/?$ /consultancy#web-mobile [R=301,L,NC,NE]
+    RewriteRule ^iot(\.php)?/?$ /consultancy#iot [R=301,L,NC,NE]
+    RewriteRule ^research\.php$ /research [R=301,L,NC]
+    RewriteRule ^consultancy\.php$ /consultancy [R=301,L,NC]
+    RewriteRule ^contact\.php$ /contact [R=301,L,NC]
+    RewriteRule ^team\.php$ /team [R=301,L,NC]
+    RewriteRule ^about(\.php)?/?$ /team [R=301,L,NC]
+    RewriteRule ^workshops?(/.*)?$ / [R=301,L,NC]
+
+    # Never serve source/support folders if they are uploaded by mistake.
+    RewriteRule ^(database|docs|src|node_modules)(/|$) - [F,L]
+
+    # The PHP API has its own .htaccess.
+    RewriteRule ^api(/|$) - [L]
+
+    # Real files (assets, favicon) are served directly; every other path is an SPA route.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    RewriteRule ^ index.html [L]
+</IfModule>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# ---------------------------------------------------------------- security headers
+<IfModule mod_headers.c>
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" "expr=%{HTTPS} == 'on'"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://lh3.googleusercontent.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://accounts.google.com; object-src 'none'"
+</IfModule>
+
+# ---------------------------------------------------------------- caching
+<IfModule mod_headers.c>
+    # Vite assets have content hashes in their names, so they can be cached forever.
+    <If "%{REQUEST_URI} =~ m#^/assets/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
+    # The HTML shell must always be revalidated so new deploys are picked up immediately.
+    <FilesMatch "\.html$">
+        Header set Cache-Control "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# ---------------------------------------------------------------- compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain application/javascript application/json image/svg+xml
+</IfModule>

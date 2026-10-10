@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FactorCode, FactorDefinition } from '../../types';
 import { FACTORS_DATA } from '../../data/factorsData';
-import { Search, ArrowRight, BookOpen, Layers, Award, Sparkles } from 'lucide-react';
+import { Search, ArrowRight, BookOpen, Layers, Award } from 'lucide-react';
 
 interface FactorsDirectoryViewProps {
   initialFactorCode?: string;

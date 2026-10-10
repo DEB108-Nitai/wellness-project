@@ -1,6 +1,6 @@
 {
-  "name": "Wellness - 16 Personality Factors Assessment",
-  "description": "Scientific 16 personality factor questionnaire, comprehensive visual personality profile, Sten scoring engine, researcher campaigns, and administrative analytics.",
+  "name": "Transenigma",
+  "description": "Transenigma Pvt Ltd company website: research, consultancy, workshops, 60-Day Transformation Programs and the 16 Personality Factors assessment.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }
