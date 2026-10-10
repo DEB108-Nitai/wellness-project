@@ -1,13 +1,24 @@
 import React from 'react';
 import { ArrowRight, Cpu, FlaskConical, HeartPulse } from 'lucide-react';
-import { useSectionNavigate } from '../../lib/routes';
+import { useAppNavigate, useSectionNavigate } from '../../lib/routes';
 
 /**
  * Research, Consultancy and Programs: the three disciplines behind Transenigma.
  * Owner-approved copy (2026-10-09), facts from the company's previous website.
- * Research and Consultancy cards get "Learn more" links once their pages exist.
+ * Each card links to its page (view) or home-page section; Consultancy gets its link once that page exists.
  */
-const DISCIPLINES = [
+interface Discipline {
+  icon: React.ElementType;
+  label: string;
+  title: string;
+  stat: string;
+  text: string;
+  note?: string;
+  link?: { label: string; view?: string; section?: string };
+  tone: string;
+}
+
+const DISCIPLINES: Discipline[] = [
   {
     icon: FlaskConical,
     label: 'Research',
@@ -15,6 +26,7 @@ const DISCIPLINES = [
     stat: '97 publications · 15 research fields',
     text: 'Through the Trans Enigma Research Foundation (TERF): computational psychology, AI-led drug discovery, the science of happiness, Sankhya and Ayurveda, leadership and governance.',
     note: 'Published with IEEE/ACM, Springer and the Journal of Financial Crime.',
+    link: { label: 'Explore our research', view: 'research' },
     tone: 'bg-teal-50 text-teal-700 ring-teal-100',
   },
   {
@@ -34,10 +46,13 @@ const DISCIPLINES = [
     link: { label: 'See the programs', section: '60-days-challenge' },
     tone: 'bg-amber-50 text-amber-700 ring-amber-100',
   },
-] as const;
+];
 
 export const FoundationSection: React.FC = () => {
   const goToSection = useSectionNavigate();
+  const goTo = useAppNavigate();
+  const follow = (link: NonNullable<Discipline['link']>) => (link.section ? goToSection(link.section) : link.view && goTo(link.view));
+
   return (
     <section aria-labelledby="foundation-title" className="bg-slate-50/80 border-b border-slate-200/70 py-16 lg:py-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -65,17 +80,19 @@ export const FoundationSection: React.FC = () => {
                 <h3 className="mt-6 text-2xl font-bold text-slate-900 font-heading">{d.title}</h3>
                 <p className="mt-1.5 text-sm font-semibold text-teal-700">{d.stat}</p>
                 <p className="mt-4 text-sm text-slate-600 leading-relaxed">{d.text}</p>
-                {'note' in d && <p className="mt-auto pt-5 text-xs text-slate-500 italic">{d.note}</p>}
-                {'link' in d && (
-                  <button
-                    type="button"
-                    onClick={() => goToSection(d.link.section)}
-                    className="mt-auto pt-5 self-start inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
-                  >
-                    {d.link.label}
-                    <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                  </button>
-                )}
+                <div className="mt-auto pt-5 space-y-3">
+                  {d.note && <p className="text-xs text-slate-500 italic">{d.note}</p>}
+                  {d.link && (
+                    <button
+                      type="button"
+                      onClick={() => follow(d.link!)}
+                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
+                    >
+                      {d.link.label}
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </li>
             );
           })}

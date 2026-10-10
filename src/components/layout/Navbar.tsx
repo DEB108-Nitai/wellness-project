@@ -47,7 +47,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'FAQ', view: 'faq' },
     ],
   },
-  { id: 'research', label: 'Research', view: 'research', ready: false },
+  { id: 'research', label: 'Research', view: 'research' },
   { id: 'consultancy', label: 'Consultancy', view: 'consultancy', ready: false },
   { id: 'team', label: 'Our Team', view: 'team' },
   { id: 'contact', label: 'Contact', view: 'contact' },

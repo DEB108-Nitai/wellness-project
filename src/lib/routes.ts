@@ -15,6 +15,7 @@ const VIEW_PATHS: Record<string, string> = {
   faq: '/faq',
   contact: '/contact',
   team: '/team',
+  research: '/research',
   'privacy-terms': '/privacy',
   privacy: '/privacy',
   terms: '/terms',
