@@ -326,6 +326,25 @@ test('google callback rejects bad state, wrong audience, unverified email and op
     assertSame('/results/TE-ABC123?x=1', GoogleOAuth::safeNext('/results/TE-ABC123?x=1'));
 });
 
+// ------------------------------------------------------------------ sliding session (AUTH-7)
+test('an active user\'s session cookie is renewed at most once a day', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    AuthService::register('Maya Lin', uniqueEmail(), GOOD_PASSWORD, authReq());
+    assertTrue(abs(time() - (int) ($_SESSION['_cookie_at'] ?? 0)) <= 2, 'sign-in sends a fresh cookie');
+
+    $_SESSION['_cookie_at'] = time() - 3600;           // renewed an hour ago: not again yet
+    AuthService::flush();
+    assertTrue(AuthService::user() !== null);
+    assertSame(time() - 3600, $_SESSION['_cookie_at']);
+
+    $_SESSION['_cookie_at'] = time() - 86400 - 60;     // over a day ago: renewed on this visit
+    AuthService::flush();
+    assertTrue(AuthService::user() !== null);
+    assertTrue(abs(time() - $_SESSION['_cookie_at']) <= 2, 'cookie must be renewed after a day');
+});
+
 // ------------------------------------------------------------------ email templates
 test('email templates render escaped HTML and plain text', function () {
     useTestDatabase();

@@ -3,7 +3,7 @@
 The single document to restart this project from scratch if all context is lost. **Update it at the end of every phase.**
 Related: [PRD.md](PRD.md) (the agreed specification) · [DEVELOPMENT.md](DEVELOPMENT.md) (local setup and commands) · [`tests/e2e/README.md`](../tests/e2e/README.md) (browser tests)
 
-_Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). Next: CodeRabbit review → DreamHost deploy (Phase 7) → auth completion (live SMTP/Google) → admin console (Phase 5)._
+_Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). PR #1 reviewed (CodeRabbit) and merged. Owner's order: build the whole app first, deploy last — auth completion (sliding session cookie + session-file cleanup done; live SMTP via DreamHost and Google sign-in next) → admin console (Phase 5) → DreamHost deploy (Phase 7)._
 
 ---
 
@@ -22,7 +22,7 @@ _Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site sli
    npm run lint                                  # TypeScript check
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
-4. **Git:** branch `feature/backend-foundation-auth`. Commits: `e128497` (Phases 1–2), `a1e342b` (Phase 3), then the Phase 4 commit ("feat: 60-day challenges STI/PTI/TTI…", see `git log`).
+4. **Git:** Phases 1–4 and slices S1–S10 were built on `feature/backend-foundation-auth` and merged into `main` via PR #1 (merge `781dbfe`). Current work: branch `feature/auth-completion`.
 5. **Local databases:** `transenigma` (app) and `transenigma_test` (wiped by every test run). **Never touch** `wellness` / `wellness_test`; they belong to the separate older folder `htdocs/wellness-project`. The old `wellness16pf` / `wellness16pf_test` are a pre-rename backup (2026-10-09).
 6. **Local admin account:** created by the owner with `api/bin/create-admin.php` (id 1). Test data from browser runs is always deleted afterwards.
 

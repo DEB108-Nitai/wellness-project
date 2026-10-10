@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 use Transenigma\Core\HttpException;
 use Transenigma\Core\Router;
+use Transenigma\Core\Session;
 use Transenigma\Core\SqlSplitter;
 use Transenigma\Core\Validator;
 
@@ -69,4 +70,22 @@ test('sql splitter respects quotes, escapes and comments', function () {
         ["INSERT INTO t VALUES ('a;b', 'it''s', \"x\\\";y\")", 'SELECT 1', 'SELECT `we;ird`'],
         SqlSplitter::split($sql)
     );
+});
+
+test('session file cleanup deletes only old session files', function () {
+    $dir = sys_get_temp_dir() . '/te-sess-' . bin2hex(random_bytes(4));
+    mkdir($dir);
+    try {
+        foreach (['sess_old' => time() - 31 * 86400, 'sess_new' => time() - 86400, 'other_old' => time() - 31 * 86400] as $name => $mtime) {
+            file_put_contents("$dir/$name", 'x');
+            touch("$dir/$name", $mtime);
+        }
+        assertSame(1, Session::purgeFiles($dir, 30 * 86400));
+        assertTrue(!is_file("$dir/sess_old"), 'expired session file must be deleted');
+        assertTrue(is_file("$dir/sess_new"), 'recent session file must be kept');
+        assertTrue(is_file("$dir/other_old"), 'non-session files are never touched');
+    } finally {
+        array_map('unlink', glob("$dir/*") ?: []);
+        rmdir($dir);
+    }
 });
