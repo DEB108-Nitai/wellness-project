@@ -183,5 +183,9 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 ## 9. Rolling back
 
 - **Frontend:** re-upload the previous `dist/`.
-- **Database:** restore last night's backup: `gunzip -c ~/backups/transenigma-YYYY-MM-DD.sql.gz | mysql --defaults-extra-file=$HOME/.my.cnf transenigma`.
+- **Database:** never restore straight over the live database. Anything visitors did since the backup (accounts, test results, registrations) would be lost.
+  1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (rename the file it writes, e.g. `transenigma-YYYY-MM-DD-before-restore.sql.gz`, so the next run doesn't replace it).
+  2. Create a scratch database in the panel (e.g. `transenigma_restore`). Restore last night's backup into it: `gunzip -c ~/backups/transenigma-YYYY-MM-DD.sql.gz | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore`.
+  3. Compare the two databases. Find the rows created after the backup, e.g. `SELECT … WHERE created_at > '<backup time>'` in `users`, `test_sessions`, `challenge_registrations` and `contact_messages`. Copy the good ones into the restored database, or fix only the broken rows in the live database.
+  4. Only then switch production over. Either point `db.name` in `config.php` at the restored database, or copy the corrected tables back into `transenigma`. Keep the step-1 backup until the site has run normally for a while.
 - **Whole site:** point the domain back at the old site's backup (§2).

@@ -13,7 +13,7 @@ namespace Transenigma\Core;
  */
 final class Router
 {
-    /** @var list<array{method:string, regex:string, params:list<string>, handler:callable|array, options:array}> */
+    /** @var list<array{method:string, pattern:string, regex:string, params:list<string>, handler:callable|array, options:array}> */
     private array $routes = [];
 
     public function get(string $pattern, callable|array $handler, array $options = []): void
