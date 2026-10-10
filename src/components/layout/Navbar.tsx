@@ -48,7 +48,7 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   { id: 'research', label: 'Research', view: 'research' },
-  { id: 'consultancy', label: 'Consultancy', view: 'consultancy', ready: false },
+  { id: 'consultancy', label: 'Consultancy', view: 'consultancy' },
   { id: 'team', label: 'Our Team', view: 'team' },
   { id: 'contact', label: 'Contact', view: 'contact' },
 ];

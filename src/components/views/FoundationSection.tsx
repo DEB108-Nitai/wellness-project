@@ -5,7 +5,7 @@ import { useAppNavigate, useSectionNavigate } from '../../lib/routes';
 /**
  * Research, Consultancy and Programs: the three disciplines behind Transenigma.
  * Owner-approved copy (2026-10-09), facts from the company's previous website.
- * Each card links to its page (view) or home-page section; Consultancy gets its link once that page exists.
+ * Each card links to its page (view) or home-page section.
  */
 interface Discipline {
   icon: React.ElementType;
@@ -35,6 +35,7 @@ const DISCIPLINES: Discipline[] = [
     title: 'Technology, delivered.',
     stat: '9 client projects',
     text: 'Enterprise platforms, web and mobile apps and IoT systems for Mjunction (TATA-SAIL), SALPG (HPCL–Total), Oil India, ISKCON and the Centre for Quantum Technologies, NUS.',
+    link: { label: 'See our work', view: 'consultancy' },
     tone: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
   },
   {

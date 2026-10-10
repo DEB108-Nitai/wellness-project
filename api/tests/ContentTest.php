@@ -74,8 +74,9 @@ test('consultancy keeps working-link and no-link projects and drops dead links',
     assertSame(null, $byName['Depression Prediction Engine']['url']);
     foreach ($projects as $p) {
         assertTrue($p['url'] === null || str_starts_with($p['url'], 'https://'), "{$p['name']} links over https");
-        assertTrue(is_file(dirname(__DIR__, 2) . '/public' . $p['image']), "image exists for {$p['name']}");
+        assertTrue($p['image'] === null || is_file(dirname(__DIR__, 2) . '/public' . $p['image']), "image exists for {$p['name']}");
     }
+    assertSame('/images/projects/depression-prediction-v2.webp', $byName['Depression Prediction Engine']['image'], 'old-site image replaced (017, 018)');
 });
 
 test('unpublished content is hidden', function () {

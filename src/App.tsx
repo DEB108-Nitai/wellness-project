@@ -22,6 +22,7 @@ import { BenefitsView } from './components/views/BenefitsView';
 import { FAQView } from './components/views/FAQView';
 import { TeamView } from './components/views/TeamView';
 import { ResearchView } from './components/views/ResearchView';
+import { ConsultancyView } from './components/views/ConsultancyView';
 import { ContactView } from './components/views/ContactView';
 import { PrivacyTermsView } from './components/views/PrivacyTermsView';
 import { AdminPortalView } from './components/views/AdminPortalView';
@@ -121,6 +122,7 @@ export default function App() {
         <Route path="/benefits" element={<WithNavigate component={BenefitsView} />} />
         <Route path="/faq" element={<WithNavigate component={FAQView} />} />
         <Route path="/research" element={<ResearchView />} />
+        <Route path="/consultancy" element={<WithNavigate component={ConsultancyView} />} />
         <Route path="/team" element={<WithNavigate component={TeamView} />} />
         <Route path="/contact" element={<ContactView />} />
         <Route path="/privacy" element={<PrivacyTermsView key="privacy" initialTab="privacy" />} />
