@@ -4,6 +4,7 @@ import { api } from '../api/client';
 export interface PublicSettings {
   site_name: string;
   support_email: string;
+  linkedin_url: string;
   announcement_text: string;
   announcement_active: boolean;
   maintenance_mode: boolean;
@@ -16,6 +17,7 @@ export interface PublicSettings {
 const DEFAULTS: PublicSettings = {
   site_name: 'Transenigma',
   support_email: '',
+  linkedin_url: '',
   announcement_text: '',
   announcement_active: false,
   maintenance_mode: false,

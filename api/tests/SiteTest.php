@@ -136,6 +136,18 @@ test('admin settings update is validated and typed', function () {
     SettingsService::update(['maintenance_mode' => false], 1);
 });
 
+test('linkedin_url accepts only https links on linkedin.com and is public', function () {
+    useTestDatabase();
+    foreach (['http://www.linkedin.com/company/x', 'https://evil.com/linkedin.com', 'https://notlinkedin.com/x', 'javascript:alert(1)'] as $bad) {
+        $e = assertThrows(HttpException::class, fn () => SettingsService::update(['linkedin_url' => $bad], 1));
+        assertSame(['linkedin_url'], array_keys($e->fields), "rejects $bad");
+    }
+    $after = SettingsService::update(['linkedin_url' => 'https://www.linkedin.com/company/example/'], 1);
+    assertSame('https://www.linkedin.com/company/example/', $after['linkedin_url']);
+    assertSame('https://www.linkedin.com/company/example/', SettingsService::public()['linkedin_url']);
+    SettingsService::update(['linkedin_url' => ''], 1);
+});
+
 test('FAQs come from the database in display order', function () {
     useTestDatabase();
     $faqs = SiteService::faqs();

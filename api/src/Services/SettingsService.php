@@ -11,10 +11,12 @@ use Transenigma\Core\Database;
  */
 final class SettingsService
 {
-    /** @var array<string, array{type:string, default:mixed, public:bool, min?:int, max?:int}> */
+    /** @var array<string, array{type:string, default:mixed, public:bool, min?:int, max?:int, host?:string}> */
     public const DEFINITIONS = [
         'site_name' => ['type' => 'string', 'default' => 'Transenigma', 'public' => true, 'max' => 60],
         'support_email' => ['type' => 'email', 'default' => '', 'public' => true],
+        // Company LinkedIn page for the footer; empty hides the link. Only https links on linkedin.com are accepted.
+        'linkedin_url' => ['type' => 'url', 'default' => '', 'public' => true, 'max' => 255, 'host' => 'linkedin.com'],
         'announcement_text' => ['type' => 'string', 'default' => '', 'public' => true, 'max' => 200],
         'announcement_active' => ['type' => 'bool', 'default' => false, 'public' => true],
         'maintenance_mode' => ['type' => 'bool', 'default' => false, 'public' => true],
@@ -110,6 +112,21 @@ final class SettingsService
                     $value = is_string($value) ? mb_strtolower(trim($value)) : '';
                     if ($value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
                         $errors[$key] = 'Please enter a valid email address.';
+                        continue 2;
+                    }
+                    $clean[$key] = $value;
+                    break;
+                case 'url':
+                    $value = is_string($value) ? trim($value) : '';
+                    $host = strtolower((string) parse_url($value, PHP_URL_HOST));
+                    $allowed = $def['host'] ?? null;
+                    if ($value !== '' && (
+                        !filter_var($value, FILTER_VALIDATE_URL)
+                        || !str_starts_with($value, 'https://')
+                        || mb_strlen($value) > ($def['max'] ?? 255)
+                        || ($allowed !== null && $host !== $allowed && !str_ends_with($host, '.' . $allowed))
+                    )) {
+                        $errors[$key] = $allowed !== null ? "Please enter an https:// link on $allowed." : 'Please enter a valid https:// link.';
                         continue 2;
                     }
                     $clean[$key] = $value;

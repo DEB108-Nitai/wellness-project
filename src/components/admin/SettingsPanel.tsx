@@ -88,6 +88,13 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       <label className="block text-xs font-semibold text-slate-700">
+        Company LinkedIn page
+        <input type="url" value={form.linkedin_url} maxLength={255} onChange={(e) => set('linkedin_url', e.target.value)} placeholder="https://www.linkedin.com/company/…" className={`mt-1 ${input} ${errors.linkedin_url ? 'border-rose-400' : 'border-slate-300'}`} />
+        <span className="mt-1 block font-normal text-slate-500">Shown in the site footer. Leave empty to hide it.</span>
+        {err('linkedin_url')}
+      </label>
+
+      <label className="block text-xs font-semibold text-slate-700">
         Announcement banner text
         <input value={form.announcement_text} maxLength={200} onChange={(e) => set('announcement_text', e.target.value)} className={`mt-1 ${input} ${errors.announcement_text ? 'border-rose-400' : 'border-slate-300'}`} />
         {err('announcement_text')}

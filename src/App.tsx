@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Link, Navigate, Outlet, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useNavigationType, useParams } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
@@ -66,6 +66,7 @@ function SiteLayout() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#1E2430]">
+      <ScrollToTop />
       {settings.announcement_active && settings.announcement_text && <AnnouncementBar text={settings.announcement_text} />}
       <Navbar currentView={viewForPath(location.pathname)} onNavigate={onNavigate} />
       <VerifyEmailBanner />
@@ -76,6 +77,21 @@ function SiteLayout() {
       <CookieNotice />
     </div>
   );
+}
+
+/**
+ * New pages open at the top, as on a normal website (links don't do this by themselves in a single-page app).
+ * Section links (/#id, /research#slug) also start from the top; the page then scrolls to its section.
+ * Skipped for the browser's back/forward buttons, which restore the previous position.
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navigationType = useNavigationType();
+  React.useEffect(() => {
+    if (navigationType !== 'POP') window.scrollTo(0, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the page itself changes
+  }, [pathname]);
+  return null;
 }
 
 function FactorsRoute() {

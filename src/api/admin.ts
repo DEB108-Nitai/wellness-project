@@ -44,6 +44,7 @@ export interface RegistrationPage {
 export interface AdminSettings {
   site_name: string;
   support_email: string;
+  linkedin_url: string;
   announcement_text: string;
   announcement_active: boolean;
   maintenance_mode: boolean;

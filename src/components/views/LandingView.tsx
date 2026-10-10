@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   ArrowRight,
@@ -32,11 +32,17 @@ interface LandingViewProps {
 }
 
 export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
-  // Deep links such as /#60-days-challenge scroll to that section once the page has rendered.
+  // Deep links such as /#60-days-challenge scroll to that section once the page has rendered. Arriving from
+  // another page jumps straight there; links within the home page scroll smoothly.
   const location = useLocation();
+  const landed = useRef(false);
   useEffect(() => {
     if (!location.hash) return;
-    const t = window.setTimeout(() => document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 100);
+    const behavior: ScrollBehavior = landed.current ? 'smooth' : 'auto';
+    const t = window.setTimeout(() => {
+      document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior });
+      landed.current = true;
+    }, 100);
     return () => window.clearTimeout(t);
   }, [location.hash, location.key]);
 
