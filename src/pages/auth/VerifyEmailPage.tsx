@@ -39,7 +39,7 @@ export const VerifyEmailPage: React.FC = () => {
   };
 
   return (
-    <AuthShell title="Email verification">
+    <AuthShell title="Verify your email">
       {state.status === 'verifying' && (
         <p className="flex items-center gap-3 text-slate-600">
           <Loader2 className="w-5 h-5 animate-spin text-teal-600" /> Confirming your email address…
@@ -48,7 +48,9 @@ export const VerifyEmailPage: React.FC = () => {
       {state.status === 'done' && (
         <div className="space-y-6">
           <p className="flex items-start gap-3 text-[15px] text-slate-700">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" /> Your email address is confirmed. Thank you!
+            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0" />
+            {/* Verifying never signs anyone in: a forwarded link must not open the account. */}
+            {user ? 'Your email address is confirmed. Thank you!' : 'Your email is confirmed. Sign in to continue.'}
           </p>
           <Link
             to={user ? '/' : '/login'}

@@ -47,7 +47,7 @@ export const ResetPasswordPage: React.FC = () => {
   };
 
   return (
-    <AuthShell title="Choose a new password" subtitle="You'll be signed out on all other devices once it's changed.">
+    <AuthShell title="Choose a new password" subtitle="You'll be signed out on other devices.">
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {error && (
           <FormAlert tone="error">

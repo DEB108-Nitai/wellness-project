@@ -50,7 +50,7 @@ export const ForgotPasswordPage: React.FC = () => {
   }
 
   return (
-    <AuthShell title="Forgot your password?" subtitle="Enter the email you signed up with and we'll send you a link to choose a new one.">
+    <AuthShell title="Reset your password" subtitle="Enter your email and we'll send you a link.">
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
         {error && <FormAlert tone="error">{error}</FormAlert>}
         <TextField

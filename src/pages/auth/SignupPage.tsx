@@ -61,10 +61,10 @@ export const SignupPage: React.FC = () => {
 
   return (
     <AuthShell
-      title="Create your free account"
+      title="Create your account"
       subtitle={
         <>
-          Already have one?{' '}
+          It's free. Already have one?{' '}
           <Link to={loginLink} className="font-semibold text-teal-700 hover:text-teal-800">
             Sign in
           </Link>

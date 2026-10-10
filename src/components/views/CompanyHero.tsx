@@ -35,7 +35,7 @@ export const CompanyHero: React.FC<Props> = ({ onNavigate }) => {
           className="mt-6 text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] font-heading text-balance"
         >
           Transcend the enigma.
-          <span className="block mt-1 bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-200 bg-clip-text text-transparent">
+          <span className="block mt-1 pb-[0.12em] bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-200 bg-clip-text text-transparent">
             Transform your life.
           </span>
         </h1>
