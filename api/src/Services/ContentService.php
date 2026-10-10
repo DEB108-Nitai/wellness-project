@@ -27,8 +27,8 @@ final class ContentService
     public static function research(): array
     {
         $categories = [];
-        foreach (Database::all('SELECT id, slug, name FROM research_categories WHERE is_published = 1 ORDER BY sort_order, id') as $c) {
-            $categories[(int) $c['id']] = ['slug' => $c['slug'], 'name' => $c['name'], 'count' => 0, 'publications' => []];
+        foreach (Database::all('SELECT id, slug, name, tagline FROM research_categories WHERE is_published = 1 ORDER BY sort_order, id') as $c) {
+            $categories[(int) $c['id']] = ['slug' => $c['slug'], 'name' => $c['name'], 'tagline' => $c['tagline'], 'count' => 0, 'publications' => []];
         }
         $rows = Database::all(
             'SELECT p.id, p.category_id, p.citation, p.year, p.url FROM publications p

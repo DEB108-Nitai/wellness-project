@@ -41,11 +41,17 @@ export const ResearchView: React.FC = () => {
   }, [data, query]);
   const matches = categories.reduce((n, c) => n + c.count, 0);
 
-  // Land on /research#<slug> once the sections exist; repeat when the hash changes.
+  // Land on /research#<slug> once the sections exist; repeat when the hash changes. Arriving from another
+  // page (e.g. a homepage card) jumps straight there; moves within this page scroll smoothly.
+  const landed = useRef(false);
   useEffect(() => {
     if (!data || !location.hash) return;
     const id = decodeURIComponent(location.hash.slice(1));
-    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 80);
+    const behavior: ScrollBehavior = landed.current ? 'smooth' : 'auto';
+    const t = window.setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior });
+      landed.current = true;
+    }, 80);
     return () => window.clearTimeout(t);
   }, [data, location.hash, location.key]);
 

@@ -27,6 +27,10 @@ test('research has 15 categories and 97 publications, newest first, with unique 
     assertSame('happiness-affect-states', $r['categories'][0]['slug']);
     assertSame('Sankhya, Vedic Psychology & Ayurveda', $r['categories'][2]['name'], 'the "Pyschology" typo is fixed');
 
+    foreach ($r['categories'] as $c) {
+        assertTrue(is_string($c['tagline']) && $c['tagline'] !== '', "{$c['name']} has a homepage tagline (016)");
+    }
+
     $slugs = array_column($r['categories'], 'slug');
     assertSame(count($slugs), count(array_unique($slugs)));
     foreach ($slugs as $s) {

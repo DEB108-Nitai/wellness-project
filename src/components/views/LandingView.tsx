@@ -24,6 +24,7 @@ import {
 import { ChallengeSection } from './ChallengeSection';
 import { CompanyHero } from './CompanyHero';
 import { FoundationSection } from './FoundationSection';
+import { ResearchFieldsSection } from './ResearchFieldsSection';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 
 interface LandingViewProps {
@@ -422,6 +423,9 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
 
       {/* SECTION 8: 60-DAY TRANSFORMATION CHALLENGES (STI, PTI, TTI) */}
       <ChallengeSection />
+
+      {/* SECTION 9: RESEARCH FIELDS (S7b), one card per field, linking to /research#slug */}
+      <ResearchFieldsSection />
     </div>
   );
 };

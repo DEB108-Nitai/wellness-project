@@ -21,6 +21,8 @@ export interface ResearchCategory {
   /** Anchor on the Research page: /research#<slug> */
   slug: string;
   name: string;
+  /** One-line summary for the homepage research cards. */
+  tagline: string | null;
   count: number;
   publications: Publication[];
 }
