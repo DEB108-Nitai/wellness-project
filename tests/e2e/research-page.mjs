@@ -37,8 +37,9 @@ try {
   check(await page.eval(`getComputedStyle(document.querySelectorAll('nav[aria-label="Research fields"]')[1]).display !== 'none'`), 'desktop shows the field sidebar');
   const years = await page.eval(`[...document.querySelectorAll('[id="sankhya-vedic-psychology-ayurveda"] ol > li > span')].map(s => s.innerText)`);
   check(years[0] === '2024' && years[years.length - 1] === '2013', 'newest first within a field');
-  const link = await page.eval(`(() => { const a = [...document.querySelectorAll('a')].find(a => a.innerText.includes('Read the paper')); return a && [a.target, a.rel, a.href.startsWith('https://publications.waset.org/')]; })()`);
-  check(link && link[0] === '_blank' && link[1].includes('noopener') && link[2], 'paper link opens safely in a new tab');
+  const links = await page.eval(`(() => [...document.querySelectorAll('a')].filter(a => a.innerText.includes('Read the paper')).map(a => [a.target, a.rel, a.href]))()`);
+  check(links.length === 26, `26 papers have a "Read the paper" link (got ${links.length})`);
+  check(links.every(([t, rel, href]) => t === '_blank' && rel.includes('noopener') && href.startsWith('https://')), 'paper links open safely in a new tab');
   await page.screenshot(`${SHOTS}research-1440.png`);
 
   // Sidebar jump updates the hash, scrolls, and highlights the field.

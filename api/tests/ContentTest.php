@@ -43,9 +43,14 @@ test('research has 15 categories and 97 publications, newest first, with unique 
 
     $all = array_merge(...array_column($r['categories'], 'publications'));
     assertTrue(!array_filter($all, static fn ($p) => str_contains($p['citation'], 'Presented approach. Presented')), 'duplicated words removed');
+    assertSame([], array_values(array_filter($all, static fn ($p) => $p['year'] === null)), 'every publication has a year (012)');
+
+    // 013: only verified links: DOIs, plus three institutional pages.
     $withUrl = array_values(array_filter($all, static fn ($p) => $p['url'] !== null));
-    assertSame(1, count($withUrl));
-    assertTrue(str_starts_with($withUrl[0]['url'], 'https://publications.waset.org/'));
+    assertSame(26, count($withUrl));
+    foreach ($withUrl as $p) {
+        assertTrue((bool) preg_match('#^https://(doi\.org/10\.|publications\.waset\.org/|scholarworks\.waldenu\.edu/|www\.cesnur\.org/)#', $p['url']), "verified link: {$p['url']}");
+    }
 });
 
 test('consultancy keeps working-link and no-link projects and drops dead links', function () {
