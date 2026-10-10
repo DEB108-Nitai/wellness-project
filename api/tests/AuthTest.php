@@ -353,6 +353,7 @@ test('email templates render escaped HTML and plain text', function () {
     assertTrue(str_contains($msg['html'], '&lt;script&gt;'));
     assertTrue(str_contains($msg['html'], 'token=a&amp;b'));
     assertTrue(str_contains($msg['text'], 'https://example.com/verify-email?token=a&b'));
+    assertTrue(str_contains($msg['html'], 'src="cid:te-icon"') && is_file(API_ROOT . '/templates/email/icon.png'), 'emails show the te icon');
     foreach (['reset-password', 'password-changed'] as $t) {
         $m = Mailer::render($t, ['name' => 'A', 'url' => 'https://x', 'siteName' => 'Transenigma', 'siteUrl' => 'https://x', 'supportEmail' => '']);
         assertTrue($m['subject'] !== '' && $m['text'] !== '' && str_contains($m['html'], '<html'));

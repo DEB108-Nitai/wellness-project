@@ -22,6 +22,10 @@ final class Mailer
     /** Overridable in tests: fn(string $to, array $message): void */
     public static $transport = null;
 
+    /** The icon PNG referenced by _layout.php as cid:te-icon. */
+    private const ICON_CID = 'te-icon';
+    private const ICON_FILE = '/templates/email/icon.png';
+
     public static function send(string $to, string $template, array $vars = []): bool
     {
         try {
@@ -94,6 +98,7 @@ final class Mailer
         $mail->isHTML(true);
         $mail->Body = $message['html'];
         $mail->AltBody = $message['text'];
+        $mail->addEmbeddedImage(API_ROOT . self::ICON_FILE, self::ICON_CID, 'transenigma.png', PHPMailer::ENCODING_BASE64, 'image/png');
         $mail->send();
     }
 
@@ -102,7 +107,9 @@ final class Mailer
         $dir = Config::path('mail');
         $file = sprintf('%s/%s-%s-%s.html', $dir, gmdate('Ymd-His'), $template, bin2hex(random_bytes(3)));
         $header = sprintf("<!--\nTo: %s\nSubject: %s\n\n%s\n-->\n", $to, $message['subject'], $message['text']);
-        file_put_contents($file, $header . $message['html']);
+        // No attachments in a preview file: inline the icon so it shows when opened in a browser.
+        $icon = 'data:image/png;base64,' . base64_encode((string) file_get_contents(API_ROOT . self::ICON_FILE));
+        file_put_contents($file, $header . str_replace('cid:' . self::ICON_CID, $icon, $message['html']));
         Logger::info('Email written to log (no SMTP configured)', ['to' => $to, 'template' => $template, 'file' => basename($file)]);
     }
 
