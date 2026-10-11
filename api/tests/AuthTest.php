@@ -356,10 +356,11 @@ test('an active user\'s session cookie is renewed at most once a day', function 
     AuthService::register('Maya Lin', uniqueEmail(), GOOD_PASSWORD, authReq());
     assertTrue(abs(time() - (int) ($_SESSION['_cookie_at'] ?? 0)) <= 2, 'sign-in sends a fresh cookie');
 
-    $_SESSION['_cookie_at'] = time() - 3600;           // renewed an hour ago: not again yet
+    $hourAgo = time() - 3600;                          // renewed an hour ago: not again yet
+    $_SESSION['_cookie_at'] = $hourAgo;
     AuthService::flush();
     assertTrue(AuthService::user() !== null);
-    assertSame(time() - 3600, $_SESSION['_cookie_at']);
+    assertSame($hourAgo, $_SESSION['_cookie_at']);
 
     $_SESSION['_cookie_at'] = time() - 86400 - 60;     // over a day ago: renewed on this visit
     AuthService::flush();

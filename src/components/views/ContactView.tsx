@@ -75,15 +75,19 @@ export const ContactView: React.FC = () => {
               </div>
             )}
 
-            {settings.company_address && (
+            {(settings.company_address || settings.company_cin) && (
               <div className="flex items-start gap-3">
                 <MapPin className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
                 <div>
-                  <span className="font-semibold text-white block">Registered office</span>
+                  <span className="font-semibold text-white block">{settings.company_address ? 'Registered office' : 'Company'}</span>
                   <address className="not-italic">
                     {BRAND.legalName}
-                    <br />
-                    {settings.company_address}
+                    {settings.company_address && (
+                      <>
+                        <br />
+                        {settings.company_address}
+                      </>
+                    )}
                   </address>
                   {settings.company_cin && <span className="block mt-1 text-slate-400">CIN {settings.company_cin}</span>}
                 </div>
