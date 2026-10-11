@@ -304,6 +304,28 @@ test('google sign-in to a never-verified account drops the unproven password and
     assertSame(401, assertThrows(HttpException::class, fn () => AuthService::attempt($email, GOOD_PASSWORD, authReq()))->status);
 });
 
+test('google sign-in refuses a disabled account, whether found by Google ID or by email', function () {
+    useTestDatabase();
+    freshSession();
+    $claims = googleClaims();
+    runGoogleFlow($claims);
+    $id = (int) AuthService::user()['id'];
+    Database::run("UPDATE users SET status = 'disabled' WHERE id = ?", [$id]);
+
+    freshSession();
+    assertSame('ACCOUNT_DISABLED', assertThrows(HttpException::class, fn () => runGoogleFlow($claims))->errorCode);
+    assertSame(null, AuthService::user(), 'no session for a disabled account');
+
+    // A disabled password account is also refused when Google matches it by email.
+    captureMail();
+    $email = uniqueEmail();
+    $other = AuthService::register('Disabled Person', $email, GOOD_PASSWORD, authReq());
+    Database::run("UPDATE users SET status = 'disabled', email_verified_at = UTC_TIMESTAMP() WHERE id = ?", [$other['id']]);
+    freshSession();
+    assertSame('ACCOUNT_DISABLED', assertThrows(HttpException::class, fn () => runGoogleFlow(googleClaims(['email' => $email])))->errorCode);
+    assertSame(null, AuthService::user());
+});
+
 test('google callback rejects bad state, wrong audience, unverified email and open redirects', function () {
     useTestDatabase();
     freshSession();
