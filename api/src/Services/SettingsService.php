@@ -97,6 +97,11 @@ final class SettingsService
                 $errors[$key] = 'Unknown setting.';
                 continue;
             }
+            // Text settings must arrive as text: coercing e.g. null or an array to '' would silently wipe the stored value.
+            if (!in_array($def['type'], ['bool', 'int'], true) && !is_string($value)) {
+                $errors[$key] = 'Must be text.';
+                continue;
+            }
             switch ($def['type']) {
                 case 'bool':
                     if (!is_bool($value)) {
