@@ -11,12 +11,16 @@ use Transenigma\Core\Database;
  */
 final class SettingsService
 {
-    /** @var array<string, array{type:string, default:mixed, public:bool, min?:int, max?:int, host?:string}> */
+    /** @var array<string, array{type:string, default:mixed, public:bool, min?:int, max?:int, host?:string, pattern?:string, hint?:string}> */
     public const DEFINITIONS = [
         'site_name' => ['type' => 'string', 'default' => 'Transenigma', 'public' => true, 'max' => 60],
         'support_email' => ['type' => 'email', 'default' => '', 'public' => true],
         // Company LinkedIn page for the footer; empty hides the link. Only https links on linkedin.com are accepted.
         'linkedin_url' => ['type' => 'url', 'default' => '', 'public' => true, 'max' => 255, 'host' => 'linkedin.com'],
+        // Registered office and CIN for the footer and Contact page (company-law disclosure); empty hides them.
+        'company_address' => ['type' => 'string', 'default' => '', 'public' => true, 'max' => 255],
+        'company_cin' => ['type' => 'string', 'default' => '', 'public' => true, 'max' => 21,
+            'pattern' => '/^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/', 'hint' => 'Please enter a valid 21-character CIN, e.g. U74999WB2017PTC219904.'],
         'announcement_text' => ['type' => 'string', 'default' => '', 'public' => true, 'max' => 200],
         'announcement_active' => ['type' => 'bool', 'default' => false, 'public' => true],
         'maintenance_mode' => ['type' => 'bool', 'default' => false, 'public' => true],
@@ -136,6 +140,13 @@ final class SettingsService
                     if (mb_strlen($value) > ($def['max'] ?? 255) || ($key === 'site_name' && $value === '')) {
                         $errors[$key] = 'Please enter a valid value (max ' . ($def['max'] ?? 255) . ' characters).';
                         continue 2;
+                    }
+                    if (isset($def['pattern'])) {
+                        $value = strtoupper($value);
+                        if ($value !== '' && !preg_match($def['pattern'], $value)) {
+                            $errors[$key] = $def['hint'];
+                            continue 2;
+                        }
                     }
                     $clean[$key] = $value;
             }

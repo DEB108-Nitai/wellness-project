@@ -5,6 +5,8 @@ export interface PublicSettings {
   site_name: string;
   support_email: string;
   linkedin_url: string;
+  company_address: string;
+  company_cin: string;
   announcement_text: string;
   announcement_active: boolean;
   maintenance_mode: boolean;
@@ -18,6 +20,8 @@ const DEFAULTS: PublicSettings = {
   site_name: 'Transenigma',
   support_email: '',
   linkedin_url: '',
+  company_address: '',
+  company_cin: '',
   announcement_text: '',
   announcement_active: false,
   maintenance_mode: false,
