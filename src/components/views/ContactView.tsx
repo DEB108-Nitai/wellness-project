@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Mail, Send, CheckCircle2, MessageSquare, Shield, Clock } from 'lucide-react';
+import { Mail, Send, CheckCircle2, MessageSquare, Shield, Clock, MapPin } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { siteApi } from '../../api/site';
+import { BRAND } from '../../lib/brand';
 import { useSettings } from '../../context/SettingsContext';
 
 export const ContactView: React.FC = () => {
@@ -70,6 +71,25 @@ export const ContactView: React.FC = () => {
                   <a href={`mailto:${settings.support_email}`} className="hover:text-white underline-offset-4 hover:underline">
                     {settings.support_email}
                   </a>
+                </div>
+              </div>
+            )}
+
+            {(settings.company_address || settings.company_cin) && (
+              <div className="flex items-start gap-3">
+                <MapPin className="w-4 h-4 text-teal-400 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-semibold text-white block">{settings.company_address ? 'Registered office' : 'Company'}</span>
+                  <address className="not-italic">
+                    {BRAND.legalName}
+                    {settings.company_address && (
+                      <>
+                        <br />
+                        {settings.company_address}
+                      </>
+                    )}
+                  </address>
+                  {settings.company_cin && <span className="block mt-1 text-slate-400">CIN {settings.company_cin}</span>}
                 </div>
               </div>
             )}

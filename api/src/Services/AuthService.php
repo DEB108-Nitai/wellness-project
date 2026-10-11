@@ -56,6 +56,7 @@ final class AuthService
             return self::$current = null;
         }
         Session::set(self::S_LAST_SEEN, time());
+        Session::renewCookie();
         return self::$current = $user;
     }
 

@@ -4,6 +4,8 @@
  * @var array $vars
  * @var array $message  ['subject','preheader','body'(HTML),'text']
  * @var callable $e     HTML escaper
+ * The icon is the site's te tile as a PNG (icon.png, from public/brand/te-icon-tile.svg), embedded as cid:te-icon:
+ * email apps don't show SVG. Its white tile keeps it readable in dark mode; the name next to it is text, so apps recolour it.
  */
 ?><!doctype html>
 <html lang="en">
@@ -21,7 +23,7 @@
       <tr><td style="height:6px;background:linear-gradient(90deg,#0d9488,#4f46e5,#d97706);background-color:#0d9488;"></td></tr>
       <tr><td style="padding:28px 32px 8px;">
         <table role="presentation" cellpadding="0" cellspacing="0"><tr>
-          <td style="width:36px;height:36px;border-radius:10px;background:#0d9488;color:#ffffff;font-weight:700;font-size:16px;letter-spacing:-0.5px;text-align:center;vertical-align:middle;">te</td>
+          <td style="width:36px;height:36px;vertical-align:middle;"><img src="cid:te-icon" width="36" height="36" alt="" style="display:block;width:36px;height:36px;border:1px solid #e2e8f0;border-radius:10px;"></td>
           <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;"><?= $e($vars['siteName']) ?></td>
         </tr></table>
       </td></tr>

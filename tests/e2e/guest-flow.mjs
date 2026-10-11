@@ -102,7 +102,7 @@ try {
 
   // 6. Sign up from the gate → lands on the report
   await page.clickText('Create free account', 'a');
-  await page.waitText('Create your free account');
+  await page.waitText('Create your account');
   await page.fill('input[autocomplete=name]', 'Asha Verma');
   await page.fill('input[type=email]', email);
   await page.fill('input[autocomplete=new-password]', 'Calm-River-Lantern-42');
@@ -121,7 +121,8 @@ try {
   step(`share link ${shareLink}`);
   await page.goto(shareLink);
   await page.waitText('This report was shared with you');
-  const leaks = await page.eval(`/Age \\d+|India/.test(document.body.innerText)`);
+  // The footer is left out: it names the venture "India Tribal Care".
+  const leaks = await page.eval(`/Age \\d+|India/.test([...document.querySelectorAll('footer')].reduce((t, f) => t.replace(f.innerText, ''), document.body.innerText))`);
   step(`shared view hides age/country: ${!leaks}`);
   await page.screenshot(`${OUT}08-shared.png`);
 

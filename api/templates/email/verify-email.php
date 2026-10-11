@@ -1,6 +1,6 @@
 <?php
 /** @var array $vars ['name','url','siteName'] @var callable $e */
-$button = '<a href="' . $e($vars['url']) . '" style="display:inline-block;background:#0d9488;color:#ffffff;text-decoration:none;font-weight:600;padding:12px 24px;border-radius:10px;">Verify my email</a>';
+$button = '<a href="' . $e($vars['url']) . '" style="display:inline-block;background-color:#0d9488;background-image:linear-gradient(#0d9488,#0d9488);color:#ffffff;text-decoration:none;font-weight:600;padding:12px 24px;border-radius:10px;">Verify my email</a>';
 
 return [
     'subject' => "Confirm your email for {$vars['siteName']}",

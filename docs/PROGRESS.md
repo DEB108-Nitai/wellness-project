@@ -3,7 +3,7 @@
 The single document to restart this project from scratch if all context is lost. **Update it at the end of every phase.**
 Related: [PRD.md](PRD.md) (the agreed specification) · [DEVELOPMENT.md](DEVELOPMENT.md) (local setup and commands) · [`tests/e2e/README.md`](../tests/e2e/README.md) (browser tests)
 
-_Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). Next: CodeRabbit review → DreamHost deploy (Phase 7) → auth completion (live SMTP/Google) → admin console (Phase 5)._
+_Last updated: 2026-10-11. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). PR #1 reviewed (CodeRabbit) and merged. **Auth completion done** on `feature/auth-completion`: sliding session cookie, live SMTP via DreamHost, sign-in redesign, Google sign-in live (§4c). Owner's order: build the whole app first, deploy last — admin console (Phase 5) next → DreamHost deploy (Phase 7)._
 
 ---
 
@@ -18,11 +18,11 @@ _Last updated: 2026-10-10. **Phases 0–4 complete. Transenigma company-site sli
 3. **Start the local environment** (Windows + XAMPP; Apache and MySQL must be running):
    ```
    C:\xampp\php\php.exe api\bin\migrate.php      # apply new migrations
-   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (60 at last count)
+   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (72 at last count)
    npm run lint                                  # TypeScript check
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
-4. **Git:** branch `feature/backend-foundation-auth`. Commits: `e128497` (Phases 1–2), `a1e342b` (Phase 3), then the Phase 4 commit ("feat: 60-day challenges STI/PTI/TTI…", see `git log`).
+4. **Git:** Phases 1–4 and slices S1–S10 were built on `feature/backend-foundation-auth` and merged into `main` via PR #1 (merge `781dbfe`). Current work: branch `feature/auth-completion`.
 5. **Local databases:** `transenigma` (app) and `transenigma_test` (wiped by every test run). **Never touch** `wellness` / `wellness_test`; they belong to the separate older folder `htdocs/wellness-project`. The old `wellness16pf` / `wellness16pf_test` are a pre-rename backup (2026-10-09).
 6. **Local admin account:** created by the owner with `api/bin/create-admin.php` (id 1). Test data from browser runs is always deleted afterwards.
 
@@ -111,6 +111,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 017–018 | Depression Prediction Engine image: distressing old image removed, owner-supplied illustration |
 | 019 | `support_email` support@transenigma.com; Dr. Mayank Bhasin "CEO and Founder" |
 | 020 | `linkedin_url` setting (company LinkedIn page) |
+| 021 | `company_address` and `company_cin` settings (registered office + CIN, shown in footer and Contact) |
 
 ---
 
@@ -120,7 +121,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 |---|---|---|
 | 0 | PRD | ✅ Approved; now v1.3 |
 | 1 | Foundation: PHP core, schema, IPIP items + norms, `.htaccess`, cleanup | ✅ Committed `e128497` |
-| 2 | Authentication: sign-up/in/out, verification, reset, Google OAuth, roles, admin CLI | ✅ Committed `e128497`. Live email and Google wait on credentials |
+| 2 | Authentication: sign-up/in/out, verification, reset, Google OAuth, roles, admin CLI | ✅ Committed `e128497`. Live email and Google sign-in done in auth completion (§4c) |
 | 3 | Assessment and results: server sessions, scoring, guest flow, results gate, sharing, My Results | ✅ Committed `a1e342b` |
 | 4 | 60-Day Challenges (STI, PTI, TTI), contact, newsletter, FAQ, settings, maintenance | ✅ Committed |
 | 5 | Admin console on server data + anonymise user + admin 2FA | ⬜ Next |
@@ -177,9 +178,22 @@ The product became the company website of Transenigma Pvt Ltd, replacing transen
 - `research.php`, `consultancy.php`, `contact.php` and `team.php` → their new pages; `/about` → `/team`.
 - `/workshop/…` → `/`.
 
-**Waiting on the owner (company):**
-- registered office address, CIN and phone number for the footer and Contact page (ask after every phase);
-- final OK of the teal logo.
+**Company details:** registered office address and CIN were supplied on 2026-10-11 and are shown in the footer and on the Contact page (settings `company_address`, `company_cin`, editable in admin Settings). **No phone number is published** (owner decision).
+
+**Waiting on the owner (company):** final OK of the teal logo.
+
+## 4c. Auth completion (branch `feature/auth-completion`, 2026-10-10 → 11)
+
+| Step | What | Commit |
+|---|---|---|
+| A | Session cookie renewed on activity (at most daily); daily cron deletes old session files | `4817c4b` |
+| B | Real email via DreamHost SMTP; brand icon embedded; dark-mode-safe buttons | `fe858a4` |
+| — | Sign-in pages redesigned to match the site; verify page says "Sign in to continue" | `4d9d4d2` |
+| — | Reserved test domains (`@example.com` …) never sent over SMTP | `9221ed9` |
+| C | Google sign-in live and tested (link to existing account, returning sign-in, cancel, forged state); test for disabled accounts via Google; project skill `.claude/skills/build-auth` | this step |
+| — | Registered office address + CIN in footer and Contact (migration 021) | this step |
+
+**Note:** the owner's account (id 1) was demoted to `user` for testing (owner request, 2026-10-11) and is linked to Google. Re-promote with `create-admin.php` when the admin console is ready.
 
 ---
 
@@ -256,8 +270,8 @@ The product became the company website of Transenigma Pvt Ltd, replacing transen
 | Domain name | Email links, Google redirect, deploy | Asked senior (message drafted 2026-10-05) |
 | Support email + sending mailbox | Contact notifications, confirmation emails | Asked senior |
 | SMTP credentials | Real email sending | Asked senior. Enter directly into `config.local.php`, never in chat |
-| Google OAuth Client ID/secret | Google sign-in | Owner will create |
-| Production MySQL + SFTP/SSH | Phase 7 | Later |
+| Google OAuth Client ID/secret | Google sign-in | ✅ Created on the owner's personal Gmail (project `transenigma-website`, Testing). **Before launch:** add the company Gmail as IAM Owner, set it as support/contact email, publish the app |
+| Production MySQL + SFTP/SSH | Phase 7 | ✅ Owner has them (2026-10-11). Entered by the owner on the server at deploy, never in chat |
 
 **Cleaning browser-test data** (the e2e scripts create real local records): delete users, challenge registrations, contact messages and newsletter rows with `@example.com` addresses, plus their `audit_logs` / `email_log` rows. Keep the owner's admin (id 1).
 
@@ -279,7 +293,7 @@ The product became the company website of Transenigma Pvt Ltd, replacing transen
 ---
 
 ## 10. Testing
-- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **60 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
+- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **72 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
 - **Browser:** `tests/e2e/guest-flow.mjs` and `tests/e2e/phase4-flow.mjs`. Both passed at the end of their phases. `tests/e2e/challenge-shots.mjs` captures the three program blocks at desktop and phone widths for a visual check.
 - **Frontend:** `npm run lint` (TypeScript) and `npm run build`.
 

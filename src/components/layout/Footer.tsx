@@ -210,6 +210,13 @@ export const Footer: React.FC<FooterProps> = () => {
             </span>
           </div>
         </div>
+        {(settings.company_cin || settings.company_address) && (
+          <p className="pt-4 text-center lg:text-right text-xs text-slate-500 leading-relaxed">
+            {settings.company_cin && <span className="whitespace-nowrap">CIN {settings.company_cin}</span>}
+            {settings.company_cin && settings.company_address && <span aria-hidden="true"> · </span>}
+            {settings.company_address && <span>Registered office: {settings.company_address}</span>}
+          </p>
+        )}
       </div>
     </footer>
   );

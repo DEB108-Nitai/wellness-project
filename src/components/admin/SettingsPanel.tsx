@@ -94,6 +94,20 @@ export const SettingsPanel: React.FC = () => {
         {err('linkedin_url')}
       </label>
 
+      <div className="grid sm:grid-cols-3 gap-4">
+        <label className="block text-xs font-semibold text-slate-700 sm:col-span-2">
+          Registered office address
+          <input value={form.company_address} maxLength={255} onChange={(e) => set('company_address', e.target.value)} className={`mt-1 ${input} ${errors.company_address ? 'border-rose-400' : 'border-slate-300'}`} />
+          {err('company_address')}
+        </label>
+        <label className="block text-xs font-semibold text-slate-700">
+          CIN
+          <input value={form.company_cin} maxLength={21} onChange={(e) => set('company_cin', e.target.value)} placeholder="U74999WB2017PTC219904" className={`mt-1 ${input} ${errors.company_cin ? 'border-rose-400' : 'border-slate-300'}`} />
+          {err('company_cin')}
+        </label>
+        <span className="sm:col-span-3 -mt-2 block text-xs text-slate-500">Shown in the site footer and on the Contact page. Leave empty to hide.</span>
+      </div>
+
       <label className="block text-xs font-semibold text-slate-700">
         Announcement banner text
         <input value={form.announcement_text} maxLength={200} onChange={(e) => set('announcement_text', e.target.value)} className={`mt-1 ${input} ${errors.announcement_text ? 'border-rose-400' : 'border-slate-300'}`} />

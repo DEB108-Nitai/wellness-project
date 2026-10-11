@@ -304,6 +304,28 @@ test('google sign-in to a never-verified account drops the unproven password and
     assertSame(401, assertThrows(HttpException::class, fn () => AuthService::attempt($email, GOOD_PASSWORD, authReq()))->status);
 });
 
+test('google sign-in refuses a disabled account, whether found by Google ID or by email', function () {
+    useTestDatabase();
+    freshSession();
+    $claims = googleClaims();
+    runGoogleFlow($claims);
+    $id = (int) AuthService::user()['id'];
+    Database::run("UPDATE users SET status = 'disabled' WHERE id = ?", [$id]);
+
+    freshSession();
+    assertSame('ACCOUNT_DISABLED', assertThrows(HttpException::class, fn () => runGoogleFlow($claims))->errorCode);
+    assertSame(null, AuthService::user(), 'no session for a disabled account');
+
+    // A disabled password account is also refused when Google matches it by email.
+    captureMail();
+    $email = uniqueEmail();
+    $other = AuthService::register('Disabled Person', $email, GOOD_PASSWORD, authReq());
+    Database::run("UPDATE users SET status = 'disabled', email_verified_at = UTC_TIMESTAMP() WHERE id = ?", [$other['id']]);
+    freshSession();
+    assertSame('ACCOUNT_DISABLED', assertThrows(HttpException::class, fn () => runGoogleFlow(googleClaims(['email' => $email])))->errorCode);
+    assertSame(null, AuthService::user());
+});
+
 test('google callback rejects bad state, wrong audience, unverified email and open redirects', function () {
     useTestDatabase();
     freshSession();
@@ -326,7 +348,36 @@ test('google callback rejects bad state, wrong audience, unverified email and op
     assertSame('/results/TE-ABC123?x=1', GoogleOAuth::safeNext('/results/TE-ABC123?x=1'));
 });
 
+// ------------------------------------------------------------------ sliding session (AUTH-7)
+test('an active user\'s session cookie is renewed at most once a day', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    AuthService::register('Maya Lin', uniqueEmail(), GOOD_PASSWORD, authReq());
+    assertTrue(abs(time() - (int) ($_SESSION['_cookie_at'] ?? 0)) <= 2, 'sign-in sends a fresh cookie');
+
+    $hourAgo = time() - 3600;                          // renewed an hour ago: not again yet
+    $_SESSION['_cookie_at'] = $hourAgo;
+    AuthService::flush();
+    assertTrue(AuthService::user() !== null);
+    assertSame($hourAgo, $_SESSION['_cookie_at']);
+
+    $_SESSION['_cookie_at'] = time() - 86400 - 60;     // over a day ago: renewed on this visit
+    AuthService::flush();
+    assertTrue(AuthService::user() !== null);
+    assertTrue(abs(time() - $_SESSION['_cookie_at']) <= 2, 'cookie must be renewed after a day');
+});
+
 // ------------------------------------------------------------------ email templates
+test('mail to reserved test domains is never sent over SMTP', function () {
+    foreach (['a@example.com', 'a@EXAMPLE.org', 'a@sub.example.net', 'a@x.test', 'a@site.invalid', 'a@localhost'] as $to) {
+        assertTrue(Mailer::isReservedTestAddress($to), "$to must be treated as a test address");
+    }
+    foreach (['a@gmail.com', 'support@transenigma.com', 'a@example.co.uk', 'a@mytest.com', 'a@examples.com'] as $to) {
+        assertTrue(!Mailer::isReservedTestAddress($to), "$to is a real address");
+    }
+});
+
 test('email templates render escaped HTML and plain text', function () {
     useTestDatabase();
     $msg = Mailer::render('verify-email', ['name' => '<script>x</script>', 'url' => 'https://example.com/verify-email?token=a&b', 'siteName' => 'Transenigma', 'siteUrl' => 'https://example.com', 'supportEmail' => 'help@example.com']);
@@ -334,6 +385,7 @@ test('email templates render escaped HTML and plain text', function () {
     assertTrue(str_contains($msg['html'], '&lt;script&gt;'));
     assertTrue(str_contains($msg['html'], 'token=a&amp;b'));
     assertTrue(str_contains($msg['text'], 'https://example.com/verify-email?token=a&b'));
+    assertTrue(str_contains($msg['html'], 'src="cid:te-icon"') && is_file(API_ROOT . '/templates/email/icon.png'), 'emails show the te icon');
     foreach (['reset-password', 'password-changed'] as $t) {
         $m = Mailer::render($t, ['name' => 'A', 'url' => 'https://x', 'siteName' => 'Transenigma', 'siteUrl' => 'https://x', 'supportEmail' => '']);
         assertTrue($m['subject'] !== '' && $m['text'] !== '' && str_contains($m['html'], '<html'));

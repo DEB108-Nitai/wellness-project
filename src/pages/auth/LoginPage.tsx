@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
         <>
           New here?{' '}
           <Link to={signupLink} className="font-semibold text-teal-700 hover:text-teal-800">
-            Create a free account
+            Create an account
           </Link>
         </>
       }

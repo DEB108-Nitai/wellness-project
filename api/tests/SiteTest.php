@@ -167,6 +167,26 @@ test('linkedin_url accepts only https links on linkedin.com and is public', func
     SettingsService::update(['linkedin_url' => ''], 1);
 });
 
+test('company address and CIN are public, and the CIN must be well formed', function () {
+    useTestDatabase();
+    $public = SettingsService::public();
+    assertSame('U74999WB2017PTC219904', $public['company_cin'], 'seeded by migration 021');
+    assertTrue(str_contains($public['company_address'], 'New Alipore'));
+    foreach (['U74999WB2017PTC21990', 'X74999WB2017PTC219904', 'U74999WB2017PTC2199045', '<b>bad</b>'] as $bad) {
+        $e = assertThrows(HttpException::class, fn () => SettingsService::update(['company_cin' => $bad], 1));
+        assertSame(['company_cin'], array_keys($e->fields), "rejects $bad");
+    }
+    assertSame('U74999WB2017PTC219904', SettingsService::update(['company_cin' => ' u74999wb2017ptc219904 '], 1)['company_cin'], 'trimmed and upper-cased');
+    assertSame('', SettingsService::update(['company_cin' => ''], 1)['company_cin'], 'empty hides it');
+    SettingsService::update(['company_cin' => 'U74999WB2017PTC219904'], 1);
+
+    // Non-text values are refused, never coerced to '' (which would wipe the stored value).
+    $e = assertThrows(HttpException::class, fn () => SettingsService::update(['company_address' => null, 'company_cin' => 123, 'support_email' => ['x'], 'linkedin_url' => false], 1));
+    assertSame(['company_address', 'company_cin', 'support_email', 'linkedin_url'], array_keys($e->fields));
+    assertTrue(str_contains(SettingsService::get('company_address'), 'New Alipore'), 'address kept');
+    assertSame('U74999WB2017PTC219904', SettingsService::get('company_cin'), 'CIN kept');
+});
+
 test('FAQs come from the database in display order', function () {
     useTestDatabase();
     $faqs = SiteService::faqs();

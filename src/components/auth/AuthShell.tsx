@@ -1,71 +1,90 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, BarChart3, LineChart, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ShieldCheck } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 import { BrandLogo } from '../common/BrandLogo';
 
 /**
- * Full-page onboarding layout for sign-in / sign-up / password flows:
- * brand panel on the left (desktop), focused form on the right.
+ * Full-page layout for sign-in / sign-up / password / verification pages.
+ * The brand side uses the home page's dark hero style (CompanyHero); the form side stays light.
+ * Desktop: brand panel left, form right. Phone/tablet: a short dark band above the form.
+ * Owner-approved copy (2026-10-10): kept general so it fits whatever the account is used for.
  */
+const DarkBackdrop: React.FC = () => (
+  <>
+    <div
+      aria-hidden="true"
+      className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:44px_44px] [mask-image:radial-gradient(ellipse_at_center,black_35%,transparent_80%)]"
+    />
+    <div aria-hidden="true" className="absolute -top-40 -left-24 w-[32rem] h-[32rem] rounded-full bg-teal-500/20 blur-3xl" />
+    <div aria-hidden="true" className="absolute -bottom-48 right-0 w-[30rem] h-[30rem] rounded-full bg-indigo-500/20 blur-3xl" />
+  </>
+);
+
+const Eyebrow: React.FC = () => (
+  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-teal-300">Research · Health · Education</p>
+);
+
+const Welcome: React.FC<{ className: string }> = ({ className }) => (
+  <p className={`font-['Poppins'] font-extrabold tracking-tight leading-[1.05] text-balance ${className}`}>
+    Welcome to
+    <span className="block mt-1 pb-[0.12em] bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-200 bg-clip-text text-transparent">
+      {BRAND.name}.
+    </span>
+  </p>
+);
+
 export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; children: React.ReactNode }> = ({
   title,
   subtitle,
   children,
 }) => (
   <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-white">
-    {/* Brand panel */}
-    <aside className="hidden lg:flex relative overflow-hidden flex-col justify-between p-12 xl:p-16 bg-gradient-to-br from-teal-700 via-teal-800 to-indigo-900 text-white">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 opacity-[0.07]"
-        style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '22px 22px' }}
-      />
-      <div aria-hidden="true" className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-400/20 blur-3xl" />
-      <div aria-hidden="true" className="absolute -bottom-32 -left-20 w-96 h-96 rounded-full bg-teal-300/20 blur-3xl" />
+    {/* Brand panel (desktop) */}
+    <aside className="hidden lg:flex relative overflow-hidden flex-col justify-between p-12 xl:p-16 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
+      <DarkBackdrop />
 
       <Link to="/" aria-label={`${BRAND.name} home`} className="relative w-fit">
         <BrandLogo onDark className="h-8" />
       </Link>
 
-      <div className="relative space-y-8 max-w-md">
-        <div className="space-y-3">
-          <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-teal-200">
-            16 Personality Factors · 60-Day Transformation
-          </p>
-          <h2 className="text-4xl xl:text-5xl font-bold leading-tight font-heading">
-            Understand yourself.
-            <br />
-            <span className="text-amber-300">Transform your life.</span>
-          </h2>
-        </div>
-        <ul className="space-y-4 text-teal-50">
-          {[
-            { icon: BarChart3, text: 'A private, science-based report on all 16 of your personality factors' },
-            { icon: LineChart, text: 'Pick up where you left off — your progress follows you on every device' },
-            { icon: ShieldCheck, text: 'Your answers stay confidential and are never sold' },
-          ].map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-start gap-3">
-              <span className="mt-0.5 w-8 h-8 shrink-0 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center">
-                <Icon className="w-4 h-4" />
-              </span>
-              <span className="text-[15px] leading-relaxed">{text}</span>
-            </li>
-          ))}
-        </ul>
+      <div className="relative max-w-md space-y-6">
+        <Eyebrow />
+        <Welcome className="text-5xl xl:text-6xl" />
+        <p className="text-lg text-slate-300 leading-relaxed">One account for everything you do with us.</p>
       </div>
 
-      <p className="relative text-xs text-teal-100/70">
-        Scored against norms from 35,000+ people using the public-domain IPIP 16-factor scales.
+      <p className="relative inline-flex items-center gap-2 text-sm text-slate-400">
+        <ShieldCheck className="w-4 h-4 text-teal-300" aria-hidden="true" />
+        Private and secure. Your data is never sold.
       </p>
     </aside>
 
-    {/* Form panel */}
     <main className="flex flex-col min-h-screen">
-      <div className="flex items-center justify-between px-5 sm:px-10 pt-6">
-        <Link to="/" aria-label={`${BRAND.name} home`} className="lg:hidden">
-          <BrandLogo className="h-6" />
-        </Link>
+      {/* Brand band (phone/tablet) */}
+      <div className="lg:hidden relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 text-white">
+        <DarkBackdrop />
+        <div className="relative px-5 sm:px-10 pt-5 pb-8">
+          <div className="flex items-center justify-between">
+            <Link to="/" aria-label={`${BRAND.name} home`}>
+              <BrandLogo onDark className="h-6" />
+            </Link>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Back to home
+            </Link>
+          </div>
+          <div className="mt-7 space-y-3">
+            <Eyebrow />
+            <Welcome className="text-3xl sm:text-4xl" />
+          </div>
+        </div>
+      </div>
+
+      {/* Form panel */}
+      <div className="hidden lg:flex px-10 pt-6">
         <Link
           to="/"
           className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-teal-700 transition-colors"
@@ -74,7 +93,7 @@ export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; ch
         </Link>
       </div>
 
-      <div className="flex-1 flex items-center justify-center px-5 sm:px-10 py-10">
+      <div className="flex-1 flex lg:items-center justify-center px-5 sm:px-10 py-8 sm:py-10">
         <div className="w-full max-w-md">
           <div className="mb-8 space-y-2">
             <h1 className="text-3xl font-bold text-slate-900 font-heading tracking-tight">{title}</h1>
