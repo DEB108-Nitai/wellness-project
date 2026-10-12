@@ -88,13 +88,20 @@ $ARGUMENTS
    - update `docs/PROGRESS.md` at the end of the phase;
    - remind the owner of the open items (company address/CIN/phone, support-mail recheck, DreamHost webmail check).
 
+## Admin two-step sign-in (ADM-12, built in Phase 5 slice G)
+- **Files:**
+  - `Support/Totp.php`: RFC 6238 and AES-256-GCM secret storage;
+  - `Services/TwoFactorService.php`;
+  - `Controllers/TwoFactorController.php`: `/auth/2fa/*`, `/admin/security*`;
+  - `pages/auth/TwoFactorPage.tsx`, `components/auth/TwoFactorParts.tsx`, `components/admin/SecurityAdmin.tsx`.
+- **`AuthService::signIn()` returns false for an admin.** The session holds `auth_pending` (10 minutes; tied to `session_version`), and `user()` is null until `completeSecondStep()`.
+- **`user()` rejects an admin session without `auth_2fa`.** Keep it that way: no path may set the admin session without the second step.
+- **A code is single use** (`totp_last_step`, a conditional UPDATE). Recovery codes are SHA-256 hashes, used up with a conditional UPDATE.
+- **Rate limits:** 5 wrong codes per admin per 15 minutes (`2fa`), plus 30 per IP (`2fa_ip`).
+- **Security-page actions need a step-up code** (app or recovery). Moving to a new phone bumps `session_version` and keeps this session (`keepSessionAt`).
+- **Tests:** use `signInAdmin()`, `freshCode()` and `markSecondStepPassed()` from `api/tests/_helpers.php`. E2E admins sign in with `tests/e2e/admin-signin.mjs`.
+
 ## Planned auth work still to build
-- **ADM-12 admin TOTP:**
-  - RFC 6238 (SHA-1, 6 digits, 30 s, ±1 step), written in plain PHP, with no library.
-  - The secret is encrypted with `app.secret` (`openssl_encrypt`, AES-256-GCM).
-  - 10 one-time recovery codes, stored hashed.
-  - Sign-in becomes a two-step flow: a password or Google session is "pending 2FA" until the code passes.
-  - Rate-limit code attempts. Audit enrol, use and reset.
 - **ADM-11 anonymise:**
   - Clear name, email, nickname and contact details on the user, their sessions and their registrations; keep answers and scores.
   - Bump `session_version` and set status to disabled.

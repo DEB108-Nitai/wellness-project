@@ -3,6 +3,7 @@
 // removes all of them. Usage: node tests/e2e/admin-registrations.mjs  (needs XAMPP + npm run dev + Chrome)
 import { execFileSync } from 'node:child_process';
 import { launch } from './cdp.mjs';
+import { finishAdminSignIn } from './admin-signin.mjs';
 
 const BASE = 'http://localhost:3000';
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
@@ -42,6 +43,7 @@ try {
   await page.clickText('Create account', 'button');
   await page.waitFor(`location.pathname !== '/signup'`, 20000);
   execFileSync('C:/xampp/php/php.exe', [`${ROOT}api/bin/create-admin.php`, email], { input: 'y\n' });
+  await finishAdminSignIn(page, BASE, email, PASSWORD); // admins sign in with an authenticator code too (ADM-12)
 
   await page.goto(`${BASE}/admin/registrations`);
   await page.waitText('Registrations per day');

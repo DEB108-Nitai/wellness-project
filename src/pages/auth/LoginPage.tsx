@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
-import { afterSignIn, googleStartUrl, safeNext } from '../../api/auth';
+import { afterSignIn, googleStartUrl, safeNext, twoFactorPath } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { FormAlert, GoogleButton, OrDivider, PageSpinner, PasswordField, SubmitButton, TextField } from '../../components/auth/FormControls';
@@ -16,10 +16,11 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_link_requires_password: 'An account with this email already exists. Please sign in with your password.',
   google_account_mismatch: 'This email is already connected to a different Google account. Please use that Google account or your password.',
   rate_limited: 'Too many attempts. Please wait a few minutes and try again.',
+  two_factor_expired: 'Your sign-in took too long. Please sign in again.',
 };
 
 export const LoginPage: React.FC = () => {
-  const { user, loading, login, googleEnabled, claimedResultRef } = useAuth();
+  const { user, loading, login, googleEnabled, claimedResultRef, twoFactor } = useAuth();
   const [params] = useSearchParams();
   const next = safeNext(params.get('next'));
   const [email, setEmail] = useState('');
@@ -30,6 +31,7 @@ export const LoginPage: React.FC = () => {
 
   if (loading) return <PageSpinner />;
   if (user) return <Navigate to={afterSignIn(next, claimedResultRef)} replace />;
+  if (twoFactor) return <Navigate to={twoFactorPath(next)} replace />; // admin: the authenticator code is next
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +40,7 @@ export const LoginPage: React.FC = () => {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      // The redirect happens on the next render (`if (user)` above), which sees the claimed result too.
+      // The redirect happens on the next render (`if (user)` / `if (twoFactor)` above), which sees the claimed result too.
     } catch (err) {
       if (err instanceof ApiError) {
         setFieldErrors(err.fields);

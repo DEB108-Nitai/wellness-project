@@ -361,4 +361,26 @@ export const AUDIT_LABELS: Record<string, string> = {
   CONTENT_IMAGE_UPLOADED: 'Uploaded an image',
   ADMIN_CREATED_CLI: 'Admin created (server)',
   ADMIN_PROMOTED_CLI: 'Admin promoted (server)',
+  AUTH_2FA_ENABLED: 'Turned on two-step sign-in',
+  AUTH_2FA_FAILED: 'Wrong sign-in code',
+  AUTH_2FA_LOCKOUT: 'Locked out after wrong sign-in codes',
+  AUTH_2FA_RECOVERY_USED: 'Used a recovery code',
+  AUTH_2FA_RECOVERY_REGENERATED: 'Created new recovery codes',
+  AUTH_2FA_CHANGED: 'Moved two-step sign-in to a new phone',
+  AUTH_2FA_RESET: 'Two-step sign-in reset (server)',
+};
+
+// ------------------------------------------------------------------ security (ADM-12)
+
+export interface SecurityStatus {
+  enabledAt: string | null;
+  recoveryCodesLeft: number;
+}
+
+export const securityApi = {
+  status: () => api.get<SecurityStatus>('/admin/security'),
+  /** Each needs a current code from the app, or a recovery code. */
+  regenerateRecoveryCodes: (code: string) => api.post<{ recoveryCodes: string[] }>('/admin/security/recovery-codes', { code }),
+  startReplace: (code: string) => api.post<{ secret: string; uri: string }>('/admin/security/authenticator', { code }),
+  confirmReplace: (code: string) => api.post<SecurityStatus>('/admin/security/authenticator/confirm', { code }),
 };

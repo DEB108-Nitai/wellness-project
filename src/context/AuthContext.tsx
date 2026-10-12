@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { authApi, AuthUser, SessionPayload } from '../api/auth';
+import { authApi, AuthUser, SessionPayload, TwoFactorPending } from '../api/auth';
 import { clearAllPending, runBeforeSignOut } from '../lib/pendingAnswers';
 
 interface AuthState {
@@ -9,7 +9,10 @@ interface AuthState {
   googleEnabled: boolean;
   /** A finished guest test attached by the latest sign-in (see afterSignIn). */
   claimedResultRef: string | null;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  /** An admin sign-in waiting for the authenticator code (ADM-12); user stays null until it passes. */
+  twoFactor: TwoFactorPending | null;
+  /** Null when the account is an admin that still needs the second step. */
+  login: (email: string, password: string) => Promise<AuthUser | null>;
   signup: (name: string, email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -24,11 +27,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
   const [claimedResultRef, setClaimedResultRef] = useState<string | null>(null);
+  const [twoFactor, setTwoFactor] = useState<TwoFactorPending | null>(null);
 
   const applySession = useCallback((payload: SessionPayload) => {
     setUser(payload.user);
     setGoogleEnabled(payload.googleEnabled);
     setClaimedResultRef(payload.claimedResultRef ?? null);
+    setTwoFactor(payload.twoFactor ?? null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -50,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (email: string, password: string) => {
       const payload = await authApi.login(email, password);
       applySession(payload);
-      return payload.user as AuthUser;
+      return payload.user;
     },
     [applySession],
   );
@@ -76,8 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [applySession]);
 
   const value = useMemo(
-    () => ({ user, loading, googleEnabled, claimedResultRef, login, signup, logout, refresh, applySession }),
-    [user, loading, googleEnabled, claimedResultRef, login, signup, logout, refresh, applySession],
+    () => ({ user, loading, googleEnabled, claimedResultRef, twoFactor, login, signup, logout, refresh, applySession }),
+    [user, loading, googleEnabled, claimedResultRef, twoFactor, login, signup, logout, refresh, applySession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

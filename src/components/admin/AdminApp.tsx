@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { ArrowLeft, BarChart3, BookOpen, Briefcase, ClipboardList, LayoutDashboard, Menu, Settings, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, BookOpen, Briefcase, ClipboardList, LayoutDashboard, Menu, Settings, ShieldCheck, UsersRound, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AdminOverview } from './AdminOverview';
@@ -10,6 +10,7 @@ import { VisitorsAdmin } from './VisitorsAdmin';
 import { ParticipantDetail } from './ParticipantDetail';
 import { ConsultancyAdmin } from './ConsultancyAdmin';
 import { RegistrationsAdmin } from './RegistrationsAdmin';
+import { SecurityAdmin } from './SecurityAdmin';
 import { SettingsPanel } from './SettingsPanel';
 import { PageHeader } from './ui';
 
@@ -25,6 +26,7 @@ const NAV: { to: string; label: string; icon: React.ElementType; end?: boolean }
   { to: '/admin/research', label: 'Research papers', icon: BookOpen },
   { to: '/admin/consultancy', label: 'Consultancy projects', icon: Briefcase },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
+  { to: '/admin/security', label: 'Security', icon: ShieldCheck },
 ];
 
 const SideNav: React.FC<{ onPick?: () => void }> = ({ onPick }) => (
@@ -141,6 +143,7 @@ export default function AdminApp() {
                 </div>
               }
             />
+            <Route path="security" element={<SecurityAdmin />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </div>

@@ -110,6 +110,14 @@ cd ~/transenigma.com
 ```
 `create-admin` asks for the password twice, and checks it against the password policy. The password is **visible while you type**, so make sure nobody is watching the screen. It is stored only as an Argon2id hash.
 
+**Two-step sign-in (every admin):**
+- At the first sign-in on the live site, the admin scans a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator…) and saves **10 recovery codes**. After that, every admin sign-in needs a code from the app.
+- The app secret is encrypted with `app.secret`. Setting a new `app.secret` makes saved app secrets unreadable: admins then sign in with a recovery code and use **Security → Move to a new phone**, or are reset as below. So set the final `app.secret` **before** the admins set up their phones.
+- **Lost phone and recovery codes:** reset from the server, and the admin sets it up again at their next sign-in:
+  ```
+  /usr/local/php82/bin/php api/bin/create-admin.php --reset-2fa admin@transenigma.com
+  ```
+
 ---
 
 ## 6. Cron jobs (Panel → Advanced → Cron Jobs)
@@ -177,7 +185,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 - [ ] 60-day program registration → "Registered successfully" → **confirmation email arrives**.
 - [ ] Contact form → **notification arrives at support@transenigma.com**.
 - [ ] Newsletter subscribe/unsubscribe.
-- [ ] Admin: sign in → Registrations and Settings work. A normal account is refused.
+- [ ] Admin: sign in → set up two-step sign-in on your phone → save the recovery codes → Registrations and Settings work. Sign out and in again: the code is asked for. A normal account is refused.
 - [ ] Phone check: menu drawer, research cards swipe, no sideways scrolling.
 - [ ] `https://transenigma.com/robots.txt` and `/sitemap.xml` load. Submit the sitemap in Google Search Console.
 - [ ] `https://transenigma.com/api/config/config.example.php` and `/database/migrations/` return **403**.

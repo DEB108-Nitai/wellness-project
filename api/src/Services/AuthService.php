@@ -11,6 +11,7 @@ use Transenigma\Core\RateLimiter;
 use Transenigma\Core\Request;
 use Transenigma\Core\Session;
 use Transenigma\Repositories\UserRepository;
+use Transenigma\Support\Totp;
 
 /**
  * Accounts and sign-in (PRD §4.1, AUTH-1 … AUTH-13).
@@ -22,6 +23,11 @@ final class AuthService
     private const S_LAST_SEEN = 'auth_seen';
     /** A finished guest test attached at sign-in; returned once so the SPA can open it. */
     private const S_CLAIMED_REF = 'auth_claimed_ref';
+    /** ADM-12: the id of the admin who passed the second step in this session. Without it an admin is not signed in. */
+    private const S_SECOND_STEP = 'auth_2fa';
+    /** ADM-12: password or Google accepted for an admin; the authenticator code is still due. */
+    private const S_PENDING = 'auth_pending';
+    private const PENDING_TTL = 600;
 
     private const LOGIN_LIMIT = 5;          // failures per email+IP …
     private const LOGIN_WINDOW = 900;       // … per 15 minutes
@@ -51,7 +57,11 @@ final class AuthService
 
         if ($valid && $user['role'] === 'admin') {
             $idle = time() - (int) Session::get(self::S_LAST_SEEN, 0);
-            $valid = $idle <= Config::int('session.admin_idle_minutes', 720) * 60;
+            // Admin rights only in a session where this same account passed the second step
+            // (so a session promoted mid-way, or left over from another account, is not enough).
+            $valid = $idle <= Config::int('session.admin_idle_minutes', 720) * 60 && Session::get(self::S_SECOND_STEP) === (int) $user['id'];
+        } elseif ($valid) {
+            Session::forget(self::S_SECOND_STEP); // demoted: a later promotion must pass the code again
         }
         if (!$valid) {
             self::forgetSession();
@@ -67,21 +77,97 @@ final class AuthService
         return self::user() ?? throw HttpException::unauthorized();
     }
 
+    /**
+     * Every sign-in ends here, after the password or Google was accepted. An admin is not signed in yet: the
+     * session waits for the authenticator code (ADM-12, TwoFactorService) and this returns false.
+     */
+    public static function signIn(array $user, Request $request, string $method): bool
+    {
+        if ($user['role'] === 'admin') {
+            Session::regenerate();
+            Session::forget('_csrf');
+            self::forgetSession();
+            Session::set(self::S_PENDING, ['uid' => (int) $user['id'], 'ver' => (int) $user['session_version'], 'at' => time(), 'method' => $method]);
+            self::$current = null;
+            return false;
+        }
+        self::establish($user, $request, ['method' => $method]);
+        return true;
+    }
+
+    /** The admin waiting for the second step in this session, or null (none, expired, or the account changed). */
+    public static function pendingSecondStep(): ?array
+    {
+        $p = Session::get(self::S_PENDING);
+        if (!is_array($p)) {
+            return null;
+        }
+        $user = UserRepository::find((int) $p['uid']);
+        if ($user === null || $user['status'] !== 'active' || $user['role'] !== 'admin'
+            || (int) $user['session_version'] !== $p['ver'] || time() - (int) $p['at'] > self::PENDING_TTL) {
+            Session::forget(self::S_PENDING);
+            return null;
+        }
+        return ['user' => $user, 'method' => (string) $p['method'], 'secret' => self::pendingSecret()];
+    }
+
+    /** The authenticator secret offered during a first-time setup (kept server-side, encrypted, until confirmed). */
+    public static function pendingSecret(): ?string
+    {
+        $p = Session::get(self::S_PENDING);
+        return is_array($p) && is_string($p['secret'] ?? null) ? Totp::decrypt($p['secret'], 'pending:' . $p['uid']) : null;
+    }
+
+    public static function setPendingSecret(string $secret): void
+    {
+        $p = Session::get(self::S_PENDING);
+        if (is_array($p)) {
+            $p['secret'] = Totp::encrypt($secret, 'pending:' . $p['uid']);
+            Session::set(self::S_PENDING, $p);
+        }
+    }
+
+    /** The second step passed: sign the admin in for real. */
+    public static function completeSecondStep(array $user, Request $request, string $method, string $secondStep): void
+    {
+        self::establish($user, $request, ['method' => $method, 'secondStep' => $secondStep]);
+    }
+
+    /** After this session's own change bumped session_version: keep it signed in on the new version. */
+    public static function keepSessionAt(int $version): void
+    {
+        Session::regenerate();
+        Session::set(self::S_VERSION, $version);
+        self::flush();
+    }
+
+    /** This session's account changed elsewhere (version mismatch): sign it out. */
+    public static function signOutStale(): void
+    {
+        self::forgetSession();
+        self::$current = null;
+    }
+
     /** Bind the user to a fresh session ID (prevents fixation) and rotate the CSRF token. */
-    public static function signIn(array $user, Request $request, string $method): void
+    private static function establish(array $user, Request $request, array $details): void
     {
         Session::regenerate();
         Session::forget('_csrf');
+        Session::forget(self::S_PENDING);
+        Session::forget(self::S_SECOND_STEP); // never inherited from an earlier account in this browser
         Session::set(self::S_USER, (int) $user['id']);
         Session::set(self::S_VERSION, (int) $user['session_version']);
         Session::set(self::S_LAST_SEEN, time());
+        if ($user['role'] === 'admin') {
+            Session::set(self::S_SECOND_STEP, (int) $user['id']);
+        }
         UserRepository::touchLogin((int) $user['id']);
         self::$current = UserRepository::find((int) $user['id']);
         $claim = AssessmentService::claimGuestSessions((int) $user['id'], $request); // TEST-9: guest tests follow the person
         if ($claim['completedRef'] !== null) {
             Session::set(self::S_CLAIMED_REF, $claim['completedRef']);
         }
-        AuditService::forUser($user, 'AUTH_LOGIN', 'user', null, ['method' => $method], $request);
+        AuditService::forUser($user, 'AUTH_LOGIN', 'user', null, $details, $request);
     }
 
     public static function signOut(Request $request): void
@@ -277,6 +363,12 @@ final class AuthService
         if ($user !== null && ($ref = self::takeClaimedResultRef()) !== null) {
             $payload['claimedResultRef'] = $ref;
         }
+        if ($user === null && ($pending = self::pendingSecondStep()) !== null) {
+            $payload['twoFactor'] = [
+                'step' => $pending['user']['totp_enabled_at'] === null ? 'setup' : 'code',
+                'name' => $pending['user']['name'],
+            ];
+        }
         return $payload;
     }
 
@@ -310,6 +402,7 @@ final class AuthService
         Session::forget(self::S_USER);
         Session::forget(self::S_VERSION);
         Session::forget(self::S_LAST_SEEN);
+        Session::forget(self::S_SECOND_STEP);
     }
 
     private static function dummyHash(): string

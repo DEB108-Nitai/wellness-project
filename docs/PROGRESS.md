@@ -288,7 +288,29 @@ Owner asks: research papers and consultancy projects managed from the admin, and
     Minor fixes: name hidden for anonymised accounts, path allowlist, one `/auth/me` on the first visit, admins not counted, a 1-year range cap, tooltips inside scrolling charts, chart accessibility.
   - Dev fix: Vite watched `api/storage/mail` and reloaded the page whenever an email preview was written; it now watches only the frontend.
   - **Tests:** API 91 → 103. New E2E: `admin-registrations.mjs`, `admin-participants.mjs`, `admin-visitors.mjs`.
-- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin**, G admin 2FA, H messages/FAQs/audit/items.
+- **Slice G. Admin two-step sign-in (ADM-12, same branch):** migration 024.
+  - **Every admin sign-in** (password or Google) needs a 6-digit code from an authenticator app. Until the code passes, the session is "pending": the server treats it as signed out, with no admin access.
+  - **First sign-in:** set up the app (QR code, or a typed key) → confirm a code → **10 recovery codes** shown once (copy / download, "I have saved them" check).
+  - **Later sign-ins:** the code, or a recovery code (single use; the admin is emailed with how many are left).
+  - **Security page** (`/admin/security`): status, codes left, "Create new recovery codes", "Move to a new phone". Each needs a current code (or a recovery code, for a lost phone). Moving signs out the admin's other devices.
+  - **Server reset:** `create-admin.php --reset-2fa <email>` for an admin who lost both phone and codes. It signs them out everywhere, and they set it up again at the next sign-in.
+  - **Protection:**
+    - TOTP per RFC 6238 in plain PHP; the secret encrypted with AES-256-GCM (key from `app.secret`); recovery codes stored as SHA-256 only;
+    - a code can't be used twice (`totp_last_step`);
+    - 5 wrong codes per 15 minutes lock the step; 30 attempts per IP;
+    - the pending step lasts 10 minutes and ends if the password changes or the account is disabled;
+    - a session promoted to admin mid-way loses access until it signs in with a code;
+    - security emails for each change; everything audited (`AUTH_2FA_*`).
+  - **New npm package:** `qrcode` (owner-approved), plus its type definitions for development. It loads only on the 2FA screens; the main bundle didn't grow.
+  - **Fresh-eyes review:** no critical issues; 1 major issue confirmed and fixed. The second-step mark was not tied to an account, so if another person signed in on the same browser and was later promoted, they skipped the code. The mark now holds the admin's id and is dropped whenever the role isn't admin.
+    Minor fixes:
+    - attempts are counted before the check (no parallel bypass of the limit);
+    - a just-used code gets its own message, not a strike;
+    - a clear message and a log entry when the stored secret can't be decrypted;
+    - each ciphertext is bound to its account;
+    - setup secrets are encrypted in the session file.
+  - **Tests:** API 103 → 123 (RFC 6238 test vectors included). New E2E `admin-2fa.mjs`; shared helper `admin-signin.mjs` (plays the authenticator app). The four admin E2E scripts now sign in through the real second step. `phase4-flow.mjs` still expects an admin without 2FA (it is replaced by `admin-flow.mjs` in Finish).
+- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin**, H messages/FAQs/audit/items.
 
 ---
 
@@ -332,7 +354,7 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - [ ] FAQs: create, edit, delete, reorder, publish.
 - [ ] Question set and norms: read-only view. Audit log: filters.
 - [ ] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers.
-- [ ] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes.
+- [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 
 ### Phase 6 — UI polish
 - [ ] Consistency pass with shared components. Per-page titles and descriptions. Accessibility (WCAG 2.1 AA) and mobile pass.

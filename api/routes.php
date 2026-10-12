@@ -20,6 +20,7 @@ use Transenigma\Controllers\HealthController;
 use Transenigma\Controllers\ResultsController;
 use Transenigma\Controllers\SettingsController;
 use Transenigma\Controllers\SiteController;
+use Transenigma\Controllers\TwoFactorController;
 use Transenigma\Controllers\VisitController;
 use Transenigma\Core\Router;
 
@@ -41,6 +42,11 @@ return static function (Router $r): void {
     $r->post('/auth/resend-verification', [AuthController::class, 'resendVerification'], ['auth' => 'user']);
     $r->get('/auth/google/start', [GoogleAuthController::class, 'start'], $open);
     $r->get('/auth/google/callback', [GoogleAuthController::class, 'callback'], $open);
+
+    // --- Admin two-step sign-in (Phase 5 slice G, ADM-12): the session is pending until the code passes ---
+    $r->post('/auth/2fa/setup', [TwoFactorController::class, 'setup'], $open);
+    $r->post('/auth/2fa/enable', [TwoFactorController::class, 'enable'], $open);
+    $r->post('/auth/2fa/verify', [TwoFactorController::class, 'verify'], $open);
 
     // --- Account ------------------------------------------------------------
     $r->patch('/account', [AccountController::class, 'update'], ['auth' => 'user']);
@@ -97,6 +103,10 @@ return static function (Router $r): void {
     $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
     $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);
     $r->put('/admin/settings', [AdminController::class, 'updateSettings'], $admin);
+    $r->get('/admin/security', [TwoFactorController::class, 'status'], $admin);
+    $r->post('/admin/security/recovery-codes', [TwoFactorController::class, 'regenerate'], $admin);
+    $r->post('/admin/security/authenticator', [TwoFactorController::class, 'startReplace'], $admin);
+    $r->post('/admin/security/authenticator/confirm', [TwoFactorController::class, 'confirmReplace'], $admin);
 
     // --- Admin content: research papers and consultancy projects (Phase 5 slice A) ---
     $r->get('/admin/research', [AdminContentController::class, 'research'], $admin);

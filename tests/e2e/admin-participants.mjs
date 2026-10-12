@@ -3,6 +3,7 @@
 // Usage: node tests/e2e/admin-participants.mjs [TE-REF]   (needs XAMPP + npm run dev + Chrome)
 import { execFileSync } from 'node:child_process';
 import { launch } from './cdp.mjs';
+import { finishAdminSignIn } from './admin-signin.mjs';
 
 const BASE = 'http://localhost:3000';
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
@@ -15,7 +16,7 @@ const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '
 
 const page = await launch();
 try {
-  sql(`DELETE FROM rate_limits WHERE bucket = 'signup'`); // local runs all come from one IP
+  sql(`DELETE FROM rate_limits WHERE bucket IN ('signup', 'login', 'login_ip', '2fa', '2fa_ip')`); // local runs all come from one IP
   await page.viewport(1440, 1000);
   await page.goto(`${BASE}/signup`);
   await page.waitText('Create your account');
@@ -26,6 +27,7 @@ try {
   await page.clickText('Create account', 'button');
   await page.waitFor(`location.pathname !== '/signup'`, 20000);
   execFileSync('C:/xampp/php/php.exe', [`${ROOT}api/bin/create-admin.php`, email], { input: 'y\n' });
+  await finishAdminSignIn(page, BASE, email, 'Calm-River-Lantern-42'); // admins sign in with an authenticator code too (ADM-12)
 
   await page.goto(`${BASE}/admin/participants`);
   await page.waitText('Assessments started');

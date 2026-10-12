@@ -8,7 +8,7 @@ use Transenigma\Core\Database;
 final class UserRepository
 {
     private const COLUMNS = 'id, email, name, password_hash, google_sub, role, status, session_version,
-                             email_verified_at, last_login_at, created_at';
+                             totp_secret_enc, totp_enabled_at, email_verified_at, last_login_at, created_at';
 
     public static function find(int $id): ?array
     {

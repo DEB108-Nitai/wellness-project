@@ -41,3 +41,33 @@ function uniqueEmail(): string
 
 const GOOD_PASSWORD = 'Calm-River-Lantern-42';
 
+
+/**
+ * A new admin, signed in through both steps (password, then an authenticator code, ADM-12).
+ * Returns [user row, authenticator secret].
+ */
+function signInAdmin(?string $email = null): array
+{
+    freshSession();
+    captureMail();
+    $email ??= uniqueEmail();
+    $id = \Transenigma\Repositories\UserRepository::create('Test Admin', $email, \Transenigma\Services\PasswordPolicy::hash(GOOD_PASSWORD), null, true, 'admin');
+    AuthService::attempt($email, GOOD_PASSWORD, authReq());
+    $secret = \Transenigma\Services\TwoFactorService::setup()['secret'];
+    \Transenigma\Services\TwoFactorService::enable(\Transenigma\Support\Totp::code($secret, \Transenigma\Support\Totp::step()), authReq());
+    return [\Transenigma\Repositories\UserRepository::find($id), $secret];
+}
+
+/** A current authenticator code that has not been used yet (tests only: clears the no-reuse marker first). */
+function freshCode(int $userId, string $secret): string
+{
+    \Transenigma\Core\Database::run('UPDATE users SET totp_last_step = NULL WHERE id = ?', [$userId]);
+    return \Transenigma\Support\Totp::code($secret, \Transenigma\Support\Totp::step());
+}
+
+/** Tests that promote a signed-in user mid-way: treat this session as having passed the second step (ADM-12). */
+function markSecondStepPassed(): void
+{
+    $_SESSION['auth_2fa'] = $_SESSION['auth_uid'] ?? 0;
+    AuthService::flush();
+}

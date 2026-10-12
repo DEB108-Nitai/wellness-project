@@ -118,9 +118,7 @@ test('admin sessions expire after the idle timeout', function () {
     useTestDatabase();
     freshSession();
     captureMail();
-    $user = AuthService::register('Idle Admin', uniqueEmail(), GOOD_PASSWORD, authReq());
-    UserRepository::setRole((int) $user['id'], 'admin');
-    AuthService::flush();
+    signInAdmin();
     assertSame('admin', AuthService::user()['role']);
 
     $_SESSION['auth_seen'] = time() - (Config::int('session.admin_idle_minutes', 720) * 60) - 5;

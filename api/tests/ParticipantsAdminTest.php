@@ -128,7 +128,7 @@ test('the research export has one row per assessment with stens, optional answer
     $id = (int) Database::value('SELECT id FROM users WHERE email = ?', [$user['email']]);
     Database::run("UPDATE users SET role = 'admin' WHERE id = ?", [$id]);
     $_SESSION['auth_seen'] = time();
-    AuthService::flush();
+    markSecondStepPassed();
     ob_start();
     (new AdminParticipantsController())->exportSessions(new Request('GET', '/admin/export/sessions', ['q' => $user['email'], 'answers' => '1'], ['REMOTE_ADDR' => '10.0.0.5'], ''));
     ob_end_clean();

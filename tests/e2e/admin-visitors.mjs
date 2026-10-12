@@ -4,6 +4,7 @@
 // Usage: node tests/e2e/admin-visitors.mjs   (needs XAMPP + npm run dev + Chrome)
 import { execFileSync } from 'node:child_process';
 import { launch } from './cdp.mjs';
+import { finishAdminSignIn } from './admin-signin.mjs';
 
 const BASE = 'http://localhost:3000';
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
@@ -35,7 +36,7 @@ try {
   step(`seeded ${rows.length} page views over 30 days`);
   const before = Number(sql(`SELECT COUNT(*) FROM page_views WHERE visitor_hash NOT LIKE 'e2e%'`));
 
-  sql(`DELETE FROM rate_limits WHERE bucket = 'signup'`);
+  sql(`DELETE FROM rate_limits WHERE bucket IN ('signup', 'login', 'login_ip', '2fa', '2fa_ip')`);
   await page.viewport(1440, 1000);
   await page.goto(`${BASE}/signup`);
   await page.waitText('Create your account');
@@ -49,6 +50,7 @@ try {
   await page.clickText('Create account', 'button');
   await page.waitFor(`location.pathname !== '/signup'`, 20000);
   execFileSync('C:/xampp/php/php.exe', [`${ROOT}api/bin/create-admin.php`, email], { input: 'y\n' });
+  await finishAdminSignIn(page, BASE, email, 'Calm-River-Lantern-42'); // admins sign in with an authenticator code too (ADM-12)
   const after = Number(sql(`SELECT COUNT(*) FROM page_views WHERE visitor_hash NOT LIKE 'e2e%'`));
   if (after !== before) throw new Error(`the automated browser was counted (${after - before} views)`);
   step('our automated browser is not counted');

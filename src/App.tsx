@@ -125,6 +125,8 @@ function WithNavigate<P extends { onNavigate: (view: string, param?: string) => 
 
 // The admin console is a separate bundle, downloaded only when an admin opens it (PRD §5).
 const AdminApp = React.lazy(() => import('./components/admin/AdminApp'));
+// Only admins reach the second sign-in step; it carries the QR code library, so it loads separately too.
+const TwoFactorPage = React.lazy(() => import('./pages/auth/TwoFactorPage'));
 
 export default function App() {
   return (
@@ -135,6 +137,14 @@ export default function App() {
     <Routes>
       {/* Focused onboarding screens (no site chrome) */}
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login/2fa"
+        element={
+          <React.Suspense fallback={<PageSpinner />}>
+            <TwoFactorPage />
+          </React.Suspense>
+        }
+      />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />

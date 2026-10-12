@@ -3,9 +3,13 @@
  * Create the first administrator, or promote an existing user (PRD AUTH-10).
  *
  *   php api/bin/create-admin.php admin@yourdomain.com "Full Name"
+ *   php api/bin/create-admin.php --reset-2fa admin@yourdomain.com
  *
  * New accounts: you are asked for a password (typed twice). Existing accounts
  * keep their password and are promoted to admin after confirmation.
+ * Every admin sets up two-step sign-in (an authenticator app) at their first sign-in (ADM-12).
+ * --reset-2fa is the way back in for an admin who lost both their phone and their recovery codes:
+ * it signs them out everywhere, and they set it up again at their next sign-in.
  */
 declare(strict_types=1);
 
@@ -19,11 +23,17 @@ require dirname(__DIR__) . '/bootstrap.php';
 use Transenigma\Repositories\UserRepository;
 use Transenigma\Services\AuditService;
 use Transenigma\Services\PasswordPolicy;
+use Transenigma\Services\TwoFactorService;
 
-$email = mb_strtolower(trim($argv[1] ?? ''));
-$name = trim($argv[2] ?? '');
+$args = array_slice($argv, 1);
+$reset2fa = ($args[0] ?? '') === '--reset-2fa';
+if ($reset2fa) {
+    array_shift($args);
+}
+$email = mb_strtolower(trim($args[0] ?? ''));
+$name = trim($args[1] ?? '');
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    fwrite(STDERR, "Usage: php api/bin/create-admin.php <email> \"<full name>\"\n");
+    fwrite(STDERR, "Usage: php api/bin/create-admin.php <email> \"<full name>\"\n       php api/bin/create-admin.php --reset-2fa <email>\n");
     exit(1);
 }
 
@@ -31,6 +41,23 @@ function ask(string $prompt): string
 {
     echo $prompt;
     return rtrim((string) fgets(STDIN), "\r\n");
+}
+
+const NEXT_SIGN_IN = "At their next sign-in they set up two-step sign-in with an authenticator app (for example Google Authenticator or Microsoft Authenticator).\n";
+
+if ($reset2fa) {
+    $admin = UserRepository::findByEmail($email);
+    if ($admin === null || $admin['role'] !== 'admin') {
+        fwrite(STDERR, "$email is not an administrator.\n");
+        exit(1);
+    }
+    if (strtolower(ask("Reset two-step sign-in for $email? They will be signed out everywhere. [y/N] ")) !== 'y') {
+        echo "Cancelled.\n";
+        exit(1);
+    }
+    TwoFactorService::reset($admin);
+    echo "Done: two-step sign-in was reset for $email.\n" . NEXT_SIGN_IN;
+    exit(0);
 }
 
 $existing = UserRepository::findByEmail($email);
@@ -45,7 +72,7 @@ if ($existing !== null) {
     }
     UserRepository::setRole((int) $existing['id'], 'admin');
     AuditService::log('ADMIN_PROMOTED_CLI', 'system', null, 'user', $existing['id'], ['email' => $email]);
-    echo "Done: $email is now an administrator.\n";
+    echo "Done: $email is now an administrator.\n" . NEXT_SIGN_IN;
     exit(0);
 }
 
@@ -67,7 +94,7 @@ for ($attempt = 1; $attempt <= 3; $attempt++) {
     }
     $id = UserRepository::create($name, $email, PasswordPolicy::hash($password), null, true, 'admin');
     AuditService::log('ADMIN_CREATED_CLI', 'system', null, 'user', $id, ['email' => $email]);
-    echo "Done: administrator $email created. You can now sign in at /login.\n";
+    echo "Done: administrator $email created. You can now sign in at /login.\n" . NEXT_SIGN_IN;
     exit(0);
 }
 

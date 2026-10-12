@@ -242,7 +242,7 @@ test('another user cannot see the report (fault 4) but an admin can', function (
     assertSame(404, assertThrows(HttpException::class, fn () => AssessmentService::findOwnedByRef($state['ref'], AssessmentService::owner(testRequest())))->status);
 
     UserRepository::setRole((int) $other['id'], 'admin');
-    AuthService::flush();
+    markSecondStepPassed();
     $report = ResultsService::forViewer($state['ref'], AuthService::user());
     assertSame(false, $report['isOwner']);
     assertSame(16, count($report['factors']));
