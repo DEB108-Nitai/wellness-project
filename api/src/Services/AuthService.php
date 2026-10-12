@@ -148,8 +148,9 @@ final class AuthService
         }
 
         RateLimiter::clear('login', $key, self::LOGIN_WINDOW);
-        if (PasswordPolicy::needsRehash($hash)) {
-            UserRepository::rehashPassword((int) $user['id'], PasswordPolicy::hash($password));
+        if (PasswordPolicy::needsRehash($hash) && !UserRepository::rehashPassword((int) $user['id'], $hash, PasswordPolicy::hash($password))) {
+            // The password was reset or changed while we checked it: the old one must not sign anyone in.
+            throw new HttpException(401, 'INVALID_CREDENTIALS', 'Incorrect email or password.');
         }
         self::signIn($user, $request, 'password');
         return $user;
@@ -166,11 +167,26 @@ final class AuthService
         ]);
     }
 
+    /**
+     * Confirm the email of the signed-in account the link was sent for. Opening the link alone is not enough:
+     * otherwise someone who signed up with another person's address would get it confirmed by its real owner
+     * (and see what is filed under it) while keeping the password they chose. The link is only used up once
+     * it is accepted, so a refused click does not burn it.
+     */
     public static function verifyEmail(string $token, Request $request): void
     {
+        $invalid = static fn (): HttpException => HttpException::badRequest('This verification link is invalid or has expired. Please request a new one.', 'INVALID_TOKEN');
+        $owner = TokenService::peek($token, TokenService::VERIFY_EMAIL) ?? throw $invalid();
+        $user = self::user();
+        if ($user === null) {
+            throw HttpException::unauthorized('Please sign in to confirm your email address.', 'SIGN_IN_TO_VERIFY');
+        }
+        if ((int) $user['id'] !== $owner) {
+            throw HttpException::forbidden('This link belongs to a different account. Sign out, then sign in with the account you created.', 'WRONG_ACCOUNT');
+        }
         $userId = TokenService::consume($token, TokenService::VERIFY_EMAIL);
-        if ($userId === null) {
-            throw HttpException::badRequest('This verification link is invalid or has expired. Please request a new one.', 'INVALID_TOKEN');
+        if ($userId !== $owner) {
+            throw $invalid();
         }
         UserRepository::markVerified($userId);
         AuditService::log('AUTH_EMAIL_VERIFIED', 'user', $userId, 'user', $userId, [], $request);
@@ -231,12 +247,18 @@ final class AuthService
         if ($error = PasswordPolicy::check($new, $user['email'])) {
             throw HttpException::validation(['newPassword' => $error]);
         }
-        UserRepository::updatePassword((int) $user['id'], PasswordPolicy::hash($new));
-        // Keep THIS session signed in; every other session is now invalid.
-        $fresh = UserRepository::find((int) $user['id']);
+        // Only if no reset or other change landed since this session was checked; otherwise this request
+        // must neither overwrite that new password nor pick up the session version it created.
+        $version = (int) $user['session_version'];
+        if (!UserRepository::updatePassword((int) $user['id'], PasswordPolicy::hash($new), $version)) {
+            self::forgetSession();
+            self::$current = null;
+            throw HttpException::unauthorized('Your session ended because your password was changed elsewhere. Please sign in again.');
+        }
+        // Keep THIS session signed in, on the version this write created; every other session is now invalid.
         Session::regenerate();
-        Session::set(self::S_VERSION, (int) $fresh['session_version']);
-        self::$current = $fresh;
+        Session::set(self::S_VERSION, $version + 1);
+        self::$current = UserRepository::find((int) $user['id']);
         AuditService::forUser($user, 'ACCOUNT_PASSWORD_CHANGED', 'user', null, [], $request);
         Mailer::send($user['email'], 'password-changed', ['name' => $user['name']]);
     }

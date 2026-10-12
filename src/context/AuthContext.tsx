@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { authApi, AuthUser, SessionPayload } from '../api/auth';
+import { clearAllPending, runBeforeSignOut } from '../lib/pendingAnswers';
 
 interface AuthState {
   user: AuthUser | null;
@@ -64,10 +65,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const logout = useCallback(async () => {
+    await runBeforeSignOut(); // save any unsent test answers to the account first
     try {
       applySession(await authApi.logout());
     } catch {
       setUser(null);
+    } finally {
+      clearAllPending(); // leave no answers behind on this device (shared computers)
     }
   }, [applySession]);
 

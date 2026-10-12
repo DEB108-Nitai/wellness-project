@@ -1,27 +1,39 @@
 // Minimal Chrome DevTools Protocol driver (no dependencies; Node 22+ has WebSocket).
 import { spawn } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-export async function launch(port = 9333) {
+/**
+ * Start a headless Chrome and connect to its page. Chrome picks a free debugging port itself and writes it
+ * to DevToolsActivePort inside our fresh temporary profile, so we only ever talk to the Chrome we started
+ * (a fixed port could be taken by another local program, which would then receive typed passwords).
+ * The old `port` argument is accepted and ignored so existing scripts keep working.
+ */
+export async function launch(_port) {
   const profile = mkdtempSync(join(tmpdir(), 'te-e2e-'));
   const proc = spawn(CHROME, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
-    `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--window-size=1280,900', 'about:blank',
+    '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--window-size=1280,900', 'about:blank',
   ], { stdio: 'ignore' });
+  let exited = false;
+  proc.on('exit', () => { exited = true; });
   let target;
-  for (let i = 0; i < 50 && !target; i++) {
+  for (let i = 0; i < 50 && !target && !exited; i++) {
     try {
+      const port = Number(readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n')[0]);
       const list = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-      target = list.find((t) => t.type === 'page');
+      target = list.find((t) => t.type === 'page' && t.webSocketDebuggerUrl?.startsWith(`ws://127.0.0.1:${port}/`));
     } catch { /* not up yet */ }
     if (!target) await sleep(200);
   }
-  if (!target) throw new Error('Chrome did not start');
+  if (!target) {
+    proc.kill();
+    throw new Error('Chrome did not start');
+  }
   const ws = new WebSocket(target.webSocketDebuggerUrl);
   await new Promise((r) => ws.addEventListener('open', r, { once: true }));
   let id = 0;

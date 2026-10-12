@@ -38,7 +38,9 @@ final class ChallengeController
         if (isset($data['country']) && !Countries::isValid($data['country'])) {
             throw HttpException::validation(['country' => 'Please choose a valid country.']);
         }
-        return Response::created(ChallengeService::register($data, $request));
+        // Same answer whether or not the email was already registered (no disclosure of who joined what).
+        ChallengeService::register($data, $request);
+        return Response::created(['message' => 'Registered successfully']);
     }
 
     /** GET /api/challenge/my-registrations */

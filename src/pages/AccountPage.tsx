@@ -26,7 +26,7 @@ const Section: React.FC<{ icon: React.ElementType; title: string; description: s
 );
 
 export const AccountPage: React.FC = () => {
-  const { user, applySession, logout } = useAuth();
+  const { user, applySession, logout, refresh } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState(user?.name ?? '');
@@ -78,6 +78,8 @@ export const AccountPage: React.FC = () => {
     } catch (err) {
       if (err instanceof ApiError && Object.keys(err.fields).length) setPasswordErrors(err.fields);
       else setPasswordMsg({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not save. Please try again.' });
+      // Signed out meanwhile (e.g. the password was reset elsewhere): let the rest of the site know.
+      if (err instanceof ApiError && err.status === 401) void refresh();
     } finally {
       setSavingPassword(false);
     }

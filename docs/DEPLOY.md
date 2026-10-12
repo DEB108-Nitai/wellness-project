@@ -156,8 +156,12 @@ curl -s https://transenigma.com/api/health
 curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-security"
 ```
 
+**Before launch (secrets and email):**
+- [ ] Fresh secrets on the server only: a new `app.secret` (`php -r "echo bin2hex(random_bytes(32));"`), the company's Google OAuth client and secret (delete the old personal-project client afterwards), and a **new password for the support@ mailbox** (DreamHost panel → Email). The local development copies may have been reachable on the LAN while `npm run dev` ran, so none are reused.
+- [ ] Email authentication for transenigma.com: SPF and DKIM records exist (DreamHost panel → Mail → or the DNS provider). Then send one **password reset to a Gmail address** and confirm it lands in the inbox, not Spam.
+
 **By hand:**
-- [ ] `http://` and `www.` addresses end up on `https://transenigma.com`.
+- [ ] `http://` and `www.` addresses end up on `https://transenigma.com` (the redirect check above covers `www`).
 - [ ] Every menu page loads: Home, Programs, 16PF Test pages, Research, Consultancy, Our Team, Contact, Privacy, Terms.
 - [ ] Refreshing a deep page (e.g. `/research#drug-discovery`) works, with no 404.
 - [ ] Take the test as a guest → submit → sign up → **verification email arrives** → report opens.
@@ -170,6 +174,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 - [ ] Phone check: menu drawer, research cards swipe, no sideways scrolling.
 - [ ] `https://transenigma.com/robots.txt` and `/sitemap.xml` load. Submit the sitemap in Google Search Console.
 - [ ] `https://transenigma.com/api/config/config.example.php` and `/database/migrations/` return **403**.
+- [ ] **10-minute sign-in check** with a fresh Gmail address: sign up → verification email → click it (signed in) → sign out → sign in → forgot password → reset → sign in with the new password → Google sign-in → open `/admin` as that normal user and confirm it is refused.
 - [ ] Delete any test accounts created during these checks.
 
 ---

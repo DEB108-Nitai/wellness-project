@@ -35,7 +35,8 @@
 ## Daily commands
 | Task | Command |
 |---|---|
-| Frontend dev server (http://localhost:3000; `/api` is proxied to XAMPP) | `npm run dev` |
+| Frontend dev server (http://localhost:3000, this PC only; `/api` is proxied to XAMPP) | `npm run dev` |
+| Same, reachable from a phone on the same Wi-Fi | `npm run dev:lan` |
 | API directly through Apache | http://localhost/transenigma/api/health |
 | Apply new migrations | `C:\xampp\php\php.exe api\bin\migrate.php` |
 | Migration status | `C:\xampp\php\php.exe api\bin\migrate.php --status` |

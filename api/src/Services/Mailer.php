@@ -116,7 +116,8 @@ final class Mailer
     {
         $dir = Config::path('mail');
         $file = sprintf('%s/%s-%s-%s.html', $dir, gmdate('Ymd-His'), $template, bin2hex(random_bytes(3)));
-        $header = sprintf("<!--\nTo: %s\nSubject: %s\n\n%s\n-->\n", $to, $message['subject'], $message['text']);
+        // Escaped so user text (e.g. a contact message containing "-->") cannot close the comment and inject markup.
+        $header = '<!--' . htmlspecialchars(sprintf("\nTo: %s\nSubject: %s\n\n%s\n", $to, $message['subject'], $message['text']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "-->\n";
         // No attachments in a preview file: inline the icon so it shows when opened in a browser.
         $icon = 'data:image/png;base64,' . base64_encode((string) file_get_contents(API_ROOT . self::ICON_FILE));
         file_put_contents($file, $header . str_replace('cid:' . self::ICON_CID, $icon, $message['html']));

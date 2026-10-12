@@ -54,6 +54,19 @@ final class TokenService
         return (int) Database::value('SELECT user_id FROM auth_tokens WHERE token_hash = ?', [$hash]);
     }
 
+    /** The user id a valid (unused, unexpired) token belongs to, without using it up; null otherwise. */
+    public static function peek(string $token, string $type): ?int
+    {
+        if (!preg_match('/^[A-Za-z0-9_-]{43}$/', $token)) {
+            return null;
+        }
+        $id = Database::value(
+            'SELECT user_id FROM auth_tokens WHERE token_hash = ? AND type = ? AND used_at IS NULL AND expires_at > UTC_TIMESTAMP()',
+            [hash('sha256', $token), $type]
+        );
+        return $id === null ? null : (int) $id;
+    }
+
     /** 256-bit URL-safe random token (43 chars). */
     public static function random(): string
     {

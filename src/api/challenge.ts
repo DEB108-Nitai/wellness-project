@@ -45,6 +45,7 @@ export interface Registration {
 }
 
 export const challengeApi = {
-  register: (input: RegistrationInput) => api.post<Registration>('/challenge/registrations', input),
+  /** The answer is the same for a new and an already-registered email; details go to the inbox. */
+  register: (input: RegistrationInput) => api.post<{ message: string }>('/challenge/registrations', input),
   mine: () => api.get<Registration[]>('/challenge/my-registrations'),
 };

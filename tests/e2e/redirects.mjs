@@ -32,6 +32,21 @@ for (const [from, to] of REDIRECTS) {
   check(res.status === 301 && target === to, `${from} → 301 ${to}${res.status !== 301 || target !== to ? ` (got ${res.status} ${loc})` : ''}`);
 }
 
+// www → the bare domain over https, keeping the path (sign-in only accepts the canonical origin).
+// fetch() can't set Host, so use http.request; any non-local host reaches XAMPP's default site.
+{
+  const { request } = await import('node:http');
+  const url = new URL(`${base}/research`);
+  const res = await new Promise((resolve, reject) => {
+    const req = request({ host: url.hostname, port: url.port || 80, path: url.pathname, headers: { Host: 'www.example.test' } }, resolve);
+    req.on('error', reject);
+    req.end();
+  });
+  res.resume();
+  const loc = res.headers.location ?? '';
+  check(res.statusCode === 301 && loc.startsWith('https://example.test/') && loc.endsWith('/research'), `www host → 301 https bare domain (got ${res.statusCode} ${loc})`);
+}
+
 // New pages (same paths as the old site where they overlap) are served by the app, not redirected.
 for (const p of ['/', '/research', '/consultancy', '/contact', '/team', '/factors/A', '/test']) {
   const res = await fetch(base + p, { redirect: 'manual' });

@@ -93,7 +93,7 @@ final class GoogleOAuth
      * Validate the ID token's claims. The token comes straight from Google's token
      * endpoint over TLS, so per Google's docs its signature need not be re-verified;
      * we still check issuer, audience, expiry and email verification.
-     * @return array{sub:string, email:string, name:string}
+     * @return array{sub:string, email:string, name:string, emailAuthoritative:bool}
      */
     public static function validateIdToken(string $idToken): array
     {
@@ -120,7 +120,12 @@ final class GoogleOAuth
         }
         $email = mb_strtolower($payload['email']);
         $name = trim((string) ($payload['name'] ?? '')) ?: strstr($email, '@', true);
-        return ['sub' => $payload['sub'], 'email' => $email, 'name' => mb_substr($name, 0, 100)];
+        // Google only vouches for an address it hosts: a Gmail address, or a Workspace domain (hd) that matches
+        // the email. Any other address was verified once and may since have been given to someone else.
+        $domain = substr((string) strrchr($email, '@'), 1);
+        $hd = mb_strtolower((string) ($payload['hd'] ?? ''));
+        $authoritative = in_array($domain, ['gmail.com', 'googlemail.com'], true) || ($hd !== '' && $hd === $domain);
+        return ['sub' => $payload['sub'], 'email' => $email, 'name' => mb_substr($name, 0, 100), 'emailAuthoritative' => $authoritative];
     }
 
     /** Match by Google ID, then by verified email (link), else create an account. */
@@ -133,6 +138,15 @@ final class GoogleOAuth
 
         $user = UserRepository::findByEmail($claims['email']);
         if ($user !== null) {
+            // Matching by email may never replace an existing Google link, nor link an address Google does not host.
+            if ($user['google_sub'] !== null) {
+                AuditService::log('AUTH_GOOGLE_LINK_REFUSED', 'guest', null, 'user', $user['id'], ['reason' => 'different_google_account'], $request);
+                throw HttpException::conflict('This email is already connected to a different Google account.', 'GOOGLE_ACCOUNT_MISMATCH');
+            }
+            if (!$claims['emailAuthoritative']) {
+                AuditService::log('AUTH_GOOGLE_LINK_REFUSED', 'guest', null, 'user', $user['id'], ['reason' => 'email_not_hosted_by_google'], $request);
+                throw HttpException::conflict('An account with this email already exists. Please sign in with your password.', 'GOOGLE_LINK_REQUIRES_PASSWORD');
+            }
             // Google has just proven who owns this inbox. A password set on a never-verified account was
             // not, so it is dropped (and its sessions ended) to stop account pre-hijacking.
             if (UserRepository::dropUnprovenPassword((int) $user['id'])) {
@@ -146,9 +160,14 @@ final class GoogleOAuth
         if (!SettingsService::bool('signup_open')) {
             throw HttpException::forbidden('New sign-ups are temporarily closed.', 'SIGNUP_CLOSED');
         }
-        $id = UserRepository::create($claims['name'], $claims['email'], null, $claims['sub'], true);
+        // Only an address Google hosts counts as proven; any other is confirmed by email like a password sign-up.
+        $id = UserRepository::create($claims['name'], $claims['email'], null, $claims['sub'], $claims['emailAuthoritative']);
         AuditService::log('AUTH_SIGNUP', 'user', $id, 'user', $id, ['method' => 'google'], $request);
-        return UserRepository::find($id);
+        $user = UserRepository::find($id);
+        if (!$claims['emailAuthoritative']) {
+            AuthService::sendVerification($user);
+        }
+        return $user;
     }
 
     private static function exchangeCode(string $code, string $verifier): array

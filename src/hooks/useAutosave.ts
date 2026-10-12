@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import { assessmentApi } from '../api/assessment';
+import { SIGNOUT_KEY, onBeforeSignOut, readPending, writePending } from '../lib/pendingAnswers';
 
 /**
  * 'closed': the test was submitted or restarted elsewhere (another tab), so saving stopped.
@@ -11,25 +12,6 @@ export type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error' | 'cl
 const DEBOUNCE_MS = 800;
 const RETRY_MS = 15_000;
 const MAX_PER_REQUEST = 60; // matches the API limit
-const pendingKey = (ref: string) => `te_pending_${ref}`;
-
-function readPending(ref: string): Record<string, number> {
-  try {
-    return JSON.parse(localStorage.getItem(pendingKey(ref)) ?? '{}') as Record<string, number>;
-  } catch {
-    return {};
-  }
-}
-
-function writePending(ref: string, pending: Record<string, number>): void {
-  try {
-    if (Object.keys(pending).length === 0) localStorage.removeItem(pendingKey(ref));
-    else localStorage.setItem(pendingKey(ref), JSON.stringify(pending));
-  } catch {
-    // storage unavailable (private mode) — answers still sync while online
-  }
-}
-
 /**
  * Batched, offline-tolerant autosave for an assessment session (PRD TEST-5).
  * - Answers are queued and sent ~800 ms after the last click, or immediately on flush().
@@ -46,6 +28,8 @@ export function useAutosave(ref: string | null, page: number) {
   /** Why saving stopped for good ('completed' | 'abandoned' | …), from the server; null while saving works. */
   const [closedReason, setClosedReason] = useState<string | null>(null);
   const stopped = useRef(false);
+  /** Signed out in another tab: answers given here may not be stored on this device either. */
+  const discard = useRef(false);
 
   useEffect(() => {
     pageRef.current = page;
@@ -103,7 +87,7 @@ export function useAutosave(ref: string | null, page: number) {
   /** Queue one answer; it is sent after a short pause. */
   const queue = useCallback(
     (itemId: number, value: number) => {
-      if (!ref) return;
+      if (!ref || discard.current) return;
       pending.current[String(itemId)] = value;
       writePending(ref, pending.current);
       if (stopped.current) return; // kept on this device; nothing to send to
@@ -126,6 +110,7 @@ export function useAutosave(ref: string | null, page: number) {
   useEffect(() => {
     if (!ref) return;
     stopped.current = false;
+    discard.current = false;
     setClosedReason(null);
     setStatus('idle');
     lastTick.current = Date.now();
@@ -137,11 +122,25 @@ export function useAutosave(ref: string | null, page: number) {
     const retry = window.setInterval(() => {
       if (Object.keys(pending.current).length > 0) void flush();
     }, RETRY_MS);
+    // Signing out in this tab saves the last answers first; the sign-out then clears the device.
+    const unregister = onBeforeSignOut(flush);
+    // Signed out in another tab: stop, and keep nothing that could be written back to this device.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== SIGNOUT_KEY) return;
+      stopped.current = true;
+      discard.current = true;
+      window.clearTimeout(debounce.current);
+      pending.current = {};
+      setStatus('lost');
+    };
     window.addEventListener('online', onOnline);
+    window.addEventListener('storage', onStorage);
     document.addEventListener('visibilitychange', onVisibility);
     return () => {
       window.clearInterval(retry);
+      unregister();
       window.removeEventListener('online', onOnline);
+      window.removeEventListener('storage', onStorage);
       document.removeEventListener('visibilitychange', onVisibility);
       window.clearTimeout(debounce.current);
     };

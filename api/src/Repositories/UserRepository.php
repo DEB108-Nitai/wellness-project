@@ -34,16 +34,30 @@ final class UserRepository
         );
     }
 
-    /** Store a new password hash and invalidate all existing sessions. */
-    public static function updatePassword(int $id, string $hash): void
+    /**
+     * Store a new password hash and invalidate all existing sessions.
+     * With $expectedVersion, the write only happens if no reset/change landed since the caller's check;
+     * returns false when it did not happen.
+     */
+    public static function updatePassword(int $id, string $hash, ?int $expectedVersion = null): bool
     {
-        Database::run('UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [$hash, $id]);
+        if ($expectedVersion === null) {
+            return Database::run('UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ?', [$hash, $id])->rowCount() === 1;
+        }
+        return Database::run(
+            'UPDATE users SET password_hash = ?, session_version = session_version + 1 WHERE id = ? AND session_version = ?',
+            [$hash, $id, $expectedVersion]
+        )->rowCount() === 1;
     }
 
-    /** Transparent re-hash on login (algorithm upgrade) — does not sign anyone out. */
-    public static function rehashPassword(int $id, string $hash): void
+    /**
+     * Transparent re-hash on login (algorithm upgrade) — does not sign anyone out.
+     * Only replaces the exact hash the password was checked against, so a reset that landed meanwhile
+     * is never overwritten with the old password. Returns false in that case.
+     */
+    public static function rehashPassword(int $id, string $oldHash, string $newHash): bool
     {
-        Database::run('UPDATE users SET password_hash = ? WHERE id = ?', [$hash, $id]);
+        return Database::run('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ?', [$newHash, $id, $oldHash])->rowCount() === 1;
     }
 
     public static function markVerified(int $id): void

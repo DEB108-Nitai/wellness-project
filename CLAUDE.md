@@ -19,7 +19,7 @@ PHP is XAMPP's: `C:\xampp\php\php.exe` (also `php` if on PATH).
 
 | Task | Command |
 |---|---|
-| Frontend dev server (http://localhost:3000, proxies `/api` to XAMPP Apache) | `npm run dev` |
+| Frontend dev server (http://localhost:3000, this PC only; proxies `/api` to XAMPP Apache). `npm run dev:lan` for a phone on Wi-Fi | `npm run dev` |
 | Type-check (the only "lint") | `npm run lint` |
 | Production build | `npm run build` |
 | All API tests (wipes and re-migrates `transenigma_test`) | `php api/tests/run.php` |

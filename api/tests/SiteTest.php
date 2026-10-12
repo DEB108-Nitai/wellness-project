@@ -44,11 +44,17 @@ test('all three programs register with the exact details chosen (faults 15, 16)'
 test('the same email cannot register twice for the same program, but can join other programs (fault 17)', function () {
     useTestDatabase();
     asGuest();
-    captureMail();
+    $mail = captureMail();
     $email = uniqueEmail();
-    ChallengeService::register(registration(['email' => $email, 'program' => 'STI']), authReq());
-    $e = assertThrows(HttpException::class, fn () => ChallengeService::register(registration(['email' => $email, 'program' => 'STI']), authReq()));
-    assertSame('ALREADY_REGISTERED', $e->errorCode);
+    $first = ChallengeService::register(registration(['email' => $email, 'program' => 'STI']), authReq());
+    // A second attempt looks exactly like success to whoever submits it (no disclosure of who joined what);
+    // only the inbox learns it is already registered.
+    assertSame(null, ChallengeService::register(registration(['email' => $email, 'program' => 'STI', 'name' => 'Someone Else']), authReq()));
+    assertSame(1, (int) Database::value("SELECT COUNT(*) FROM challenge_registrations WHERE email = ? AND program = 'STI'", [$email]));
+    assertSame(2, count($mail));
+    assertSame($email, $mail[1]['to']);
+    assertTrue(str_contains($mail[1]['subject'], 'already registered'));
+    assertTrue(str_contains($mail[1]['text'], $first['ref']) && str_contains($mail[1]['text'], 'Ravi Kumar'), 'the registered name and ref, not the new input');
     ChallengeService::register(registration(['email' => $email, 'program' => 'TTI']), authReq()); // allowed
 
     // After cancellation, registering again is allowed.
@@ -107,6 +113,30 @@ test('admin can change status and notes; CSV export neutralises formulas', funct
     $csv = (string) ob_get_clean();
     assertTrue(str_contains($csv, "'=HYPERLINK"), 'formula must be prefixed with an apostrophe');
     assertTrue(str_contains($csv, $reg['ref']));
+});
+
+test('CSV export keeps every value in its own cell, even with backslash-quote tricks', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $tricky = 'x\\",=HYPERLINK("http://evil")';
+    $goal = "line one\nline \\\" two"; // a newline and a backslash-quote inside one cell
+    $reg = ChallengeService::register(registration(['name' => $tricky, 'primaryGoal' => $goal]), authReq());
+    ob_start();
+    ChallengeService::exportCsv(['q' => $reg['ref']]);
+    $csv = substr((string) ob_get_clean(), 3); // drop the UTF-8 BOM
+    // Parse the way spreadsheets do (RFC 4180, no backslash escape).
+    $fh = fopen('php://memory', 'r+');
+    fwrite($fh, $csv);
+    rewind($fh);
+    $rows = [];
+    while (($row = fgetcsv($fh, null, ',', '"', '')) !== false) {
+        $rows[] = $row;
+    }
+    assertSame(2, count($rows), 'header + one row');
+    assertSame(14, count($rows[1]), 'no extra cells');
+    assertSame($tricky, $rows[1][3], 'name cell intact');
+    assertSame($goal, $rows[1][11], 'goal cell intact');
 });
 
 test('contact form stores the message and notifies support when configured', function () {
