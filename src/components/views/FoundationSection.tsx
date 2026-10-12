@@ -1,6 +1,8 @@
 import React from 'react';
 import { ArrowRight, Cpu, FlaskConical, HeartPulse } from 'lucide-react';
 import { useAppNavigate, useSectionNavigate } from '../../lib/routes';
+import { ContentStats } from '../../api/content';
+import { useContentStats } from '../../hooks/useContentStats';
 
 /**
  * Research, Consultancy and Programs: the three disciplines behind Transenigma.
@@ -11,7 +13,8 @@ interface Discipline {
   icon: React.ElementType;
   label: string;
   title: string;
-  stat: string;
+  /** Live counts come from the admin-managed content, so they never go stale. */
+  stat: string | ((s: ContentStats) => string);
   text: string;
   note?: string;
   link?: { label: string; view?: string; section?: string };
@@ -23,7 +26,7 @@ const DISCIPLINES: Discipline[] = [
     icon: FlaskConical,
     label: 'Research',
     title: 'Science, published.',
-    stat: '97 publications · 15 research fields',
+    stat: (s) => `${plural(s.publications, 'publication')} · ${plural(s.researchFields, 'research field')}`,
     text: 'Through the Trans Enigma Research Foundation (TERF): computational psychology, AI-led drug discovery, the science of happiness, Sankhya and Ayurveda, leadership and governance.',
     note: 'Published with IEEE/ACM, Springer and the Journal of Financial Crime.',
     link: { label: 'Explore our research', view: 'research' },
@@ -33,7 +36,7 @@ const DISCIPLINES: Discipline[] = [
     icon: Cpu,
     label: 'Consultancy',
     title: 'Technology, delivered.',
-    stat: '9 client projects',
+    stat: (s) => plural(s.clientProjects, 'client project'),
     text: 'Enterprise platforms, web and mobile apps and IoT systems for Mjunction (TATA-SAIL), SALPG (HPCL–Total), Oil India, ISKCON and the Centre for Quantum Technologies, NUS.',
     link: { label: 'See our work', view: 'consultancy' },
     tone: 'bg-indigo-50 text-indigo-700 ring-indigo-100',
@@ -49,7 +52,10 @@ const DISCIPLINES: Discipline[] = [
   },
 ];
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 export const FoundationSection: React.FC = () => {
+  const { stats, failed } = useContentStats();
   const goToSection = useSectionNavigate();
   const goTo = useAppNavigate();
   const follow = (link: NonNullable<Discipline['link']>) => (link.section ? goToSection(link.section) : link.view && goTo(link.view));
@@ -79,7 +85,12 @@ export const FoundationSection: React.FC = () => {
                   <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">{d.label}</span>
                 </div>
                 <h3 className="mt-6 text-2xl font-bold text-slate-900 font-heading">{d.title}</h3>
-                <p className="mt-1.5 text-sm font-semibold text-teal-700">{d.stat}</p>
+                {typeof d.stat === 'string' || stats ? (
+                  <p className="mt-1.5 text-sm font-semibold text-teal-700">{typeof d.stat === 'string' ? d.stat : d.stat(stats!)}</p>
+                ) : failed ? null : (
+                  // Same height while the live count loads; never shows a stale number.
+                  <p className="mt-1.5 h-5 w-44 rounded bg-slate-100 animate-pulse" aria-hidden="true" />
+                )}
                 <p className="mt-4 text-sm text-slate-600 leading-relaxed">{d.text}</p>
                 <div className="mt-auto pt-5 space-y-3">
                   {d.note && <p className="text-xs text-slate-500 italic">{d.note}</p>}

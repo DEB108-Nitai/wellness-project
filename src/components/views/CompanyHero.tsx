@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowRight, PlayCircle } from 'lucide-react';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useSectionNavigate } from '../../lib/routes';
+import { useContentStats } from '../../hooks/useContentStats';
 
 /**
  * Opening band of the home page: Transenigma's mission in a compact dark hero.
@@ -13,6 +14,7 @@ interface Props {
 
 export const CompanyHero: React.FC<Props> = ({ onNavigate }) => {
   const goToSection = useSectionNavigate();
+  const { stats, failed } = useContentStats();
   const { active: activeDraft, progress: draftProgress } = useActiveSession();
   const resuming = !!activeDraft && activeDraft.answeredCount > 0;
 
@@ -42,8 +44,18 @@ export const CompanyHero: React.FC<Props> = ({ onNavigate }) => {
 
         <p className="mt-7 text-base sm:text-lg text-slate-300 leading-relaxed max-w-2xl mx-auto text-pretty">
           Transenigma is a research and technology company with one mission: to turn the science of the mind into tools that
-          change lives. After 97 publications and years of work for industry, now we build health care and education products for
-          everyone.
+          change lives. After{' '}
+          {failed ? (
+            // Count unavailable: no number rather than a stale one.
+            'many'
+          ) : (
+            // Live count of published papers; the space is kept while it loads so the line doesn't jump.
+            <span className={`tabular-nums transition-opacity ${stats ? 'opacity-100' : 'opacity-0'}`} aria-hidden={stats ? undefined : true}>
+              {stats?.publications ?? '00'}
+            </span>
+          )}{' '}
+          publications
+          and years of work for industry, now we build health care and education products for everyone.
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">

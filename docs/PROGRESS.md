@@ -241,6 +241,29 @@ The owner ran a CodeRabbit deep scan and pasted 12 findings (1 duplicate). All 1
 
 ---
 
+## 4f. Phase 5 admin console — slice A: research and consultancy content (branch `feature/admin-console`, 2026-10-12)
+
+Owner asks: research papers and consultancy projects managed from the admin, and every number on the site follows.
+
+- **Admin console rebuilt** as its own lazy-loaded bundle (`src/components/admin/AdminApp.tsx`, ~58 KB) with a sidebar, a phone drawer and real URLs (`/admin`, `/admin/registrations`, `/admin/research`, `/admin/consultancy`, `/admin/settings`). Shared admin UI kit: `src/components/admin/ui.tsx`. The old `AdminPortalView` was removed.
+- **Research** (`/admin/research`): add/edit/hide/delete papers (one "title or full citation" field, category or **+ New category**, year, https link). Categories can be renamed, retagged, reordered, hidden, and deleted when empty. A new category becomes a new home-page card.
+- **Consultancy** (`/admin/consultancy`): add/edit/hide/remove projects per section, with client name and an image upload (JPEG/PNG/WebP ≤ 2 MB, content-checked, random name, saved to `<webroot>/uploads/projects`, a folder that never runs scripts).
+- **Live numbers:** new `GET /api/content/stats`. The hard-coded "97 publications · 15 research fields", "After 97 publications", "Fifteen fields…", "9 client projects" and the `CLIENTS` list now come from the database. The `/research` meta description no longer names a number.
+- **Migration 022:** `publications.created_at` and `consultancy_projects.client_name` (backfilled for the 9 clients).
+- **Fresh-eyes review** (course lesson 41, a separate read-only agent): no critical issues. The confirmed fixes are in:
+  - uploads folder made world-readable (0755);
+  - DEPLOY: `uploads/` is live content (never delete; backed up nightly);
+  - cron sweeps uploads that were never saved;
+  - atomic category delete;
+  - modal focus and trap, drawer Escape/aria;
+  - reorder renumbers;
+  - fallbacks when stats fail;
+  - more tests.
+- **Tests:** API 83 → 91 (`ContentAdminTest`). New E2E `tests/e2e/admin-content.mjs`: add a paper in a new category plus a project with an image, check the home, Research and Consultancy pages and counts, then remove both.
+- **Still in Phase 5:** B registrations charts, C participants and results, D visitor counter, E dashboard, F users and anonymise, **F2 multiple admins with one primary admin**, G admin 2FA, H messages/FAQs/audit/items.
+
+---
+
 ## 5. Prototype faults (from the first analysis)
 
 | # | Fault | Status |

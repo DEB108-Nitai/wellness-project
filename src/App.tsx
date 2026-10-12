@@ -16,6 +16,7 @@ import { AnnouncementBar } from './components/layout/AnnouncementBar';
 import { CookieNotice } from './components/layout/CookieNotice';
 import { VerifyEmailBanner } from './components/layout/VerifyEmailBanner';
 import { RequireAdmin, RequireAuth } from './components/auth/RouteGuards';
+import { PageSpinner } from './components/auth/FormControls';
 import { LandingView } from './components/views/LandingView';
 import { FactorsDirectoryView } from './components/views/FactorsDirectoryView';
 import { HowItWorksView } from './components/views/HowItWorksView';
@@ -26,7 +27,6 @@ import { ResearchView } from './components/views/ResearchView';
 import { ConsultancyView } from './components/views/ConsultancyView';
 import { ContactView } from './components/views/ContactView';
 import { PrivacyTermsView } from './components/views/PrivacyTermsView';
-import { AdminPortalView } from './components/views/AdminPortalView';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
@@ -116,6 +116,9 @@ function WithNavigate<P extends { onNavigate: (view: string, param?: string) => 
   return <Component {...({ onNavigate } as P)} />;
 }
 
+// The admin console is a separate bundle, downloaded only when an admin opens it (PRD §5).
+const AdminApp = React.lazy(() => import('./components/admin/AdminApp'));
+
 export default function App() {
   return (
     <>
@@ -129,6 +132,18 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      {/* Admin console: its own layout, no public site chrome */}
+      <Route
+        path="/admin/*"
+        element={
+          <RequireAdmin>
+            <React.Suspense fallback={<PageSpinner />}>
+              <AdminApp />
+            </React.Suspense>
+          </RequireAdmin>
+        }
+      />
 
       <Route element={<SiteLayout />}>
         <Route index element={<WithNavigate component={LandingView} />} />
@@ -160,14 +175,6 @@ export default function App() {
             <RequireAuth>
               <AccountPage />
             </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <RequireAdmin>
-              <WithNavigate component={AdminPortalView} />
-            </RequireAdmin>
           }
         />
         <Route path="/unsubscribe" element={<UnsubscribePage />} />

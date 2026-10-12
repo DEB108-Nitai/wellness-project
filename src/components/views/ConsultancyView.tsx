@@ -15,19 +15,6 @@ interface Props {
 
 const UPCOMING = 'upcoming';
 
-// Client names as plain text (no third-party logos), in the order the old site listed the work.
-const CLIENTS = [
-  'SALPG',
-  'Mjunction (TATA-SAIL)',
-  'Oil India',
-  'ISKCON Kolkata',
-  'Kolkata Ventures',
-  'Annamrita',
-  'Centre for Quantum Technologies, NUS',
-  'Brainwave Science',
-  'Yogavihara',
-];
-
 const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> = ({ project, upcoming }) => (
   <li>
     <article className="group h-full flex flex-col rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
@@ -117,6 +104,8 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
   const services = data?.groups.filter((g) => g.slug !== UPCOMING) ?? [];
   const upcoming = data?.groups.find((g) => g.slug === UPCOMING);
   const clientProjects = services.reduce((n, g) => n + g.projects.length, 0);
+  // Client names as plain text (no third-party logos), from the admin-managed projects.
+  const clients = [...new Set(services.flatMap((g) => g.projects.map((p) => p.clientName).filter((c): c is string => !!c)))];
 
   return (
     <div className="pb-24">
@@ -138,18 +127,20 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
       </section>
 
       {/* Clients */}
+      {clients.length > 0 && (
       <section aria-labelledby="clients-title" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 id="clients-title" className="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
           Clients and partners
         </h2>
         <ul className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-2.5">
-          {CLIENTS.map((c) => (
+          {clients.map((c) => (
             <li key={c} className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700">
               {c}
             </li>
           ))}
         </ul>
       </section>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 space-y-20" aria-busy={!data && !loadError}>
         {loadError && (

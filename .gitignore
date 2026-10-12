@@ -17,3 +17,6 @@ api/storage/mail/*
 
 # E2E screenshots
 tests/e2e/shots/
+
+# Admin uploads (live content; back up on the server, never commit)
+/uploads/

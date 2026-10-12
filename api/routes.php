@@ -8,6 +8,7 @@
 declare(strict_types=1);
 
 use Transenigma\Controllers\AccountController;
+use Transenigma\Controllers\AdminContentController;
 use Transenigma\Controllers\AdminController;
 use Transenigma\Controllers\AssessmentController;
 use Transenigma\Controllers\AuthController;
@@ -74,6 +75,7 @@ return static function (Router $r): void {
     $r->get('/content/research', [ContentController::class, 'research']);
     $r->get('/content/consultancy', [ContentController::class, 'consultancy']);
     $r->get('/content/ventures', [ContentController::class, 'ventures']);
+    $r->get('/content/stats', [ContentController::class, 'stats']);
 
     // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
     $admin = ['auth' => 'admin', 'maintenance' => false];
@@ -82,4 +84,18 @@ return static function (Router $r): void {
     $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
     $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);
     $r->put('/admin/settings', [AdminController::class, 'updateSettings'], $admin);
+
+    // --- Admin content: research papers and consultancy projects (Phase 5 slice A) ---
+    $r->get('/admin/research', [AdminContentController::class, 'research'], $admin);
+    $r->post('/admin/research/categories', [AdminContentController::class, 'createCategory'], $admin);
+    $r->patch('/admin/research/categories/{id:[0-9]+}', [AdminContentController::class, 'updateCategory'], $admin);
+    $r->delete('/admin/research/categories/{id:[0-9]+}', [AdminContentController::class, 'deleteCategory'], $admin);
+    $r->post('/admin/research/papers', [AdminContentController::class, 'createPaper'], $admin);
+    $r->patch('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'updatePaper'], $admin);
+    $r->delete('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'deletePaper'], $admin);
+    $r->get('/admin/consultancy', [AdminContentController::class, 'consultancy'], $admin);
+    $r->post('/admin/consultancy/projects', [AdminContentController::class, 'createProject'], $admin);
+    $r->patch('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'updateProject'], $admin);
+    $r->delete('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'deleteProject'], $admin);
+    $r->post('/admin/uploads/project-image', [AdminContentController::class, 'uploadProjectImage'], $admin);
 };

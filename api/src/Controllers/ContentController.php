@@ -5,6 +5,7 @@ namespace Transenigma\Controllers;
 
 use Transenigma\Core\Request;
 use Transenigma\Core\Response;
+use Transenigma\Services\AdminContentService;
 use Transenigma\Services\ContentService;
 
 /** Public Transenigma company content (slice S5). */
@@ -26,6 +27,12 @@ final class ContentController
     public function ventures(Request $request): Response
     {
         return Response::ok(ContentService::ventures());
+    }
+
+    /** GET /api/content/stats — live counts for the home page (publications, fields, client projects). */
+    public function stats(Request $request): Response
+    {
+        return Response::ok(AdminContentService::stats());
     }
 
     /** GET /api/content/consultancy */

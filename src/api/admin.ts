@@ -76,3 +76,71 @@ export const adminApi = {
   settings: () => api.get<AdminSettings>('/admin/settings'),
   updateSettings: (changes: Partial<AdminSettings>) => api.put<AdminSettings>('/admin/settings', changes),
 };
+
+// ------------------------------------------------------------------ content (Phase 5 slice A)
+
+export interface AdminCategory {
+  id: number;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  sortOrder: number;
+  published: boolean;
+  paperCount: number;
+}
+
+export interface AdminPaper {
+  id: number;
+  categoryId: number;
+  citation: string;
+  year: number | null;
+  url: string | null;
+  published: boolean;
+  createdAt: string;
+}
+
+export interface PaperInput {
+  citation: string;
+  year: number | null;
+  url: string | null;
+  published: boolean;
+  categoryId?: number;
+  newCategory?: { name: string; tagline: string | null };
+}
+
+export type ProjectGroup = 'enterprise' | 'web-mobile' | 'iot' | 'upcoming';
+
+export interface AdminProject {
+  id: number;
+  group: ProjectGroup;
+  slug: string;
+  name: string;
+  clientName: string | null;
+  description: string;
+  image: string | null;
+  url: string | null;
+  published: boolean;
+}
+
+export type ProjectInput = Omit<AdminProject, 'id' | 'slug'>;
+
+export const contentAdminApi = {
+  research: () => api.get<{ categories: AdminCategory[]; papers: AdminPaper[] }>('/admin/research'),
+  createCategory: (c: { name: string; tagline: string | null; published?: boolean }) => api.post<AdminCategory>('/admin/research/categories', c),
+  updateCategory: (id: number, c: Partial<Pick<AdminCategory, 'name' | 'tagline' | 'published' | 'sortOrder'>>) =>
+    api.patch<AdminCategory>(`/admin/research/categories/${id}`, c),
+  deleteCategory: (id: number) => api.delete<null>(`/admin/research/categories/${id}`),
+  createPaper: (p: PaperInput) => api.post<AdminPaper>('/admin/research/papers', p),
+  updatePaper: (id: number, p: Partial<PaperInput>) => api.patch<AdminPaper>(`/admin/research/papers/${id}`, p),
+  deletePaper: (id: number) => api.delete<null>(`/admin/research/papers/${id}`),
+
+  consultancy: () => api.get<{ groups: { slug: ProjectGroup; name: string }[]; projects: AdminProject[] }>('/admin/consultancy'),
+  createProject: (p: ProjectInput) => api.post<AdminProject>('/admin/consultancy/projects', p),
+  updateProject: (id: number, p: Partial<ProjectInput>) => api.patch<AdminProject>(`/admin/consultancy/projects/${id}`, p),
+  deleteProject: (id: number) => api.delete<null>(`/admin/consultancy/projects/${id}`),
+  uploadProjectImage: (file: File) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.upload<{ path: string }>('/admin/uploads/project-image', form);
+  },
+};

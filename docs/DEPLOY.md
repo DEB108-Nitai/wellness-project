@@ -58,6 +58,8 @@ DreamHost serves the domain from `/home/<user>/transenigma.com/`. The config fil
     ├── robots.txt, sitemap.xml │  contents of dist/
     ├── assets/  brand/  images/┘
     ├── api/                    ← the api/ folder (see below)
+    ├── uploads/                ← images admins upload (created on first upload, mode 755). LIVE CONTENT:
+    │                              never delete or overwrite it when deploying; it is backed up nightly (§6)
     └── database/
         └── migrations/         ← database/migrations/ (read by migrate.php; blocked from the web by .htaccess)
 ```
@@ -139,6 +141,11 @@ gzip -t "$tmp"                                          # the archive is readabl
 zcat "$tmp" | tail -n 1 | grep -q "Dump completed"      # mysqldump finished the dump
 mv "$tmp" "$out"
 find "$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete   # only after a good backup
+# Admin-uploaded images are live content too (the database points at them).
+if [ -d "$HOME/transenigma.com/uploads" ]; then
+  tar -czf "$HOME/backups/transenigma-uploads-$(date +%F).tar.gz" -C "$HOME/transenigma.com" uploads
+  find "$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
+fi
 ```
 
 - **Set up:** run `chmod 700 ~/bin/backup-db.sh`, then run the script once by hand and check that a `.sql.gz` file appears in `~/backups`.
@@ -182,7 +189,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 ## 8. Updating the site later
 
 1. On a developer machine: pull, `npm ci`, tests, `npm run build`.
-2. Upload the new `dist/` contents (replace `assets/`; old hashed files can be deleted), plus any changed `api/` files and new `database/migrations/` files.
+2. Upload the new `dist/` contents (replace `assets/`; old hashed files can be deleted), plus any changed `api/` files and new `database/migrations/` files. **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
 3. Over SSH: `/usr/local/php82/bin/php api/bin/migrate.php` (applies only the new migrations).
 
 ## 9. Rolling back

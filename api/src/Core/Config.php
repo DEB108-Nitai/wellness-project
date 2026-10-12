@@ -94,6 +94,8 @@ final class Config
             'sessions' => API_ROOT . '/storage/sessions',
             'cache' => API_ROOT . '/storage/cache',
             'mail' => API_ROOT . '/storage/mail',
+            // Public uploads (admin images) beside index.html in the web root, served at /uploads/…
+            'uploads' => dirname(API_ROOT) . '/uploads',
             'migrations' => dirname(API_ROOT) . '/database/migrations',
             default => throw new RuntimeException("Unknown path '$name'"),
         };

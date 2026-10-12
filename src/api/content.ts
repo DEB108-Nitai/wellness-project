@@ -36,6 +36,8 @@ export interface ConsultancyProject {
   id: number;
   slug: string;
   name: string;
+  /** Shown in "Clients and partners" on /consultancy; null for upcoming products. */
+  clientName: string | null;
   description: string;
   image: string | null;
   /** Null when the project has no live website. */
@@ -65,7 +67,16 @@ export interface Venture {
   url: string | null;
 }
 
+/** Live site-wide counts (home page). */
+export interface ContentStats {
+  publications: number;
+  researchFields: number;
+  clientProjects: number;
+  clients: string[];
+}
+
 export const contentApi = {
+  stats: () => api.get<ContentStats>('/content/stats'),
   ventures: () => api.get<Venture[]>('/content/ventures'),
   team: () => api.get<TeamMember[]>('/content/team'),
   research: () => api.get<Research>('/content/research'),
