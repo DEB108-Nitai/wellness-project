@@ -10,7 +10,7 @@ export interface Faq {
 /** Bot-protection fields sent with public forms (see api/src/Services/SpamGuard.php). */
 export interface SpamFields {
   website: string;
-  formStartedAt: number;
+  formElapsedMs: number;
 }
 
 export const siteApi = {

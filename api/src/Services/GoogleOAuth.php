@@ -84,7 +84,9 @@ final class GoogleOAuth
             throw HttpException::forbidden('This account has been disabled.', 'ACCOUNT_DISABLED');
         }
         AuthService::signIn($user, $request, 'google');
-        return $flow['next'];
+        // A finished guest test was just attached: with no other destination, open it.
+        $claimed = AuthService::takeClaimedResultRef();
+        return $flow['next'] === '/' && $claimed !== null ? '/results/' . $claimed : $flow['next'];
     }
 
     /**

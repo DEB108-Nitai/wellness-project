@@ -6,6 +6,8 @@ interface AuthState {
   /** True until the first /auth/me response arrives. */
   loading: boolean;
   googleEnabled: boolean;
+  /** A finished guest test attached by the latest sign-in (see afterSignIn). */
+  claimedResultRef: string | null;
   login: (email: string, password: string) => Promise<AuthUser>;
   signup: (name: string, email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
@@ -20,10 +22,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [googleEnabled, setGoogleEnabled] = useState(false);
+  const [claimedResultRef, setClaimedResultRef] = useState<string | null>(null);
 
   const applySession = useCallback((payload: SessionPayload) => {
     setUser(payload.user);
     setGoogleEnabled(payload.googleEnabled);
+    setClaimedResultRef(payload.claimedResultRef ?? null);
   }, []);
 
   const refresh = useCallback(async () => {
@@ -68,8 +72,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [applySession]);
 
   const value = useMemo(
-    () => ({ user, loading, googleEnabled, login, signup, logout, refresh, applySession }),
-    [user, loading, googleEnabled, login, signup, logout, refresh, applySession],
+    () => ({ user, loading, googleEnabled, claimedResultRef, login, signup, logout, refresh, applySession }),
+    [user, loading, googleEnabled, claimedResultRef, login, signup, logout, refresh, applySession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -20,6 +20,8 @@ final class AuthService
     private const S_USER = 'auth_uid';
     private const S_VERSION = 'auth_ver';
     private const S_LAST_SEEN = 'auth_seen';
+    /** A finished guest test attached at sign-in; returned once so the SPA can open it. */
+    private const S_CLAIMED_REF = 'auth_claimed_ref';
 
     private const LOGIN_LIMIT = 5;          // failures per email+IP …
     private const LOGIN_WINDOW = 900;       // … per 15 minutes
@@ -75,7 +77,10 @@ final class AuthService
         Session::set(self::S_LAST_SEEN, time());
         UserRepository::touchLogin((int) $user['id']);
         self::$current = UserRepository::find((int) $user['id']);
-        AssessmentService::claimGuestSessions((int) $user['id'], $request); // TEST-9: guest tests follow the person
+        $claim = AssessmentService::claimGuestSessions((int) $user['id'], $request); // TEST-9: guest tests follow the person
+        if ($claim['completedRef'] !== null) {
+            Session::set(self::S_CLAIMED_REF, $claim['completedRef']);
+        }
         AuditService::forUser($user, 'AUTH_LOGIN', 'user', null, ['method' => $method], $request);
     }
 
@@ -242,11 +247,23 @@ final class AuthService
     public static function sessionPayload(): array
     {
         $user = self::user();
-        return [
+        $payload = [
             'user' => $user ? UserRepository::toPublic($user) : null,
             'csrfToken' => Csrf::token(),
             'googleEnabled' => GoogleOAuth::isConfigured(),
         ];
+        if ($user !== null && ($ref = self::takeClaimedResultRef()) !== null) {
+            $payload['claimedResultRef'] = $ref;
+        }
+        return $payload;
+    }
+
+    /** The finished guest test attached at this sign-in, if any. Returned only once. */
+    public static function takeClaimedResultRef(): ?string
+    {
+        $ref = Session::get(self::S_CLAIMED_REF);
+        Session::forget(self::S_CLAIMED_REF);
+        return is_string($ref) ? $ref : null;
     }
 
     private static function peekResetToken(string $token): ?int

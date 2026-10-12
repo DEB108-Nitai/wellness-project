@@ -69,7 +69,11 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
   const { user: currentUser, logout } = useAuth();
   // In-progress assessment for this visitor (account or guest browser), from the API.
-  const { active: activeDraft, progress: draftProgress } = useActiveSession();
+  const { active: activeDraft, pendingResult, progress: draftProgress } = useActiveSession();
+  const hasDraft = !!activeDraft && activeDraft.answeredCount > 0;
+  // A guest's finished test waiting for an account: the CTA leads back to it instead of a new test.
+  const resultRef = !hasDraft ? pendingResult?.ref ?? null : null;
+  const openTest = () => (resultRef ? onNavigate('results', resultRef) : onNavigate('test'));
   const goToSection = useSectionNavigate();
 
   // Desktop dropdown that is open (by id), and the expanded groups in the mobile drawer.
@@ -350,17 +354,22 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
 
               {/* Assessment CTA: Compact & beautifully styled without screen overflow */}
               <button
-                onClick={() => onNavigate('test')}
+                onClick={openTest}
                 className={`px-3 xl:px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                  activeDraft && activeDraft.answeredCount > 0
+                  hasDraft || resultRef
                     ? 'text-slate-950 bg-teal-400 hover:bg-teal-300 ring-2 ring-teal-500/50 shadow-teal-500/20'
                     : 'text-slate-950 bg-teal-500 hover:bg-teal-400 active:bg-teal-600'
                 }`}
               >
-                {activeDraft && activeDraft.answeredCount > 0 ? (
+                {hasDraft ? (
                   <>
                     <PlayCircle className="w-3.5 h-3.5 text-slate-950 shrink-0" />
                     <span>Continue ({draftProgress}%)</span>
+                  </>
+                ) : resultRef ? (
+                  <>
+                    <span>See my result</span>
+                    <ArrowRight className="w-3.5 h-3.5 shrink-0" />
                   </>
                 ) : (
                   <>
@@ -374,10 +383,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
             {/* Mobile Controls */}
             <div className="flex lg:hidden items-center gap-2">
               <button
-                onClick={() => onNavigate('test')}
+                onClick={openTest}
                 className="px-3 py-1 text-xs font-semibold text-slate-950 bg-teal-500 rounded-lg whitespace-nowrap"
               >
-                {activeDraft && activeDraft.answeredCount > 0 ? `Resume (${draftProgress}%)` : 'Take Test'}
+                {hasDraft ? `Resume (${draftProgress}%)` : resultRef ? 'See my result' : 'Take Test'}
               </button>
 
               <button

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, BookOpen, Check, CheckCircle2, Compass, Loader2, Send, Volume2, X } from 'lucide-react';
 import { ApiError } from '../../api/client';
@@ -39,12 +39,21 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [done, setDone] = useState(false);
 
+  // Typed something that would be lost? Ask before closing (an accidental Escape or ✕ must not wipe the form).
+  const dirty =
+    !done &&
+    (phone !== '' || age !== '' || city !== '' || struggles.length > 0 || primaryGoal !== '' || consent ||
+      name !== (user?.name ?? '') || email !== (user?.email ?? ''));
+  const requestClose = useCallback(() => {
+    if (!dirty || window.confirm('Discard your registration? What you have typed will be lost.')) onClose();
+  }, [dirty, onClose]);
+
   // Close on Escape.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && requestClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
 
   const toggleStruggle = (item: string) =>
     setStruggles((s) => (s.includes(item) ? s.filter((x) => x !== item) : [...s, item]));
@@ -71,7 +80,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
         ...(primaryGoal.trim() ? { primaryGoal: primaryGoal.trim() } : {}),
         consent,
         website,
-        formStartedAt: startedAt.current,
+        formElapsedMs: Date.now() - startedAt.current,
       });
       setDone(true);
     } catch (err) {
@@ -97,7 +106,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
       aria-labelledby="registration-title"
     >
       <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-auto max-h-[92vh] overflow-y-auto overscroll-contain">
-        <button onClick={onClose} className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer" aria-label="Close">
+        <button onClick={requestClose} className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer" aria-label="Close">
           <X className="w-5 h-5" />
         </button>
 

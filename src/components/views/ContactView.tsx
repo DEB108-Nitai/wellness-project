@@ -29,7 +29,7 @@ export const ContactView: React.FC = () => {
         ...(subject.trim() ? { subject: subject.trim() } : {}),
         message: message.trim(),
         website,
-        formStartedAt: startedAt.current,
+        formElapsedMs: Date.now() - startedAt.current,
       });
       setSubmitted(true);
     } catch (err) {

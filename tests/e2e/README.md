@@ -8,6 +8,7 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 | Script | What it checks |
 |---|---|
 | `guest-flow.mjs` | Guest takes the test → reload and resume → submit → results gate → sign up → report → share link → My Results |
+| `edge-cases.mjs` | Guest finishes → "I already have an account" → "Back to home": navbar shows "See my result", /test shows "Your profile is ready", signing up without a link opens the report; Back button steps 3 → 2 → 1 → "in progress" card; a test restarted in another tab stops saving and says why |
 | `research-page.mjs` | Research page: 15 fields and 97 publications, newest first, sidebar/chip jumps set `/research#slug` and land below the header, deep links, search (single, multi-word, no match, clear), paper link opens safely, no overflow at 1440/768/390/360 px. Read-only |
 | `redirects.mjs` | Old transenigma.com addresses (`.php` and extensionless, any case, trailing slash) → 301 to their new pages, against real Apache with the production build (`npm run build` first; default base `http://localhost/<folder>/dist`, or pass `https://transenigma.com` after deploy); app pages 200; robots.txt and sitemap.xml. No browser |
 | `page-meta.mjs` | Per-page title, description, canonical URL and `index, follow` on the 12 public pages; `noindex` and no canonical on sign-in, account, results, admin and unknown pages; title updates on in-app navigation. Read-only |
@@ -21,6 +22,7 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 
 ```
 node tests/e2e/guest-flow.mjs
+node tests/e2e/edge-cases.mjs
 node tests/e2e/nav-flow.mjs
 node tests/e2e/home-top.mjs
 node tests/e2e/team-page.mjs

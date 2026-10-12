@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
-import { googleStartUrl, safeNext } from '../../api/auth';
+import { afterSignIn, googleStartUrl, safeNext } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { FormAlert, GoogleButton, OrDivider, PageSpinner, PasswordField, SubmitButton, TextField } from '../../components/auth/FormControls';
@@ -17,8 +17,7 @@ const GOOGLE_ERRORS: Record<string, string> = {
 };
 
 export const LoginPage: React.FC = () => {
-  const { user, loading, login, googleEnabled } = useAuth();
-  const navigate = useNavigate();
+  const { user, loading, login, googleEnabled, claimedResultRef } = useAuth();
   const [params] = useSearchParams();
   const next = safeNext(params.get('next'));
   const [email, setEmail] = useState('');
@@ -28,7 +27,7 @@ export const LoginPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <PageSpinner />;
-  if (user) return <Navigate to={next} replace />;
+  if (user) return <Navigate to={afterSignIn(next, claimedResultRef)} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +36,7 @@ export const LoginPage: React.FC = () => {
     setSubmitting(true);
     try {
       await login(email.trim(), password);
-      navigate(next, { replace: true });
+      // The redirect happens on the next render (`if (user)` above), which sees the claimed result too.
     } catch (err) {
       if (err instanceof ApiError) {
         setFieldErrors(err.fields);

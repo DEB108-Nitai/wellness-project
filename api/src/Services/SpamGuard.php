@@ -20,8 +20,10 @@ final class SpamGuard
         if (trim((string) ($body[self::HONEYPOT_FIELD] ?? '')) !== '') {
             throw HttpException::badRequest('Your submission could not be accepted.', 'SPAM_DETECTED');
         }
-        $startedAt = (int) ($body['formStartedAt'] ?? 0); // unix ms from the browser
-        if ($startedAt > 0 && (microtime(true) * 1000 - $startedAt) < self::MIN_SECONDS * 1000) {
+        // How long the form was open, measured by the browser itself. Comparing a browser timestamp with
+        // the server clock failed for everyone whose device clock runs a few seconds fast.
+        $elapsed = $body['formElapsedMs'] ?? null;
+        if (is_int($elapsed) && $elapsed >= 0 && $elapsed < self::MIN_SECONDS * 1000) {
             throw HttpException::badRequest('That was quick! Please check the form and submit again.', 'TOO_FAST');
         }
     }

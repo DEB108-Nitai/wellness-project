@@ -18,7 +18,7 @@ _Last updated: 2026-10-11. **Phases 0–4 complete. Transenigma company-site sli
 3. **Start the local environment** (Windows + XAMPP; Apache and MySQL must be running):
    ```
    C:\xampp\php\php.exe api\bin\migrate.php      # apply new migrations
-   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (72 at last count)
+   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (77 at last count)
    npm run lint                                  # TypeScript check
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
@@ -195,6 +195,25 @@ The product became the company website of Transenigma Pvt Ltd, replacing transen
 
 **Note:** the owner's account (id 1) was demoted to `user` for testing (owner request, 2026-10-11) and is linked to Google. Re-promote with `create-admin.php` when the admin console is ready.
 
+## 4d. Test and form edge cases (branch `fix/test-edge-cases`, 2026-10-11)
+
+Found after the owner finished the test as a guest, clicked "I already have an account", then "Back to home": the result was saved but nothing on the site pointed back to it.
+
+| # | Case | Fix |
+|---|---|---|
+| 1 | Guest leaves the results gate | `GET /test/result-pending`; /test shows "Your profile is ready", and the navbar CTA reads "See my result" |
+| 2 | Guest signs in later without the `next` link | Sign-in returns `claimedResultRef` once; email, sign-up and Google open `/results/<ref>` when no destination was chosen |
+| 3 | Signed out mid-test | Autosave stops on `NO_ACTIVE_SESSION` and shows "You have been signed out"; answers stay in localStorage |
+| 4 | Submitted or restarted in another tab | Autosave sends the test `ref`. The server refuses a closed test with `SESSION_CLOSED {status}`, and **never writes an old tab's answers into a newer test** (a real bug found while fixing this) |
+| 5 | Device clock running fast | SpamGuard uses browser-measured `formElapsedMs`; before, every form failed with "That was quick!" |
+| 6 | Account draft vs guest draft at sign-in | Keep the one with more answers (the most recent on a tie) |
+| 7 | Back button inside the test | The page lives in the URL (`/test?page=N`, `?page=review`); Back steps through pages |
+| 8 | 60-day form closed by accident | Asks "Discard your registration?" when something was typed |
+
+**Tests:**
+- API: 77 passing (5 new).
+- New E2E `tests/e2e/edge-cases.mjs`.
+
 ---
 
 ## 5. Prototype faults (from the first analysis)
@@ -293,7 +312,7 @@ The product became the company website of Transenigma Pvt Ltd, replacing transen
 ---
 
 ## 10. Testing
-- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **72 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
+- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **77 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
 - **Browser:** `tests/e2e/guest-flow.mjs` and `tests/e2e/phase4-flow.mjs`. Both passed at the end of their phases. `tests/e2e/challenge-shots.mjs` captures the three program blocks at desktop and phone widths for a visual check.
 - **Frontend:** `npm run lint` (TypeScript) and `npm run build`.
 

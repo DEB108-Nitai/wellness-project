@@ -69,7 +69,7 @@ export const Footer: React.FC<FooterProps> = () => {
     setSubscribeError(null);
     setSubscribing(true);
     try {
-      await siteApi.subscribe(email.trim(), { website, formStartedAt: startedAt.current });
+      await siteApi.subscribe(email.trim(), { website, formElapsedMs: Date.now() - startedAt.current });
       setSubscribed(true);
       setEmail('');
     } catch (err) {

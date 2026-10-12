@@ -29,6 +29,7 @@ const VIEW_PATHS: Record<string, string> = {
 
 export function pathForView(view: string, param?: string): string {
   if (view === 'factors' && param) return `/factors/${encodeURIComponent(param)}`;
+  if (view === 'results' && param) return `/results/${encodeURIComponent(param)}`;
   return VIEW_PATHS[view] ?? '/';
 }
 

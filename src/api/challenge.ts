@@ -30,9 +30,9 @@ export interface RegistrationInput {
   struggles: string[];
   primaryGoal?: string;
   consent: boolean;
-  /** Honeypot (must stay empty) and form-render timestamp for bot protection. */
+  /** Honeypot (must stay empty) and how long the form was open (ms), for bot protection. */
   website: string;
-  formStartedAt: number;
+  formElapsedMs: number;
 }
 
 export interface Registration {
