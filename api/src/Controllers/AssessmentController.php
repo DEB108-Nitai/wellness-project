@@ -38,6 +38,12 @@ final class AssessmentController
         return Response::ok($session ? AssessmentService::state($session) : null);
     }
 
+    /** GET /api/test/result-pending — a guest's finished test that is waiting for an account, or null. */
+    public function pendingResult(Request $request): Response
+    {
+        return Response::ok(AssessmentService::latestLockedResult(AssessmentService::owner($request)));
+    }
+
     /** POST /api/test/session — consent + demographics → start. */
     public function start(Request $request): Response
     {
@@ -67,8 +73,21 @@ final class AssessmentController
     /** PUT /api/test/session/answers — batched autosave. */
     public function saveAnswers(Request $request): Response
     {
-        $session = $this->activeOrFail($request);
         $body = $request->json();
+        $owner = AssessmentService::owner($request);
+        $session = AssessmentService::active($owner);
+        // The page names the test it is answering. A tab left open on a test that was submitted or
+        // restarted elsewhere must not write into the caller's newer test, and is told why it stopped.
+        $ref = $body['ref'] ?? null;
+        if ($session === null || (is_string($ref) && $ref !== $session['public_ref'])) {
+            $named = is_string($ref) ? AssessmentService::byRef($ref) : null;
+            if ($named !== null && AssessmentService::owns($named, $owner) && $named['status'] !== 'in_progress') {
+                throw new HttpException(409, 'SESSION_CLOSED', $named['status'] === 'completed'
+                    ? 'This assessment was already submitted.'
+                    : 'This assessment was closed, so new answers can no longer be saved to it.', ['status' => $named['status']]);
+            }
+            throw HttpException::notFound('No assessment in progress.', 'NO_ACTIVE_SESSION');
+        }
         $data = Validator::validate($body, ['page' => 'required|int|min:1|max:100', 'pageSeconds' => 'int|min:0|max:86400']);
         $answers = $body['answers'] ?? [];
         if (!is_array($answers)) {

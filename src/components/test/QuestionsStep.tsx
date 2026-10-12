@@ -48,6 +48,8 @@ const SaveIndicator: React.FC<{ status: SaveStatus }> = ({ status }) => {
       </span>
     ),
     error: <span className="text-amber-700">Not saved yet — retrying</span>,
+    closed: <span className="text-slate-500">Saving stopped</span>,
+    lost: <span className="text-amber-700">Not saved — see below</span>,
   };
   return (
     <span aria-live="polite" className="text-xs font-medium">

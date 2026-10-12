@@ -46,6 +46,7 @@ return static function (Router $r): void {
     // --- Assessment (Phase 3) — guests and users ------------------------------
     $r->get('/test/items', [AssessmentController::class, 'items']);
     $r->get('/test/session', [AssessmentController::class, 'current']);
+    $r->get('/test/result-pending', [AssessmentController::class, 'pendingResult']);
     $r->post('/test/session', [AssessmentController::class, 'start']);
     $r->put('/test/session/answers', [AssessmentController::class, 'saveAnswers']);
     $r->post('/test/session/abandon', [AssessmentController::class, 'abandon']);

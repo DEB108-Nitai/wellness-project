@@ -67,6 +67,25 @@ final class AssessmentService
         return $session;
     }
 
+    /**
+     * A guest's newest finished assessment, still waiting for an account (TEST-9). Lets the site
+     * remind them it exists after they leave the "your profile is ready" screen. Null when signed in.
+     * @return array{ref:string, completedAt:string}|null
+     */
+    public static function latestLockedResult(array $owner): ?array
+    {
+        if ($owner['userId'] !== null || $owner['guestHash'] === null) {
+            return null;
+        }
+        $row = Database::one(
+            "SELECT public_ref, completed_at FROM test_sessions
+             WHERE guest_token_hash = ? AND user_id IS NULL AND status = 'completed'
+             ORDER BY completed_at DESC LIMIT 1",
+            [$owner['guestHash']]
+        );
+        return $row === null ? null : ['ref' => $row['public_ref'], 'completedAt' => gmdate('c', strtotime($row['completed_at'] . ' UTC'))];
+    }
+
     public static function findOwnedByRef(string $ref, array $owner): array
     {
         $session = self::byRef($ref);
@@ -313,37 +332,45 @@ final class AssessmentService
 
     /**
      * TEST-6/9: attach this browser's guest sessions to the account that just signed in.
-     * If both the account and the guest have an in-progress session, the most recent one is kept.
+     * If both the account and the guest have an in-progress session, the one with more answers is
+     * kept (the most recent on a tie), so a nearly finished test is never dropped for a fresh one.
+     * @return array{count:int, completedRef:?string} completedRef: the newest finished test just attached
      */
-    public static function claimGuestSessions(int $userId, Request $request): int
+    public static function claimGuestSessions(int $userId, Request $request): array
     {
         $cookie = $request->cookie(self::GUEST_COOKIE) ?? Cookies::$jar[self::GUEST_COOKIE] ?? null;
         if (!is_string($cookie) || !preg_match('/^[A-Za-z0-9_-]{43}$/', $cookie)) {
-            return 0;
+            return ['count' => 0, 'completedRef' => null];
         }
         $guestHash = hash('sha256', $cookie);
 
-        $claimed = Database::transaction(static function () use ($userId, $guestHash): int {
+        $claim = Database::transaction(static function () use ($userId, $guestHash): array {
             $inProgress = Database::all(
-                "SELECT id FROM test_sessions WHERE status = 'in_progress'
-                   AND (user_id = ? OR (user_id IS NULL AND guest_token_hash = ?))
-                 ORDER BY last_activity_at DESC",
+                "SELECT s.id FROM test_sessions s
+                 WHERE s.status = 'in_progress' AND (s.user_id = ? OR (s.user_id IS NULL AND s.guest_token_hash = ?))
+                 ORDER BY (SELECT COUNT(*) FROM session_answers a WHERE a.session_id = s.id) DESC, s.last_activity_at DESC, s.id DESC",
                 [$userId, $guestHash]
             );
-            foreach (array_slice($inProgress, 1) as $older) {
-                Database::run("UPDATE test_sessions SET status = 'abandoned' WHERE id = ?", [$older['id']]);
+            foreach (array_slice($inProgress, 1) as $other) {
+                Database::run("UPDATE test_sessions SET status = 'abandoned' WHERE id = ?", [$other['id']]);
             }
-            return Database::run(
+            $completedRef = Database::value(
+                "SELECT public_ref FROM test_sessions WHERE user_id IS NULL AND guest_token_hash = ? AND status = 'completed'
+                 ORDER BY completed_at DESC LIMIT 1",
+                [$guestHash]
+            );
+            $count = Database::run(
                 'UPDATE test_sessions SET user_id = ?, guest_token_hash = NULL WHERE user_id IS NULL AND guest_token_hash = ?',
                 [$userId, $guestHash]
             )->rowCount();
+            return ['count' => $count, 'completedRef' => $completedRef === null ? null : (string) $completedRef];
         });
 
         Cookies::clear(self::GUEST_COOKIE);
-        if ($claimed > 0) {
-            AuditService::log('SESSIONS_CLAIMED', 'user', $userId, 'user', $userId, ['count' => $claimed], $request);
+        if ($claim['count'] > 0) {
+            AuditService::log('SESSIONS_CLAIMED', 'user', $userId, 'user', $userId, ['count' => $claim['count']], $request);
         }
-        return $claimed;
+        return $claim;
     }
 
     /** Daily housekeeping: mark long-inactive sessions as expired (TEST-10). */

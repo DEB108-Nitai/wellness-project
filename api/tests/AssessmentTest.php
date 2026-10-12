@@ -10,6 +10,7 @@ use Transenigma\Repositories\PsychometricRepository;
 use Transenigma\Repositories\UserRepository;
 use Transenigma\Services\AssessmentService;
 use Transenigma\Services\AuthService;
+use Transenigma\Services\GoogleOAuth;
 use Transenigma\Services\ResultsService;
 
 // ------------------------------------------------------------------ helpers
@@ -285,7 +286,7 @@ test('history lists in-progress and completed sessions, never abandoned ones', f
     assertSame(166, $history[1]['answeredCount']);
 });
 
-test('a guest session started before signing in to an account with its own draft keeps only the most recent', function () {
+test('a guest session started before signing in to an account with its own draft keeps only the most recent (equal progress)', function () {
     useTestDatabase();
     asGuest();
     $user = signUpUser();
@@ -299,6 +300,120 @@ test('a guest session started before signing in to an account with its own draft
     assertSame('abandoned', sessionRow($accountDraft['ref'])['status']);
     assertSame('in_progress', sessionRow($guestDraft['ref'])['status']);
     assertSame((int) $user['id'], (int) sessionRow($guestDraft['ref'])['user_id']);
+});
+
+/** Answer the first $count statements of a session. */
+function answerFirst(array $session, int $count): void
+{
+    $batch = [];
+    foreach (array_slice(PsychometricRepository::items($session['item_set_version']), 0, $count, true) as $id => $item) {
+        $batch[$id] = 3;
+    }
+    AssessmentService::saveAnswers($session, $batch, 1, 30, testRequest());
+}
+
+test('a tab left on a test restarted or submitted elsewhere cannot write into the new test, and is told why', function () {
+    useTestDatabase();
+    asGuest();
+    $old = AssessmentService::start(demographics(), testRequest());
+    AssessmentService::abandon(sessionRow($old['ref']), testRequest());        // tab A: "Start over"…
+    $new = AssessmentService::start(demographics(), testRequest());           // …and a new test
+    $firstItem = (int) array_key_first(PsychometricRepository::items(sessionRow($new['ref'])['item_set_version']));
+    $save = static fn (string $ref): \Transenigma\Core\Response => (new AssessmentController())->saveAnswers(new Request('PUT', '/test/session/answers', [],
+        ['REMOTE_ADDR' => '10.20.30.40', 'CONTENT_TYPE' => 'application/json'],
+        json_encode(['ref' => $ref, 'page' => 1, 'answers' => [$firstItem => 4]], JSON_THROW_ON_ERROR), Cookies::$jar));
+
+    // Tab B still shows the old test: refused with the reason, and the new test is untouched.
+    $e = assertThrows(HttpException::class, fn () => $save($old['ref']));
+    assertSame('SESSION_CLOSED', $e->errorCode);
+    assertSame('abandoned', $e->fields['status'] ?? null);
+    assertSame(0, (int) Database::value('SELECT COUNT(*) FROM session_answers WHERE session_id = ?', [sessionRow($new['ref'])['id']]));
+
+    // The current tab saves normally.
+    assertSame(1, $save($new['ref'])->body['data']['answeredCount']);
+
+    // After the new test is submitted, a stale tab learns it was completed.
+    answerAll(sessionRow($new['ref']));
+    AssessmentService::submit(sessionRow($new['ref']), testRequest());
+    assertSame('completed', assertThrows(HttpException::class, fn () => $save($new['ref']))->fields['status'] ?? null);
+
+    // Someone else naming this browser's test only ever gets a plain 404.
+    asGuest();
+    assertSame('NO_ACTIVE_SESSION', assertThrows(HttpException::class, fn () => $save($new['ref']))->errorCode);
+});
+
+test('signing in keeps the in-progress test with more answers, even when it is older', function () {
+    useTestDatabase();
+    asGuest();
+    $user = signUpUser();
+    $nearlyDone = AssessmentService::start(demographics(), testRequest());   // e.g. on the phone, last week
+    answerFirst(sessionRow($nearlyDone['ref']), 40);
+    Database::run('UPDATE test_sessions SET last_activity_at = UTC_TIMESTAMP() - INTERVAL 7 DAY WHERE public_ref = ?', [$nearlyDone['ref']]);
+
+    asGuest();                                                              // laptop, signed out
+    $fresh = AssessmentService::start(demographics(), testRequest());
+    answerFirst(sessionRow($fresh['ref']), 3);
+    AuthService::attempt($user['email'], GOOD_PASSWORD, testRequest());
+
+    assertSame('in_progress', sessionRow($nearlyDone['ref'])['status'], 'the test with more answers is kept');
+    assertSame('abandoned', sessionRow($fresh['ref'])['status']);
+    assertSame($nearlyDone['ref'], AssessmentService::active(AssessmentService::owner(testRequest()))['public_ref']);
+});
+
+test('a guest who leaves the results gate can find the finished test again, and signing in opens it', function () {
+    useTestDatabase();
+    asGuest();
+    $state = AssessmentService::start(demographics(), testRequest());
+    answerAll(sessionRow($state['ref']));
+    AssessmentService::submit(sessionRow($state['ref']), testRequest());
+
+    // Back on the site later: no draft to resume (why it looked lost), but the finished test is found.
+    $guest = AssessmentService::owner(testRequest());
+    assertSame(null, AssessmentService::active($guest));
+    assertSame($state['ref'], AssessmentService::latestLockedResult($guest)['ref'] ?? null);
+    $response = (new AssessmentController())->pendingResult(new Request('GET', '/test/result-pending', [], ['REMOTE_ADDR' => '10.1.2.3'], '', Cookies::$jar));
+    assertSame($state['ref'], $response->body['data']['ref'] ?? null, 'the endpoint returns the reference');
+
+    // Another browser sees nothing.
+    $jar = Cookies::$jar;
+    asGuest();
+    assertSame(null, AssessmentService::latestLockedResult(AssessmentService::owner(testRequest())));
+    Cookies::$jar = $jar;
+
+    // Signing up in the original browser attaches it, and the sign-in response names it exactly once.
+    signUpUser();
+    $payload = AuthService::sessionPayload();
+    assertSame($state['ref'], $payload['claimedResultRef'] ?? null);
+    assertTrue(!array_key_exists('claimedResultRef', AuthService::sessionPayload()), 'returned only once');
+    assertSame(null, AssessmentService::latestLockedResult(AssessmentService::owner(testRequest())), 'nothing pending once signed in');
+});
+
+test('google sign-in with no destination opens the finished guest test it just attached', function () {
+    useTestDatabase();
+    asGuest();
+    $state = AssessmentService::start(demographics(), testRequest());
+    answerAll(sessionRow($state['ref']));
+    AssessmentService::submit(sessionRow($state['ref']), testRequest());
+
+    \Transenigma\Core\Config::override('google.client_id', 'test-client.apps.googleusercontent.com');
+    \Transenigma\Core\Config::override('google.client_secret', 'test-secret');
+    $go = static function (string $next): string {
+        parse_str((string) parse_url(GoogleOAuth::authorizationUrl($next), PHP_URL_QUERY), $q);
+        $b64 = static fn (array $a): string => rtrim(strtr(base64_encode(json_encode($a)), '+/', '-_'), '=');
+        $claims = ['iss' => 'https://accounts.google.com', 'aud' => 'test-client.apps.googleusercontent.com', 'exp' => time() + 600,
+            'sub' => 'g-claim-' . bin2hex(random_bytes(4)), 'email' => uniqueEmail(), 'email_verified' => true, 'name' => 'Guest Person'];
+        GoogleOAuth::$tokenExchanger = static fn (): array => ['id_token' => $b64(['alg' => 'RS256']) . '.' . $b64($claims) . '.sig'];
+        return GoogleOAuth::handleCallback(new Request('GET', '/auth/google/callback', ['code' => 'abc', 'state' => $q['state']], ['REMOTE_ADDR' => '10.1.1.1'], '', Cookies::$jar));
+    };
+    assertSame('/results/' . $state['ref'], $go('/'));
+
+    // A chosen destination always wins.
+    AuthService::signOut(testRequest());
+    asGuest();
+    $second = AssessmentService::start(demographics(), testRequest());
+    answerAll(sessionRow($second['ref']));
+    AssessmentService::submit(sessionRow($second['ref']), testRequest());
+    assertSame('/my-results', $go('/my-results'));
 });
 
 test('experience rating: once per completed session', function () {

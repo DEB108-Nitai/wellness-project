@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
-import { googleStartUrl, safeNext } from '../../api/auth';
+import { afterSignIn, googleStartUrl, safeNext } from '../../api/auth';
 import { useAuth } from '../../context/AuthContext';
 import { AuthShell } from '../../components/auth/AuthShell';
 import { FormAlert, GoogleButton, OrDivider, PageSpinner, PasswordField, SubmitButton, TextField } from '../../components/auth/FormControls';
 
 export const SignupPage: React.FC = () => {
-  const { user, loading, signup, googleEnabled } = useAuth();
-  const navigate = useNavigate();
+  const { user, loading, signup, googleEnabled, claimedResultRef } = useAuth();
   const [params] = useSearchParams();
   const next = safeNext(params.get('next'));
   const [name, setName] = useState('');
@@ -19,7 +18,7 @@ export const SignupPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <PageSpinner />;
-  if (user) return <Navigate to={next} replace />;
+  if (user) return <Navigate to={afterSignIn(next, claimedResultRef)} replace />;
 
   const loginLink = `/login${next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`;
 
@@ -34,7 +33,7 @@ export const SignupPage: React.FC = () => {
     setSubmitting(true);
     try {
       await signup(name.trim(), email.trim(), password);
-      navigate(next, { replace: true });
+      // The redirect happens on the next render (`if (user)` above), which sees the claimed result too.
     } catch (err) {
       if (err instanceof ApiError) {
         setFieldErrors(err.fields);

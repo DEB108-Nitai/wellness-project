@@ -94,13 +94,20 @@ export interface HistoryEntry {
   topTraits: { code: string; name: string; sten: number }[];
 }
 
+/** A guest's finished test that is waiting for an account (shown after they leave the results gate). */
+export interface PendingResult {
+  ref: string;
+  completedAt: string;
+}
+
 export const assessmentApi = {
   items: () => api.get<ItemsPayload>('/test/items'),
   current: () => api.get<SessionState | null>('/test/session'),
+  pendingResult: () => api.get<PendingResult | null>('/test/result-pending'),
   start: (demographics: Demographics) =>
     api.post<SessionState>('/test/session', { consent: { terms: true, notDiagnosis: true }, demographics }),
-  saveAnswers: (answers: Record<string, number>, page: number, pageSeconds: number) =>
-    api.put<{ answeredCount: number; savedAt: string }>('/test/session/answers', { answers, page, pageSeconds }),
+  saveAnswers: (ref: string, answers: Record<string, number>, page: number, pageSeconds: number) =>
+    api.put<{ answeredCount: number; savedAt: string }>('/test/session/answers', { ref, answers, page, pageSeconds }),
   abandon: () => api.post<null>('/test/session/abandon'),
   submit: (ref: string) => api.post<{ ref: string; status: 'completed'; resultsLocked: boolean }>('/test/session/submit', { ref }),
   review: (ref: string, rating: number, comment?: string) =>

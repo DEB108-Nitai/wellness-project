@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertCircle, Loader2, PlayCircle, RotateCcw } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AlertCircle, ArrowRight, Loader2, Lock, PlayCircle, RotateCcw } from 'lucide-react';
 import { ApiError } from '../../api/client';
-import { assessmentApi, Demographics, ItemsPayload, SessionState } from '../../api/assessment';
+import { assessmentApi, Demographics, ItemsPayload, PendingResult, SessionState } from '../../api/assessment';
 import { useAuth } from '../../context/AuthContext';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useAutosave } from '../../hooks/useAutosave';
@@ -21,8 +21,13 @@ const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
  * All state lives on the server; this page only renders and autosaves.
  */
 export const AssessmentPage: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, refresh: refreshAuth } = useAuth();
   const activeSession = useActiveSession();
+  // The statement page lives in the URL (?page=3, ?page=review) so the browser/phone Back button
+  // steps back through the test instead of leaving it.
+  const [params, setParams] = useSearchParams();
+  const urlPage = params.get('page');
+  const startedSignedIn = React.useRef(false);
 
   const [step, setStep] = useState<Step>('loading');
   const [loadError, setLoadError] = useState('');
@@ -78,17 +83,47 @@ export const AssessmentPage: React.FC = () => {
     const restored: Record<number, number> = {};
     Object.entries(state.answers).forEach(([id, v]) => (restored[Number(id)] = v));
     setAnswers(restored);
+    startedSignedIn.current = !!user;
     // Resume at the first page that still has an unanswered statement; if none, go straight to review.
     const firstOpen = pages.findIndex((items) => items.some((q) => !restored[q.id]));
     if (firstOpen === -1 && pages.length > 0) {
       setPage(pages.length);
-      setStep('review');
+      showPage('review');
     } else {
-      setPage(firstOpen + 1 || 1);
-      setStep('questions');
+      showPage(firstOpen + 1 || 1);
     }
-    scrollTop();
   };
+
+  /** Move to a statement page (or the review) by adding a browser history entry; the effect below renders it. */
+  const showPage = (target: number | 'review') => setParams({ page: String(target) });
+
+  // URL → screen. Runs for the buttons above and for the browser's Back/Forward buttons.
+  useEffect(() => {
+    if (!session || step === 'completed' || step === 'loading' || step === 'failed') return;
+    if (step !== 'questions' && step !== 'review' && urlPage === null) return;
+    if (urlPage === null) {
+      // Back past the first page: save, then show the "assessment in progress" card.
+      void autosave.flush();
+      void load();
+      return;
+    }
+    if (urlPage === 'review') {
+      if (step !== 'review') {
+        void autosave.flush();
+        setStep('review');
+        scrollTop();
+      }
+      return;
+    }
+    const target = Number(urlPage);
+    if (Number.isInteger(target) && target >= 1 && target <= pages.length && (target !== page || step !== 'questions')) {
+      void autosave.flush(); // time spent so far belongs to the page we are leaving
+      setPage(target);
+      setStep('questions');
+      scrollTop();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPage, session?.ref, step]);
 
   // After the session is set, merge answers that were saved offline in this browser and push them.
   useEffect(() => {
@@ -133,6 +168,11 @@ export const AssessmentPage: React.FC = () => {
     }
   };
 
+  // Saving lost access (e.g. signed out in another tab): re-check who is signed in.
+  useEffect(() => {
+    if (autosave.status === 'lost') void refreshAuth();
+  }, [autosave.status, refreshAuth]);
+
   // Timer: counts while the statements are on screen and the tab is visible (resumes from the saved total).
   useEffect(() => {
     if (step !== 'questions') return;
@@ -157,12 +197,7 @@ export const AssessmentPage: React.FC = () => {
     [autosave, pages, page, answers],
   );
 
-  const goToPage = (target: number) => {
-    void autosave.flush(); // time spent so far belongs to the page we are leaving
-    setPage(target);
-    setStep('questions');
-    scrollTop();
-  };
+  const goToPage = (target: number) => showPage(target);
 
   const next = useCallback(() => {
     const missing = pages[page - 1]?.find((q) => !answers[q.id]);
@@ -171,14 +206,9 @@ export const AssessmentPage: React.FC = () => {
       document.getElementById(`q-${missing.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    void autosave.flush();
-    if (page < pages.length) {
-      setPage(page + 1);
-    } else {
-      setStep('review');
-    }
-    scrollTop();
-  }, [pages, page, answers, autosave]);
+    showPage(page < pages.length ? page + 1 : 'review');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pages, page, answers]);
 
   const prev = () => {
     if (page > 1) goToPage(page - 1);
@@ -198,6 +228,7 @@ export const AssessmentPage: React.FC = () => {
       setCompleted({ ref: result.ref, locked: result.resultsLocked });
       void activeSession.refresh();
       setStep('completed');
+      setParams({}, { replace: true });
       scrollTop();
     } catch (err) {
       if (err instanceof ApiError && err.code === 'INCOMPLETE') {
@@ -234,6 +265,21 @@ export const AssessmentPage: React.FC = () => {
     );
   }
 
+  // Saving stopped for good: say why instead of showing statements that can't be saved.
+  if ((step === 'questions' || step === 'review') && session && (autosave.status === 'closed' || autosave.status === 'lost')) {
+    return (
+      <SavingStopped
+        reference={session.ref}
+        reason={autosave.status === 'closed' ? autosave.closedReason ?? 'closed' : startedSignedIn.current && !user ? 'signed-out' : 'lost'}
+        onReload={() => {
+          setParams({}, { replace: true });
+          setSession(null);
+          void load();
+        }}
+      />
+    );
+  }
+
   if (step === 'questions') {
     return (
       <QuestionsStep
@@ -257,6 +303,7 @@ export const AssessmentPage: React.FC = () => {
       {step === 'consent' && draft && (
         <ResumeCard draft={draft} perPage={perPage} onResume={() => enterSession(draft)} onStartOver={startOver} />
       )}
+      {step === 'consent' && !draft && activeSession.pendingResult && <PendingResultCard result={activeSession.pendingResult} />}
       {step === 'consent' && <ConsentStep totalItems={totalItems} onAccept={() => {
             setStep('demographics');
             scrollTop();
@@ -324,6 +371,92 @@ const ResumeCard: React.FC<{ draft: SessionState; perPage: number; onResume: () 
       <p className="text-[11px] text-slate-500">
         Not you? <Link to="/login" className="underline">Sign in</Link> to your own account.
       </p>
+    </div>
+  );
+};
+
+/** A guest's finished test that is waiting for an account (TEST-9), so leaving the results gate never loses it. */
+const PendingResultCard: React.FC<{ result: PendingResult }> = ({ result }) => {
+  const next = encodeURIComponent(`/results/${result.ref}`);
+  const date = new Date(result.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+  return (
+    <div className="bg-gradient-to-br from-teal-900 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border-2 border-teal-500/40 shadow-xl space-y-5">
+      <div className="space-y-2">
+        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 text-xs font-semibold border border-teal-400/30">
+          <Lock className="w-3.5 h-3.5" /> Profile ready
+        </span>
+        <h2 className="text-xl sm:text-2xl font-bold font-heading">Your profile is ready</h2>
+        <p className="text-sm text-slate-300">
+          You finished the assessment on {date}. Sign in or create a free account in this browser to see your full report.
+        </p>
+      </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link
+          to={`/login?next=${next}`}
+          className="w-full sm:w-auto px-6 py-3 rounded-xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-sm shadow-md flex items-center justify-center gap-2"
+        >
+          Sign in to see it <ArrowRight className="w-4 h-4" />
+        </Link>
+        <Link
+          to={`/signup?next=${next}`}
+          className="w-full sm:w-auto px-6 py-3 rounded-xl border border-slate-600 hover:bg-slate-800 text-white font-semibold text-sm flex items-center justify-center"
+        >
+          Create free account
+        </Link>
+      </div>
+      <p className="text-[11px] text-slate-400">
+        Reference <span className="font-mono font-semibold text-slate-300">{result.ref}</span> · Want to take it again? Start below.
+      </p>
+    </div>
+  );
+};
+
+/** Why saving stopped, and the way forward (another tab submitted or restarted the test, or the visitor was signed out). */
+const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () => void }> = ({ reference, reason, onReload }) => {
+  const content: Record<string, { title: string; text: string; action: React.ReactNode }> = {
+    completed: {
+      title: 'This assessment was already submitted',
+      text: 'It was finished in another tab or window, so there is nothing left to answer here.',
+      action: (
+        <Link to={`/results/${reference}`} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+          View my result <ArrowRight className="w-4 h-4" />
+        </Link>
+      ),
+    },
+    'signed-out': {
+      title: 'You have been signed out',
+      text: 'Sign in again to carry on. Your latest answers are kept on this device and will be saved when you continue.',
+      action: (
+        <Link to="/login?next=%2Ftest" className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+          Sign in to continue <ArrowRight className="w-4 h-4" />
+        </Link>
+      ),
+    },
+    lost: {
+      title: 'We can no longer save this assessment here',
+      text: 'Your latest answers are kept on this device. Reload the test to continue where you left off.',
+      action: (
+        <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer">
+          <RotateCcw className="w-4 h-4" /> Reload the test
+        </button>
+      ),
+    },
+  };
+  const c = content[reason] ?? {
+    title: 'This assessment was restarted',
+    text: 'It was closed in another tab or window (for example with "Start over"), so it can no longer be continued here.',
+    action: (
+      <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer">
+        <RotateCcw className="w-4 h-4" /> Go to the current test
+      </button>
+    ),
+  };
+  return (
+    <div className="max-w-lg mx-auto px-4 py-20 text-center space-y-5" role="alert">
+      <AlertCircle className="w-10 h-10 mx-auto text-amber-500" />
+      <h1 className="text-2xl font-bold text-slate-900 font-heading">{c.title}</h1>
+      <p className="text-slate-600">{c.text}</p>
+      {c.action}
     </div>
   );
 };

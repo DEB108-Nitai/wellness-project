@@ -15,6 +15,8 @@ export interface SessionPayload {
   user: AuthUser | null;
   csrfToken: string;
   googleEnabled: boolean;
+  /** Set once, right after a sign-in that attached a finished guest test. */
+  claimedResultRef?: string;
 }
 
 export interface MessagePayload {
@@ -40,6 +42,11 @@ export const authApi = {
 /** Full-page navigation target for "Continue with Google" (server-side OAuth flow). */
 export function googleStartUrl(next: string): string {
   return `/api/auth/google/start?next=${encodeURIComponent(safeNext(next))}`;
+}
+
+/** Where to go after signing in: a just-attached guest result wins only when no destination was chosen. */
+export function afterSignIn(next: string, claimedResultRef: string | null): string {
+  return next === '/' && claimedResultRef ? `/results/${claimedResultRef}` : next;
 }
 
 /** Only same-site relative paths are allowed as post-login destinations. */

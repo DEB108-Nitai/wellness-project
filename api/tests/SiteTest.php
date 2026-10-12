@@ -140,9 +140,16 @@ test('newsletter: no duplicates, unsubscribe works, re-subscribe works (fault 19
 
 test('spam guard rejects honeypot and instant submissions', function () {
     assertSame('SPAM_DETECTED', assertThrows(HttpException::class, fn () => SpamGuard::check(['website' => 'http://spam']))->errorCode);
-    assertSame('TOO_FAST', assertThrows(HttpException::class, fn () => SpamGuard::check(['formStartedAt' => (int) (microtime(true) * 1000)]))->errorCode);
-    SpamGuard::check(['formStartedAt' => (int) (microtime(true) * 1000) - 10000]);
+    assertSame('TOO_FAST', assertThrows(HttpException::class, fn () => SpamGuard::check(['formElapsedMs' => 800]))->errorCode);
+    SpamGuard::check(['formElapsedMs' => 10000]);
     SpamGuard::check([]);
+});
+
+test('spam guard does not depend on the visitor\'s device clock', function () {
+    // The old check compared a browser timestamp with the server clock: a phone running 5 minutes fast
+    // was refused forever. Only the time the form was open counts now; a timestamp alone is ignored.
+    SpamGuard::check(['formStartedAt' => (int) (microtime(true) * 1000) + 300000, 'formElapsedMs' => 45000]);
+    SpamGuard::check(['formStartedAt' => (int) (microtime(true) * 1000) + 300000]);
 });
 
 test('admin settings update is validated and typed', function () {
