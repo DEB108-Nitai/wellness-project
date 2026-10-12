@@ -310,7 +310,40 @@ Owner asks: research papers and consultancy projects managed from the admin, and
     - each ciphertext is bound to its account;
     - setup secrets are encrypted in the session file.
   - **Tests:** API 103 → 123 (RFC 6238 test vectors included). New E2E `admin-2fa.mjs`; shared helper `admin-signin.mjs` (plays the authenticator app). The four admin E2E scripts now sign in through the real second step. `phase4-flow.mjs` still expects an admin without 2FA (it is replaced by `admin-flow.mjs` in Finish).
-- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin**, H messages/FAQs/audit/items.
+- **Consultancy categories (owner request 2026-10-12, same branch):** migration 025.
+  - Admins add, rename, reorder and delete (only when empty) consultancy categories, like research categories. "Add project" can create a new category in the same step.
+  - Each category has a **type**:
+    - **client work:** counted on the home page; client names are listed under "Clients and partners";
+    - **our products in development:** marked "In development" and not counted.
+
+    This replaces the rule that was hard-coded to the "Upcoming Products" section.
+  - A category's web address (`/consultancy#…`) never changes, so the old site's redirects keep working.
+- **Slice H. Messages, subscribers, FAQs, audit log, question set (ADM-3, 5, 7, 9, 10):**
+  - **Messages** (`/admin/messages`): New / Handled / All tabs, search, date range. Open a message to read it in full, use "Reply by email" (opens the email app), and mark it handled (who and when are recorded) or new again. CSV export. The Overview links to it.
+  - **Newsletter subscribers** (`/admin/subscribers`): counts (subscribed now, new in 30 days, unsubscribed), search, CSV export. Unsubscribe tokens never leave the server.
+  - **FAQs** (`/admin/faqs`): add (category picked from the list, or a new one typed), edit, hide, delete, reorder. The FAQ page follows straight away.
+  - **Audit log** (`/admin/audit`): filter by person, action, who (admin, member, visitor, server) and date. Actions are shown in plain words. Read-only: the API has no route that edits or deletes an entry.
+  - **Question set & norms** (`/admin/question-set`): the 166 statements (factor, reversed or not, attention checks with their expected answer) and the active norm table (16 factors with mean, SD, n and α; 5 domains). Read-only.
+  - **Admin menu** grouped under headings: People & numbers, Inbox, Website content, System.
+  - **Fresh-eyes review:** no critical issues; 2 major issues confirmed and fixed.
+    - Editing a project in an "in development" category erased its saved client name (the hidden field was sent empty).
+    - A paged list could leave the admin on an empty page after handling the last item.
+
+    Minor fixes:
+    - the reply link encodes the sender's address;
+    - one FAQ reorder at a time;
+    - 44 px tap targets;
+    - the "new" dot is announced to screen readers;
+    - FAQ categories typed in other capitals reuse the existing one;
+    - the content E2E cleans up after a failed run;
+    - a rollback test no longer depends on the SQL mode.
+
+    Noted, not changed:
+    - consultancy category reorder sends one request per category;
+    - two admins creating the same category name in the same instant;
+    - the tab keyboard pattern.
+  - **Tests:** API 123 → 132. New E2E `admin-site.mjs`; `admin-content.mjs` now also adds a project in a new consultancy category, and it removes its admin afterwards.
+- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin** (deferred by the owner), then Finish.
 
 ---
 
@@ -350,9 +383,9 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - [ ] Dashboard: tests started and completed, completion rate, flagged sessions, new users, new messages, recent audit events.
 - [ ] Participants: search and filters, detail view (demographics, timing, quality, 16 + 5 scores, item answers). Streamed CSV including optional item answers.
 - [ ] Users: list and search, view, change role, disable/enable (admins can't demote or disable themselves).
-- [ ] Contact messages: list, mark handled. Newsletter subscribers: list and export.
-- [ ] FAQs: create, edit, delete, reorder, publish.
-- [ ] Question set and norms: read-only view. Audit log: filters.
+- [x] Contact messages: list, mark handled. Newsletter subscribers: list and export (slice H).
+- [x] FAQs: create, edit, delete, reorder, publish (slice H).
+- [x] Question set and norms: read-only view. Audit log: filters (slice H).
 - [ ] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers.
 - [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 

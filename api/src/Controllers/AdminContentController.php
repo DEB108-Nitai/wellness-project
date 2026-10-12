@@ -16,6 +16,11 @@ use Transenigma\Services\AuthService;
  */
 final class AdminContentController
 {
+    private const GROUP_RULES = [
+        'tagline' => 'nullable|string|max:255',
+        'kind' => 'in:clients,products',
+    ];
+
     private const CATEGORY_RULES = [
         'name' => 'string|min:2|max:160',
         'tagline' => 'nullable|string|max:255',
@@ -97,12 +102,42 @@ final class AdminContentController
         return Response::ok(AdminContentService::consultancy());
     }
 
-    /** POST /api/admin/consultancy/projects */
+    /** POST /api/admin/consultancy/categories {name, tagline?, kind?} */
+    public function createGroup(Request $request): Response
+    {
+        $data = Validator::validate($request->json(), ['name' => 'required|string|min:2|max:160'] + self::GROUP_RULES);
+        return Response::created(AdminContentService::createGroup($data, AuthService::requireUser(), $request));
+    }
+
+    /** PATCH /api/admin/consultancy/categories/{id} */
+    public function updateGroup(Request $request): Response
+    {
+        $data = Validator::validate($request->json(), self::GROUP_RULES + ['name' => 'string|min:2|max:160', 'sortOrder' => 'int|min:0|max:65000']);
+        return Response::ok(AdminContentService::updateGroup((int) $request->param('id'), $data, AuthService::requireUser(), $request));
+    }
+
+    /** DELETE /api/admin/consultancy/categories/{id}: refused while it has projects. */
+    public function deleteGroup(Request $request): Response
+    {
+        AdminContentService::deleteGroup((int) $request->param('id'), AuthService::requireUser(), $request);
+        return Response::ok(null);
+    }
+
+    /** POST /api/admin/consultancy/projects {group | newGroup{name, tagline?, kind?}, name, …} */
     public function createProject(Request $request): Response
     {
-        return Response::created(AdminContentService::createProject(
-            $this->projectData($request->json(), true), AuthService::requireUser(), $request
-        ));
+        $body = $request->json();
+        $data = $this->projectData($body, true);
+        if (isset($body['newGroup'])) {
+            if (!is_array($body['newGroup'])) {
+                throw HttpException::validation(['newGroup' => 'Please name the new category.']);
+            }
+            $data['newGroup'] = Validator::validate($body['newGroup'], ['name' => 'required|string|min:2|max:160'] + self::GROUP_RULES);
+            unset($data['group']);
+        } elseif (!isset($data['group'])) {
+            throw HttpException::validation(['group' => 'Please choose a category or create a new one.']);
+        }
+        return Response::created(AdminContentService::createProject($data, AuthService::requireUser(), $request));
     }
 
     /** PATCH /api/admin/consultancy/projects/{id} */
@@ -146,7 +181,7 @@ final class AdminContentController
     {
         $req = $creating ? 'required|' : '';
         $data = Validator::validate($body, [
-            'group' => $req . 'in:' . implode(',', AdminContentService::PROJECT_GROUPS),
+            'group' => 'string|max:80', // an existing category's slug (checked by the service)
             'name' => $req . 'string|min:2|max:160',
             'clientName' => 'nullable|string|max:120',
             'description' => $req . 'string|min:10|max:2000',

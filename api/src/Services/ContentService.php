@@ -71,8 +71,8 @@ final class ContentService
     public static function consultancy(): array
     {
         $groups = [];
-        foreach (Database::all('SELECT id, slug, name, tagline FROM consultancy_groups ORDER BY sort_order, id') as $g) {
-            $groups[(int) $g['id']] = ['slug' => $g['slug'], 'name' => $g['name'], 'tagline' => $g['tagline'], 'projects' => []];
+        foreach (Database::all('SELECT id, slug, name, tagline, kind FROM consultancy_groups ORDER BY sort_order, id') as $g) {
+            $groups[(int) $g['id']] = ['slug' => $g['slug'], 'name' => $g['name'], 'tagline' => $g['tagline'], 'kind' => $g['kind'], 'projects' => []];
         }
         $rows = Database::all(
             'SELECT id, group_id, slug, name, client_name, description, image, url FROM consultancy_projects

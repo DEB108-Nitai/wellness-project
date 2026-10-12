@@ -1,51 +1,104 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { ArrowLeft, BarChart3, BookOpen, Briefcase, ClipboardList, LayoutDashboard, Menu, Settings, ShieldCheck, UsersRound, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  BarChart3,
+  BookOpen,
+  Briefcase,
+  ClipboardList,
+  FileQuestion,
+  History,
+  Inbox,
+  LayoutDashboard,
+  ListChecks,
+  Mail,
+  Menu,
+  Settings,
+  ShieldCheck,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AdminOverview } from './AdminOverview';
-import { ResearchAdmin } from './ResearchAdmin';
-import { ParticipantsAdmin } from './ParticipantsAdmin';
-import { VisitorsAdmin } from './VisitorsAdmin';
-import { ParticipantDetail } from './ParticipantDetail';
+import { AuditAdmin } from './AuditAdmin';
 import { ConsultancyAdmin } from './ConsultancyAdmin';
+import { FaqsAdmin } from './FaqsAdmin';
+import { MessagesAdmin } from './MessagesAdmin';
+import { ParticipantDetail } from './ParticipantDetail';
+import { ParticipantsAdmin } from './ParticipantsAdmin';
+import { QuestionSetAdmin } from './QuestionSetAdmin';
 import { RegistrationsAdmin } from './RegistrationsAdmin';
+import { ResearchAdmin } from './ResearchAdmin';
 import { SecurityAdmin } from './SecurityAdmin';
 import { SettingsPanel } from './SettingsPanel';
+import { SubscribersAdmin } from './SubscribersAdmin';
+import { VisitorsAdmin } from './VisitorsAdmin';
 import { PageHeader } from './ui';
 
 /**
  * The admin console (Phase 5): its own layout and URLs (/admin/...), loaded only when an admin opens it.
  * Access is enforced by <RequireAdmin> around this route and by the API on every /admin endpoint.
  */
-const NAV: { to: string; label: string; icon: React.ElementType; end?: boolean }[] = [
-  { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
-  { to: '/admin/visitors', label: 'Visitors', icon: BarChart3 },
-  { to: '/admin/participants', label: 'Participants & results', icon: UsersRound },
-  { to: '/admin/registrations', label: '60-Day registrations', icon: ClipboardList },
-  { to: '/admin/research', label: 'Research papers', icon: BookOpen },
-  { to: '/admin/consultancy', label: 'Consultancy projects', icon: Briefcase },
-  { to: '/admin/settings', label: 'Settings', icon: Settings },
-  { to: '/admin/security', label: 'Security', icon: ShieldCheck },
+type NavItem = { to: string; label: string; icon: React.ElementType; end?: boolean };
+const NAV: { heading: string | null; items: NavItem[] }[] = [
+  { heading: null, items: [{ to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true }] },
+  {
+    heading: 'People & numbers',
+    items: [
+      { to: '/admin/visitors', label: 'Visitors', icon: BarChart3 },
+      { to: '/admin/participants', label: 'Participants & results', icon: UsersRound },
+      { to: '/admin/registrations', label: '60-Day registrations', icon: ClipboardList },
+    ],
+  },
+  {
+    heading: 'Inbox',
+    items: [
+      { to: '/admin/messages', label: 'Messages', icon: Inbox },
+      { to: '/admin/subscribers', label: 'Newsletter subscribers', icon: Mail },
+    ],
+  },
+  {
+    heading: 'Website content',
+    items: [
+      { to: '/admin/research', label: 'Research papers', icon: BookOpen },
+      { to: '/admin/consultancy', label: 'Consultancy projects', icon: Briefcase },
+      { to: '/admin/faqs', label: 'FAQs', icon: FileQuestion },
+    ],
+  },
+  {
+    heading: 'System',
+    items: [
+      { to: '/admin/question-set', label: 'Question set & norms', icon: ListChecks },
+      { to: '/admin/audit', label: 'Audit log', icon: History },
+      { to: '/admin/settings', label: 'Settings', icon: Settings },
+      { to: '/admin/security', label: 'Security', icon: ShieldCheck },
+    ],
+  },
 ];
 
 const SideNav: React.FC<{ onPick?: () => void }> = ({ onPick }) => (
-  <nav aria-label="Admin sections" className="space-y-1">
-    {NAV.map(({ to, label, icon: Icon, end }) => (
-      <NavLink
-        key={to}
-        to={to}
-        end={end}
-        onClick={onPick}
-        className={({ isActive }) =>
-          `flex items-center gap-3 h-11 px-3 rounded-xl text-sm font-medium transition-colors focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-400/30 ${
-            isActive ? 'bg-teal-500/15 text-teal-200' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-          }`
-        }
-      >
-        <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
-        {label}
-      </NavLink>
+  <nav aria-label="Admin sections" className="space-y-5">
+    {NAV.map((group) => (
+      <div key={group.heading ?? 'top'} className="space-y-1">
+        {group.heading && <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{group.heading}</p>}
+        {group.items.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={onPick}
+            className={({ isActive }) =>
+              `flex items-center gap-3 h-10 px-3 rounded-xl text-sm font-medium transition-colors focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-400/30 ${
+                isActive ? 'bg-teal-500/15 text-teal-200' : 'text-slate-300 hover:bg-white/5 hover:text-white'
+              }`
+            }
+          >
+            <Icon className="w-[18px] h-[18px] shrink-0" aria-hidden="true" />
+            {label}
+          </NavLink>
+        ))}
+      </div>
     ))}
   </nav>
 );
@@ -144,6 +197,11 @@ export default function AdminApp() {
               }
             />
             <Route path="security" element={<SecurityAdmin />} />
+            <Route path="messages" element={<MessagesAdmin />} />
+            <Route path="subscribers" element={<SubscribersAdmin />} />
+            <Route path="faqs" element={<FaqsAdmin />} />
+            <Route path="audit" element={<AuditAdmin />} />
+            <Route path="question-set" element={<QuestionSetAdmin />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </div>

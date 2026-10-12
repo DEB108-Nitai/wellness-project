@@ -160,7 +160,7 @@ function asContentAdmin(): void
     $_SESSION['auth_uid'] = (int) contentAdmin()['id'];
     $_SESSION['auth_ver'] = (int) contentAdmin()['session_version'];
     $_SESSION['auth_seen'] = time();
-    \Transenigma\Services\AuthService::flush();
+    markSecondStepPassed();
 }
 
 test('the admin controller refuses unsafe links, foreign image paths, bad years and malformed new categories', function () {
@@ -245,4 +245,58 @@ test('a published category whose papers are all hidden is not shown on the site'
         AdminContentService::deletePaper($paper['id'], contentAdmin(), authReq());
         AdminContentService::deleteCategory($paper['categoryId'], contentAdmin(), authReq());
     }
+});
+
+test('consultancy categories: a new one with its first project, rename, client/product kind, delete only when empty', function () {
+    useTestDatabase();
+    $before = AdminContentService::stats();
+    $project = AdminContentService::createProject([
+        'name' => 'Clinic Booking App', 'clientName' => 'Test Health Trust', 'description' => 'Appointments and reminders for clinics.',
+        'newGroup' => ['name' => 'Healthcare Platforms', 'tagline' => 'Software for care providers.', 'kind' => 'clients'],
+    ], contentAdmin(), authReq());
+    $group = array_values(array_filter(AdminContentService::consultancy()['groups'], fn ($g) => $g['slug'] === $project['group']))[0];
+    try {
+        assertSame('healthcare-platforms', $group['slug']);
+        assertSame(['clients', 1], [$group['kind'], $group['projectCount']]);
+        $after = AdminContentService::stats();
+        assertSame($before['clientProjects'] + 1, $after['clientProjects'], 'client work is counted on the home page');
+        assertTrue(in_array('Test Health Trust', $after['clients'], true), 'client listed under Clients and partners');
+        $public = array_values(array_filter(ContentService::consultancy()['groups'], fn ($g) => $g['slug'] === 'healthcare-platforms'))[0];
+        assertSame(['Healthcare Platforms', 'clients'], [$public['name'], $public['kind']], 'a new section on /consultancy');
+
+        assertSame(422, assertThrows(HttpException::class, fn () => AdminContentService::createGroup(['name' => 'healthcare platforms'], contentAdmin(), authReq()))->status, 'names are unique');
+
+        $renamed = AdminContentService::updateGroup($group['id'], ['name' => 'Health Platforms', 'kind' => 'products'], contentAdmin(), authReq());
+        assertSame(['healthcare-platforms', 'Health Platforms'], [$renamed['slug'], $renamed['name']], 'the link anchor stays');
+        assertSame($before['clientProjects'], AdminContentService::stats()['clientProjects'], 'products in development are not counted');
+
+        $e = assertThrows(HttpException::class, fn () => AdminContentService::deleteGroup($group['id'], contentAdmin(), authReq()));
+        assertSame('CATEGORY_NOT_EMPTY', $e->errorCode);
+    } finally {
+        AdminContentService::deleteProject($project['id'], contentAdmin(), authReq());
+    }
+    AdminContentService::deleteGroup($group['id'], contentAdmin(), authReq());
+    assertSame(null, Database::value('SELECT id FROM consultancy_groups WHERE id = ?', [$group['id']]));
+    assertSame($before, AdminContentService::stats(), 'back to the starting numbers');
+    $actions = Database::all("SELECT action FROM audit_logs WHERE entity_type = 'consultancy_group' AND entity_id = ?", [(string) $group['id']]);
+    $actions = array_column($actions, 'action');
+    assertTrue(in_array('CONTENT_PROJECT_CATEGORY_UPDATED', $actions, true) && in_array('CONTENT_PROJECT_CATEGORY_DELETED', $actions, true), 'audited');
+});
+
+test('a failed project never leaves an empty new category behind; the API checks the category fields', function () {
+    useTestDatabase();
+    $count = (int) Database::value('SELECT COUNT(*) FROM consultancy_groups');
+    assertThrows(Throwable::class, fn () => AdminContentService::createProject([
+        'name' => 'Orphan Project', 'description' => null, // NOT NULL column: the insert fails in any SQL mode
+        'newGroup' => ['name' => 'Orphan Check'],
+    ], contentAdmin(), authReq()));
+    assertSame($count, (int) Database::value('SELECT COUNT(*) FROM consultancy_groups'), 'rolled back');
+
+    asContentAdmin();
+    $c = new AdminContentController();
+    $base = ['name' => 'Valid Name', 'description' => 'A long enough description.'];
+    assertSame(['group'], array_keys(assertThrows(HttpException::class, fn () => $c->createProject(contentJson($base)))->fields), 'a category is required');
+    assertSame(['group'], array_keys(assertThrows(HttpException::class, fn () => $c->createProject(contentJson($base + ['group' => 'no-such'])))->fields));
+    assertSame(['kind'], array_keys(assertThrows(HttpException::class, fn () => $c->createProject(contentJson($base + ['newGroup' => ['name' => 'Kinds', 'kind' => 'other']])))->fields));
+    assertSame(['newGroup'], array_keys(assertThrows(HttpException::class, fn () => $c->createProject(contentJson($base + ['newGroup' => 'Kinds'])))->fields));
 });

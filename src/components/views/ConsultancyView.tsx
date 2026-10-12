@@ -13,8 +13,6 @@ interface Props {
   onNavigate: (view: string) => void;
 }
 
-const UPCOMING = 'upcoming';
-
 const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> = ({ project, upcoming }) => (
   <li>
     <article className="group h-full flex flex-col rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
@@ -58,7 +56,7 @@ const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> 
 );
 
 const GroupSection: React.FC<{ group: ConsultancyGroup }> = ({ group }) => {
-  const upcoming = group.slug === UPCOMING;
+  const upcoming = group.kind === 'products';
   return (
     <section id={group.slug} aria-labelledby={`${group.slug}-title`} className="scroll-mt-28">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-4">
@@ -101,8 +99,9 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
     return () => window.clearTimeout(t);
   }, [data, location.hash, location.key]);
 
-  const services = data?.groups.filter((g) => g.slug !== UPCOMING) ?? [];
-  const upcoming = data?.groups.find((g) => g.slug === UPCOMING);
+  // Client-work areas first; categories of our own products in development (admin-managed) after them.
+  const services = data?.groups.filter((g) => g.kind === 'clients') ?? [];
+  const products = data?.groups.filter((g) => g.kind === 'products') ?? [];
   const clientProjects = services.reduce((n, g) => n + g.projects.length, 0);
   // Client names as plain text (no third-party logos), from the admin-managed projects.
   const clients = [...new Set(services.flatMap((g) => g.projects.map((p) => p.clientName).filter((c): c is string => !!c)))];
@@ -120,7 +119,7 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
           </p>
           {data && (
             <p className="text-sm font-semibold text-slate-700">
-              {clientProjects} client projects · {services.length} service areas · {upcoming?.projects.length ?? 0} upcoming products
+              {clientProjects} client projects · {services.length} service areas · {products.reduce((n, g) => n + g.projects.length, 0)} upcoming products
             </p>
           )}
         </div>
@@ -168,11 +167,11 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
           <GroupSection key={g.slug} group={g} />
         ))}
 
-        {upcoming && (
-          <div className="rounded-[2rem] bg-gradient-to-b from-indigo-50/70 to-white border border-indigo-100 p-6 sm:p-10">
-            <GroupSection group={upcoming} />
+        {products.map((g) => (
+          <div key={g.slug} className="rounded-[2rem] bg-gradient-to-b from-indigo-50/70 to-white border border-indigo-100 p-6 sm:p-10">
+            <GroupSection group={g} />
           </div>
-        )}
+        ))}
       </div>
 
       {/* Contact prompt */}

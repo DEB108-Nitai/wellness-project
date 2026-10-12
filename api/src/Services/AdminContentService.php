@@ -15,7 +15,8 @@ use Transenigma\Core\Request;
  */
 final class AdminContentService
 {
-    public const PROJECT_GROUPS = ['enterprise', 'web-mobile', 'iot', 'upcoming'];
+    /** clients = client work (counted, client names listed); products = our own products in development. */
+    public const GROUP_KINDS = ['clients', 'products'];
     private const IMAGE_TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
     private const IMAGE_MAX_BYTES = 2_097_152; // 2 MB
     private const IMAGE_MAX_SIDE = 4000;
@@ -152,11 +153,13 @@ final class AdminContentService
 
     // ------------------------------------------------------------------ consultancy
 
-    /** The fixed sections and every project (published or not). */
+    /** Every category (with its project count) and every project (published or not). */
     public static function consultancy(): array
     {
-        $groups = array_map(static fn (array $g): array => ['slug' => $g['slug'], 'name' => $g['name']],
-            Database::all('SELECT slug, name FROM consultancy_groups ORDER BY sort_order, id'));
+        $groups = array_map([self::class, 'groupOut'], Database::all(
+            'SELECT g.*, (SELECT COUNT(*) FROM consultancy_projects p WHERE p.group_id = g.id) AS project_count
+             FROM consultancy_groups g ORDER BY g.sort_order, g.id'
+        ));
         $projects = array_map([self::class, 'projectOut'], Database::all(
             'SELECT p.*, g.slug AS group_slug FROM consultancy_projects p JOIN consultancy_groups g ON g.id = p.group_id
              ORDER BY g.sort_order, p.sort_order, p.id'
@@ -164,22 +167,78 @@ final class AdminContentService
         return ['groups' => $groups, 'projects' => $projects];
     }
 
+    /** @param array{name:string, tagline?:?string, kind?:string} $data */
+    public static function createGroup(array $data, array $admin, Request $request): array
+    {
+        $id = self::insertGroup($data);
+        AuditService::forUser($admin, 'CONTENT_PROJECT_CATEGORY_CREATED', 'consultancy_group', (string) $id, ['name' => $data['name']], $request);
+        return self::group($id);
+    }
+
+    /** Rename, retag, change the kind or the position. The slug (the /consultancy#… anchor) never changes. */
+    public static function updateGroup(int $id, array $data, array $admin, Request $request): array
+    {
+        $before = self::group($id);
+        $sets = [];
+        $params = [];
+        foreach (['name' => 'name', 'tagline' => 'tagline', 'kind' => 'kind', 'sortOrder' => 'sort_order'] as $key => $column) {
+            if (array_key_exists($key, $data)) {
+                $sets[] = "$column = ?";
+                $params[] = $key === 'tagline' ? (string) self::nullIfEmpty($data[$key]) : $data[$key];
+            }
+        }
+        if ($sets !== []) {
+            if (isset($data['name'])) {
+                self::assertUniqueGroupName($data['name'], $id);
+            }
+            Database::run('UPDATE consultancy_groups SET ' . implode(', ', $sets) . ' WHERE id = ?', [...$params, $id]);
+            AuditService::forUser($admin, 'CONTENT_PROJECT_CATEGORY_UPDATED', 'consultancy_group', (string) $id, ['name' => $before['name'], 'fields' => array_keys($data)], $request);
+        }
+        return self::group($id);
+    }
+
+    /** Only an empty category can be deleted, so projects are never removed by accident. */
+    public static function deleteGroup(int $id, array $admin, Request $request): void
+    {
+        $group = self::group($id);
+        if ($group['projectCount'] > 0) {
+            throw HttpException::conflict("This category still has {$group['projectCount']} project(s). Move or remove them first.", 'CATEGORY_NOT_EMPTY');
+        }
+        $deleted = Database::run(
+            'DELETE FROM consultancy_groups WHERE id = ? AND NOT EXISTS (SELECT 1 FROM consultancy_projects WHERE group_id = ?)',
+            [$id, $id]
+        )->rowCount();
+        if ($deleted !== 1) {
+            throw HttpException::conflict('This category has just received a project. Move or remove it first.', 'CATEGORY_NOT_EMPTY');
+        }
+        AuditService::forUser($admin, 'CONTENT_PROJECT_CATEGORY_DELETED', 'consultancy_group', (string) $id, ['name' => $group['name']], $request);
+    }
+
+    /**
+     * Add a project to an existing category (group = its slug) or to a new one (newGroup {name, tagline?, kind?}),
+     * in one transaction so a failed project never leaves an empty category behind.
+     */
     public static function createProject(array $data, array $admin, Request $request): array
     {
-        $groupId = self::groupId($data['group']);
-        $id = Database::insert(
-            'INSERT INTO consultancy_projects (group_id, slug, name, client_name, description, image, url, sort_order, is_published)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                $groupId, self::uniqueSlug('consultancy_projects', $data['name'], 'project'), $data['name'],
-                self::nullIfEmpty($data['clientName'] ?? null), $data['description'], self::nullIfEmpty($data['image'] ?? null),
-                self::nullIfEmpty($data['url'] ?? null),
-                (int) Database::value('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM consultancy_projects WHERE group_id = ?', [$groupId]),
-                (int) ($data['published'] ?? true),
-            ]
-        );
-        AuditService::forUser($admin, 'CONTENT_PROJECT_CREATED', 'consultancy_project', (string) $id, ['name' => $data['name'], 'group' => $data['group']], $request);
-        return self::project($id);
+        $id = Database::transaction(static function () use ($data): int {
+            $groupId = isset($data['newGroup']) ? self::insertGroup($data['newGroup']) : self::groupId($data['group']);
+            return Database::insert(
+                'INSERT INTO consultancy_projects (group_id, slug, name, client_name, description, image, url, sort_order, is_published)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [
+                    $groupId, self::uniqueSlug('consultancy_projects', $data['name'], 'project'), $data['name'],
+                    self::nullIfEmpty($data['clientName'] ?? null), $data['description'], self::nullIfEmpty($data['image'] ?? null),
+                    self::nullIfEmpty($data['url'] ?? null),
+                    (int) Database::value('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM consultancy_projects WHERE group_id = ?', [$groupId]),
+                    (int) ($data['published'] ?? true),
+                ]
+            );
+        });
+        $project = self::project($id);
+        AuditService::forUser($admin, 'CONTENT_PROJECT_CREATED', 'consultancy_project', (string) $id, [
+            'name' => $data['name'], 'group' => $project['group'], 'newCategory' => isset($data['newGroup']),
+        ], $request);
+        return $project;
     }
 
     public static function updateProject(int $id, array $data, array $admin, Request $request): array
@@ -293,14 +352,14 @@ final class AdminContentService
                (SELECT COUNT(*) FROM research_categories c WHERE c.is_published = 1
                  AND EXISTS (SELECT 1 FROM publications p WHERE p.category_id = c.id AND p.is_published = 1)) AS fields,
                (SELECT COUNT(*) FROM consultancy_projects p JOIN consultancy_groups g ON g.id = p.group_id
-                 WHERE p.is_published = 1 AND g.slug <> ?) AS client_projects',
-            ['upcoming']
+                 WHERE p.is_published = 1 AND g.kind = ?) AS client_projects',
+            ['clients']
         );
         $clients = array_values(array_unique(array_map(static fn (array $r): string => $r['client_name'], Database::all(
             'SELECT p.client_name FROM consultancy_projects p JOIN consultancy_groups g ON g.id = p.group_id
-             WHERE p.is_published = 1 AND g.slug <> ? AND p.client_name IS NOT NULL AND p.client_name <> ?
+             WHERE p.is_published = 1 AND g.kind = ? AND p.client_name IS NOT NULL AND p.client_name <> ?
              ORDER BY g.sort_order, p.sort_order, p.id',
-            ['upcoming', '']
+            ['clients', '']
         ))));
         return [
             'publications' => (int) $row['publications'],
@@ -384,9 +443,49 @@ final class AdminContentService
     {
         $id = Database::value('SELECT id FROM consultancy_groups WHERE slug = ?', [$slug]);
         if ($id === null) {
-            throw HttpException::validation(['group' => 'Please choose a section.']);
+            throw HttpException::validation(['group' => 'Please choose a category.']);
         }
         return (int) $id;
+    }
+
+    private static function insertGroup(array $data): int
+    {
+        self::assertUniqueGroupName($data['name']);
+        return Database::insert(
+            'INSERT INTO consultancy_groups (slug, name, tagline, kind, sort_order) VALUES (?, ?, ?, ?, ?)',
+            [
+                self::uniqueSlug('consultancy_groups', $data['name'], 'projects'), $data['name'],
+                (string) self::nullIfEmpty($data['tagline'] ?? null), $data['kind'] ?? 'clients',
+                (int) Database::value('SELECT COALESCE(MAX(sort_order), 0) + 1 FROM consultancy_groups'),
+            ]
+        );
+    }
+
+    private static function assertUniqueGroupName(string $name, ?int $exceptId = null): void
+    {
+        $taken = Database::value(
+            'SELECT id FROM consultancy_groups WHERE LOWER(name) = LOWER(?)' . ($exceptId ? ' AND id <> ?' : ''),
+            $exceptId ? [$name, $exceptId] : [$name]
+        );
+        if ($taken !== null) {
+            throw HttpException::validation(['name' => 'A category with this name already exists. Pick it from the list instead.']);
+        }
+    }
+
+    public static function group(int $id): array
+    {
+        return self::groupOut(Database::one(
+            'SELECT g.*, (SELECT COUNT(*) FROM consultancy_projects p WHERE p.group_id = g.id) AS project_count FROM consultancy_groups g WHERE g.id = ?',
+            [$id]
+        ) ?? throw HttpException::notFound('Category not found.'));
+    }
+
+    private static function groupOut(array $g): array
+    {
+        return [
+            'id' => (int) $g['id'], 'slug' => $g['slug'], 'name' => $g['name'], 'tagline' => $g['tagline'],
+            'kind' => $g['kind'], 'sortOrder' => (int) $g['sort_order'], 'projectCount' => (int) $g['project_count'],
+        ];
     }
 
     /** A readable, unique, never-changing slug: "Women & Gender" → "women-gender", then "-2", "-3"… */

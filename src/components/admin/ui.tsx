@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef } from 'react';
-import { Loader2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 
 /**
  * Small shared building blocks for the admin console (Phase 5), in the site's teal/slate language.
@@ -292,3 +292,83 @@ export function fieldErrors(err: unknown): { fields: Record<string, string>; mes
   }
   return { fields: {}, message: 'Something went wrong. Please try again.' };
 }
+
+// ------------------------------------------------------------------ lists (slice H)
+
+/** Previous / next under a paged list. Hidden when everything fits on one page. */
+export const Pager: React.FC<{ page: number; perPage: number; total: number; onPage: (p: number) => void }> = ({ page, perPage, total, onPage }) => {
+  const pages = Math.max(1, Math.ceil(total / perPage));
+  if (total <= perPage) return null;
+  return (
+    <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-xs text-slate-600">
+      <span>
+        Page {page} of {pages} · {total} in all
+      </span>
+      <div className="flex gap-2">
+        <button disabled={page <= 1} onClick={() => onPage(page - 1)} className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Previous page">
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+        <button disabled={page >= pages} onClick={() => onPage(page + 1)} className="inline-flex items-center justify-center w-11 h-11 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Next page">
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/** When the list shrank (an item was handled) and this page is now empty, go to the last page that has items. */
+export function useClampPage(data: { items: unknown[]; total: number; perPage: number; page: number } | null, setPage: (p: number) => void): void {
+  useEffect(() => {
+    if (data && data.items.length === 0 && data.page > 1) setPage(Math.max(1, Math.ceil(data.total / data.perPage)));
+  }, [data, setPage]);
+}
+
+/** Compact control for filter rows. */
+export const filterControl = 'h-11 px-3 rounded-xl border border-slate-300 bg-white text-sm text-slate-800 focus:outline-hidden focus:ring-4 focus:ring-teal-500/15';
+
+export type RangeChoice = 'all' | '7' | '30' | '90' | 'custom';
+const ymd = (d: Date) => d.toISOString().slice(0, 10);
+
+/** UTC whole days for a range choice (inclusive), as the API expects. */
+export function rangeDates(range: RangeChoice, from: string, to: string): { from?: string; to?: string } {
+  if (range === 'all') return {};
+  if (range === 'custom') return { from: from || undefined, to: to || undefined };
+  return { from: ymd(new Date(Date.now() - (Number(range) - 1) * 86400000)), to: ymd(new Date()) };
+}
+
+/** "Any time / 7 / 30 / 90 days / custom" with two date boxes for custom. */
+export const RangePicker: React.FC<{
+  range: RangeChoice;
+  from: string;
+  to: string;
+  onChange: (v: { range: RangeChoice; from: string; to: string }) => void;
+  label?: string;
+}> = ({ range, from, to, onChange, label = 'Date range' }) => (
+  <>
+    <select aria-label={label} value={range} onChange={(e) => onChange({ range: e.target.value as RangeChoice, from, to })} className={filterControl}>
+      <option value="all">Any time</option>
+      <option value="7">Last 7 days</option>
+      <option value="30">Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="custom">Custom dates…</option>
+    </select>
+    {range === 'custom' && (
+      <span className="flex gap-2">
+        <input type="date" value={from} max={to || undefined} onChange={(e) => onChange({ range, from: e.target.value, to })} className={filterControl} aria-label="From date" />
+        <input type="date" value={to} min={from || undefined} onChange={(e) => onChange({ range, from, to: e.target.value })} className={filterControl} aria-label="To date" />
+      </span>
+    )}
+  </>
+);
+
+/** A search box whose value settles 350 ms after typing stops. */
+export function useDebounced(value: string, ms = 350): string {
+  const [settled, setSettled] = React.useState(value);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSettled(value.trim()), ms);
+    return () => window.clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
+
+export const fmtWhen = (iso: string | null) => (iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—');

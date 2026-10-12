@@ -50,6 +50,9 @@ export const AdminOverview: React.FC = () => {
         <p role="status" className="flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm text-sky-900">
           <Mail className="w-4 h-4 shrink-0" aria-hidden="true" />
           {d.messages.new} new contact {d.messages.new === 1 ? 'message' : 'messages'} waiting for a reply.
+          <Link to="/admin/messages" className="ml-auto font-semibold underline underline-offset-2 whitespace-nowrap">
+            Open messages
+          </Link>
         </p>
       )}
 
@@ -141,7 +144,7 @@ export const AdminOverview: React.FC = () => {
         </Panel>
       </div>
 
-      <Panel title="Recent activity">
+      <Panel title="Recent activity" actions={<SectionLink to="/admin/audit">Audit log</SectionLink>}>
         {d.recentActivity.length === 0 ? (
           <p className="text-sm text-slate-500">Nothing recorded yet.</p>
         ) : (

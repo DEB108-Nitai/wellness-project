@@ -11,6 +11,7 @@ use Transenigma\Controllers\AccountController;
 use Transenigma\Controllers\AdminContentController;
 use Transenigma\Controllers\AdminController;
 use Transenigma\Controllers\AdminParticipantsController;
+use Transenigma\Controllers\AdminSiteController;
 use Transenigma\Controllers\AssessmentController;
 use Transenigma\Controllers\AuthController;
 use Transenigma\Controllers\ChallengeController;
@@ -117,8 +118,28 @@ return static function (Router $r): void {
     $r->patch('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'updatePaper'], $admin);
     $r->delete('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'deletePaper'], $admin);
     $r->get('/admin/consultancy', [AdminContentController::class, 'consultancy'], $admin);
+    $r->post('/admin/consultancy/categories', [AdminContentController::class, 'createGroup'], $admin);
+    $r->patch('/admin/consultancy/categories/{id:[0-9]+}', [AdminContentController::class, 'updateGroup'], $admin);
+    $r->delete('/admin/consultancy/categories/{id:[0-9]+}', [AdminContentController::class, 'deleteGroup'], $admin);
     $r->post('/admin/consultancy/projects', [AdminContentController::class, 'createProject'], $admin);
     $r->patch('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'updateProject'], $admin);
     $r->delete('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'deleteProject'], $admin);
     $r->post('/admin/uploads/project-image', [AdminContentController::class, 'uploadProjectImage'], $admin);
+
+    // --- Admin: messages, subscribers, FAQs, audit log, question set (Phase 5 slice H) ---
+    $id = '{id:[0-9]+}';
+    $r->get('/admin/messages', [AdminSiteController::class, 'messages'], $admin);
+    $r->get("/admin/messages/$id", [AdminSiteController::class, 'message'], $admin);
+    $r->patch("/admin/messages/$id", [AdminSiteController::class, 'updateMessage'], $admin);
+    $r->get('/admin/export/messages', [AdminSiteController::class, 'exportMessages'], $admin);
+    $r->get('/admin/subscribers', [AdminSiteController::class, 'subscribers'], $admin);
+    $r->get('/admin/export/subscribers', [AdminSiteController::class, 'exportSubscribers'], $admin);
+    $r->get('/admin/faqs', [AdminSiteController::class, 'faqs'], $admin);
+    $r->post('/admin/faqs', [AdminSiteController::class, 'createFaq'], $admin);
+    $r->post('/admin/faqs/reorder', [AdminSiteController::class, 'reorderFaqs'], $admin);
+    $r->patch("/admin/faqs/$id", [AdminSiteController::class, 'updateFaq'], $admin);
+    $r->delete("/admin/faqs/$id", [AdminSiteController::class, 'deleteFaq'], $admin);
+    $r->get('/admin/audit', [AdminSiteController::class, 'audit'], $admin);
+    $r->get('/admin/items', [AdminSiteController::class, 'items'], $admin);
+    $r->get('/admin/norms', [AdminSiteController::class, 'norms'], $admin);
 };

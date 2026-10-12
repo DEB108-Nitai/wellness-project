@@ -48,6 +48,8 @@ export interface ConsultancyGroup {
   slug: string;
   name: string;
   tagline: string;
+  /** clients = client work; products = our own products in development ("In development" label, not counted). */
+  kind: 'clients' | 'products';
   projects: ConsultancyProject[];
 }
 

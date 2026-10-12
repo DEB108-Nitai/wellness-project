@@ -134,7 +134,20 @@ export interface PaperInput {
   newCategory?: { name: string; tagline: string | null };
 }
 
-export type ProjectGroup = 'enterprise' | 'web-mobile' | 'iot' | 'upcoming';
+/** A consultancy category's slug (its /consultancy#… anchor; fixed once created). */
+export type ProjectGroup = string;
+/** clients = client work (counted on the home page, client names listed); products = our products in development. */
+export type GroupKind = 'clients' | 'products';
+
+export interface AdminProjectGroup {
+  id: number;
+  slug: ProjectGroup;
+  name: string;
+  tagline: string;
+  kind: GroupKind;
+  sortOrder: number;
+  projectCount: number;
+}
 
 export interface AdminProject {
   id: number;
@@ -148,7 +161,14 @@ export interface AdminProject {
   published: boolean;
 }
 
-export type ProjectInput = Omit<AdminProject, 'id' | 'slug'>;
+export interface GroupInput {
+  name: string;
+  tagline: string | null;
+  kind: GroupKind;
+}
+
+/** A project goes into an existing category (group) or a new one created with it (newGroup). */
+export type ProjectInput = Omit<AdminProject, 'id' | 'slug' | 'group' | 'clientName'> & { clientName?: string | null; group?: ProjectGroup; newGroup?: GroupInput };
 
 export const contentAdminApi = {
   research: () => api.get<{ categories: AdminCategory[]; papers: AdminPaper[] }>('/admin/research'),
@@ -160,7 +180,10 @@ export const contentAdminApi = {
   updatePaper: (id: number, p: Partial<PaperInput>) => api.patch<AdminPaper>(`/admin/research/papers/${id}`, p),
   deletePaper: (id: number) => api.delete<null>(`/admin/research/papers/${id}`),
 
-  consultancy: () => api.get<{ groups: { slug: ProjectGroup; name: string }[]; projects: AdminProject[] }>('/admin/consultancy'),
+  consultancy: () => api.get<{ groups: AdminProjectGroup[]; projects: AdminProject[] }>('/admin/consultancy'),
+  createGroup: (g: GroupInput) => api.post<AdminProjectGroup>('/admin/consultancy/categories', g),
+  updateGroup: (id: number, g: Partial<GroupInput & { sortOrder: number }>) => api.patch<AdminProjectGroup>(`/admin/consultancy/categories/${id}`, g),
+  deleteGroup: (id: number) => api.delete<null>(`/admin/consultancy/categories/${id}`),
   createProject: (p: ProjectInput) => api.post<AdminProject>('/admin/consultancy/projects', p),
   updateProject: (id: number, p: Partial<ProjectInput>) => api.patch<AdminProject>(`/admin/consultancy/projects/${id}`, p),
   deleteProject: (id: number) => api.delete<null>(`/admin/consultancy/projects/${id}`),
@@ -358,6 +381,9 @@ export const AUDIT_LABELS: Record<string, string> = {
   CONTENT_PROJECT_CREATED: 'Added a consultancy project',
   CONTENT_PROJECT_UPDATED: 'Edited a consultancy project',
   CONTENT_PROJECT_DELETED: 'Removed a consultancy project',
+  CONTENT_PROJECT_CATEGORY_CREATED: 'Added a consultancy category',
+  CONTENT_PROJECT_CATEGORY_UPDATED: 'Edited a consultancy category',
+  CONTENT_PROJECT_CATEGORY_DELETED: 'Deleted a consultancy category',
   CONTENT_IMAGE_UPLOADED: 'Uploaded an image',
   ADMIN_CREATED_CLI: 'Admin created (server)',
   ADMIN_PROMOTED_CLI: 'Admin promoted (server)',
@@ -368,6 +394,15 @@ export const AUDIT_LABELS: Record<string, string> = {
   AUTH_2FA_RECOVERY_REGENERATED: 'Created new recovery codes',
   AUTH_2FA_CHANGED: 'Moved two-step sign-in to a new phone',
   AUTH_2FA_RESET: 'Two-step sign-in reset (server)',
+  ADMIN_VIEWED_ASSESSMENT: 'Viewed an assessment',
+  MESSAGE_HANDLED: 'Marked a message handled',
+  MESSAGE_REOPENED: 'Marked a message as new',
+  EXPORT_MESSAGES: 'Exported messages',
+  EXPORT_SUBSCRIBERS: 'Exported subscribers',
+  FAQ_CREATED: 'Added an FAQ',
+  FAQ_UPDATED: 'Edited an FAQ',
+  FAQ_DELETED: 'Deleted an FAQ',
+  FAQ_REORDERED: 'Reordered the FAQs',
 };
 
 // ------------------------------------------------------------------ security (ADM-12)
@@ -383,4 +418,120 @@ export const securityApi = {
   regenerateRecoveryCodes: (code: string) => api.post<{ recoveryCodes: string[] }>('/admin/security/recovery-codes', { code }),
   startReplace: (code: string) => api.post<{ secret: string; uri: string }>('/admin/security/authenticator', { code }),
   confirmReplace: (code: string) => api.post<SecurityStatus>('/admin/security/authenticator/confirm', { code }),
+};
+
+// ------------------------------------------------------------------ messages, subscribers, FAQs, audit, question set (slice H)
+
+const siteQuery = (f: object) => {
+  const params = new URLSearchParams();
+  Object.entries(f).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') params.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
+  });
+  const s = params.toString();
+  return s ? `?${s}` : '';
+};
+
+export interface Paged<T> {
+  items: T[];
+  total: number;
+  page: number;
+  perPage: number;
+}
+
+export type MessageStatus = 'new' | 'handled';
+export interface MessageFilters {
+  status?: MessageStatus;
+  q?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+}
+export interface MessageRow {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  preview: string;
+  status: MessageStatus;
+  createdAt: string;
+  handledAt: string | null;
+}
+export interface MessageDetail extends Omit<MessageRow, 'preview'> {
+  message: string;
+  handledBy: string | null;
+}
+
+export type SubscriberStatus = 'subscribed' | 'unsubscribed';
+export interface SubscriberRow {
+  id: number;
+  email: string;
+  status: SubscriberStatus;
+  createdAt: string;
+  unsubscribedAt: string | null;
+}
+
+export interface AdminFaq {
+  id: number;
+  category: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  published: boolean;
+}
+export type FaqInput = Pick<AdminFaq, 'category' | 'question' | 'answer' | 'published'>;
+
+export interface AuditFilters {
+  action?: string;
+  actorType?: 'guest' | 'user' | 'admin' | 'system';
+  actor?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+}
+export interface AuditRow {
+  id: number;
+  createdAt: string;
+  actorType: 'guest' | 'user' | 'admin' | 'system';
+  actor: { id: number; name: string; email: string } | null;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  details: Record<string, unknown> | null;
+}
+
+export interface ItemRow {
+  position: number;
+  code: string;
+  text: string;
+  factor: string | null;
+  factorName: string | null;
+  keyed: '+' | '-' | null;
+  attentionCheck: boolean;
+  expected: number | null;
+}
+export interface NormsData {
+  normSet: { version: string; source: string; sampleSize: number };
+  factors: { code: string; name: string; mean: number; sd: number; n: number | null; alpha: number | null }[];
+  domains: { code: string; name: string; mean: number; sd: number }[];
+}
+
+export const siteAdminApi = {
+  messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${siteQuery({ ...f, perPage: 25 })}`),
+  message: (id: number) => api.get<MessageDetail>(`/admin/messages/${id}`),
+  setMessageStatus: (id: number, status: MessageStatus) => api.patch<MessageDetail>(`/admin/messages/${id}`, { status }),
+  messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${siteQuery(f)}`,
+
+  subscribers: (f: { status?: SubscriberStatus; q?: string; page?: number }) =>
+    api.get<Paged<SubscriberRow> & { counts: { subscribed: number; unsubscribed: number; last30Days: number } }>(`/admin/subscribers${siteQuery({ ...f, perPage: 25 })}`),
+  subscribersCsvUrl: (f: { status?: SubscriberStatus; q?: string }) => `/api/admin/export/subscribers${siteQuery(f)}`,
+
+  faqs: () => api.get<AdminFaq[]>('/admin/faqs'),
+  createFaq: (f: FaqInput) => api.post<AdminFaq>('/admin/faqs', f),
+  updateFaq: (id: number, f: Partial<FaqInput>) => api.patch<AdminFaq>(`/admin/faqs/${id}`, f),
+  deleteFaq: (id: number) => api.delete<null>(`/admin/faqs/${id}`),
+  reorderFaqs: (ids: number[]) => api.post<AdminFaq[]>('/admin/faqs/reorder', { ids }),
+
+  audit: (f: AuditFilters) => api.get<Paged<AuditRow> & { actions: string[] }>(`/admin/audit${siteQuery({ ...f, perPage: 50 })}`),
+  items: () => api.get<{ itemSet: { version: string; description: string }; items: ItemRow[] }>('/admin/items'),
+  norms: () => api.get<NormsData>('/admin/norms'),
 };

@@ -13,6 +13,7 @@ const email = `admin${Date.now()}@example.com`;
 const PASSWORD = 'Calm-River-Lantern-42';
 const CATEGORY = `Contemplative Attention ${Date.now() % 10000}`;
 const PROJECT = `E2E Wellness Portal ${Date.now() % 10000}`;
+const SECTION = `E2E Health Platforms ${Date.now() % 10000}`;
 const step = (m) => console.log(`• ${m}`);
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const stats = (page) => page.eval(`fetch('/api/content/stats').then(r => r.json()).then(j => j.data)`);
@@ -78,12 +79,16 @@ try {
   await page.waitText('Calm attention in everyday practice');
   step('research page lists the new field and paper');
 
-  // 4. Add a consultancy project with an uploaded image.
+  // 4. Add a consultancy project with an uploaded image, in a new consultancy category.
   await page.goto(`${BASE}/admin/consultancy`);
   await page.waitText('published client projects');
   await page.clickText('Add project', 'button');
   await page.waitText('Add a consultancy project');
+  await fillDialog({ Category: '__new' });
+  await page.waitText('New category name');
   await fillDialog({
+    'New category name': SECTION,
+    'Tagline (optional)': 'Software for care providers.',
     'Project name': PROJECT,
     'Client name': 'E2E Hospital Trust',
     Description: 'A patient portal with appointments, reports and reminders.',
@@ -95,14 +100,15 @@ try {
   step('image uploaded and previewed');
   await page.screenshot(`${OUT}admin-03-add-project.png`);
   await page.clickText('Add project', '[role=dialog] button');
-  await page.waitText('Project added to the Consultancy page');
+  await page.waitText(`Project added in the new category “${SECTION}”`);
   now = await stats(page);
   if (now.clientProjects !== before.clientProjects + 1 || !now.clients.includes('E2E Hospital Trust')) throw new Error(`project counts did not follow: ${JSON.stringify(now)}`);
   await page.goto(`${BASE}/consultancy`);
   await page.waitText(PROJECT);
+  await page.waitText(SECTION);
   await page.waitText('E2E Hospital Trust');
   await page.waitFor(`[...document.images].some(i => i.src.includes('/uploads/projects/') && i.complete && i.naturalWidth > 0)`, 10000);
-  step('consultancy page shows the project, its uploaded image and the new client');
+  step('consultancy page shows the new category as a section, the project, its uploaded image and the new client');
 
   // 5. Phone width check of the admin screens.
   await page.viewport(390, 844, true);
@@ -122,6 +128,11 @@ try {
   await page.eval(`document.querySelector('[aria-label="Remove ${PROJECT}"]').click()`);
   await page.clickText('Remove project', '[role=dialog] button');
   await page.waitText('Project removed.');
+  await page.clickText('Categories', '[role=tab]');
+  await page.eval(`document.querySelector('[aria-label="Delete ${SECTION}"]').click()`);
+  await page.clickText('Delete category', '[role=dialog] button');
+  await page.waitText('Category deleted.');
+  await page.screenshot(`${OUT}admin-06-consultancy-categories.png`);
   await page.goto(`${BASE}/admin/research`);
   await page.waitText(CATEGORY);
   await page.eval(`document.querySelector('[aria-label="Delete paper"]') && [...document.querySelectorAll('section')].find(s => s.getAttribute('aria-label') === ${JSON.stringify(CATEGORY)}).querySelector('[aria-label="Delete paper"]').click()`);
@@ -143,4 +154,12 @@ try {
 } finally {
   if (page.consoleErrors.length) console.log('Browser console errors:\n  ' + page.consoleErrors.join('\n  '));
   await page.close();
+  const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', 'transenigma'], { input: q }).toString().trim();
+  // If the run failed midway, remove the test content too (it would change the live counts).
+  sql(`DELETE FROM consultancy_projects WHERE name = '${PROJECT}'; DELETE FROM consultancy_groups WHERE name = '${SECTION}';
+       DELETE p FROM publications p JOIN research_categories c ON c.id = p.category_id WHERE c.name = '${CATEGORY}';
+       DELETE FROM research_categories WHERE name = '${CATEGORY}';`);
+  const id = sql(`SELECT id FROM users WHERE email = '${email}'`);
+  if (id) sql(`DELETE FROM audit_logs WHERE actor_user_id = ${id} OR (entity_type = 'user' AND entity_id = '${id}'); DELETE FROM email_log WHERE to_email = '${email}'; DELETE FROM users WHERE id = ${id};`);
+  console.log('removed the e2e admin');
 }
