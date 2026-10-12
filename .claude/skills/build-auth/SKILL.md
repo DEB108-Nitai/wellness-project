@@ -101,9 +101,20 @@ $ARGUMENTS
 - **Security-page actions need a step-up code** (app or recovery). Moving to a new phone bumps `session_version` and keeps this session (`keepSessionAt`).
 - **Tests:** use `signInAdmin()`, `freshCode()` and `markSecondStepPassed()` from `api/tests/_helpers.php`. E2E admins sign in with `tests/e2e/admin-signin.mjs`.
 
+## Users, anonymise and the admin team (built in Phase 5 slices F and F2)
+- **Users** (`Services/AdminUsersService.php`): disable or enable bumps `session_version`. Anonymise (ADM-11) runs in one transaction and must clear every place an address can live:
+  - `users`, `test_sessions` (nickname, occupation, gender_text, share_token, user agent, IP hash);
+  - `challenge_registrations`, `contact_messages`, `newsletter_subscribers`, `email_log`;
+  - `audit_logs.details`.
+
+  A new table holding personal data must be added there.
+- **Team** (`Services/AdminTeamService.php`):
+  - exactly one primary admin (unique key on `users.primary_lock`);
+  - only the primary admin adds, removes or hands over admin rights, each after `TwoFactorService::confirmCode`;
+  - nobody acts on their own account; the primary admin's account isn't changed in the console.
+
+  Server fallback: `create-admin.php --primary`.
+- **Tests:** `api/tests/AdminUsersTest.php`. E2E `tests/e2e/admin-users.mjs` (never touches the owner's account).
+
 ## Planned auth work still to build
-- **ADM-11 anonymise:**
-  - Clear name, email, nickname and contact details on the user, their sessions and their registrations; keep answers and scores.
-  - Bump `session_version` and set status to disabled.
-  - Confirm first; it can't be undone; audit it.
-- **AUTH-10/11 admin actions:** change role and disable/enable, with self-protection and auditing.
+- Nothing open in Phase 5. Phase 7: fresh secrets on the server and the live 2FA enrolment (docs/DEPLOY.md).

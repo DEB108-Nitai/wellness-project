@@ -102,7 +102,7 @@ final class TwoFactorService
     /** New set of 10 recovery codes (the old ones stop working). Needs a current code. */
     public static function regenerateRecoveryCodes(array $user, string $code, Request $request): array
     {
-        self::stepUp($user, $code, $request);
+        self::confirmCode($user, $code, $request);
         $codes = Database::transaction(static fn (): array => self::issueRecoveryCodes((int) $user['id']));
         AuditService::forUser($user, 'AUTH_2FA_RECOVERY_REGENERATED', 'user', null, [], $request);
         self::notify($user, 'recovery_regenerated');
@@ -112,7 +112,7 @@ final class TwoFactorService
     /** Start moving to a new phone or app. Needs a current code (or a recovery code, for a lost phone). */
     public static function startReplace(array $user, string $code, Request $request): array
     {
-        self::stepUp($user, $code, $request);
+        self::confirmCode($user, $code, $request);
         $secret = Totp::newSecret();
         Session::set(self::S_REPLACE, ['uid' => (int) $user['id'], 'secret' => Totp::encrypt($secret, 'replace:' . $user['id']), 'at' => time()]);
         return self::secretPayload($secret, $user);
@@ -184,8 +184,8 @@ final class TwoFactorService
         ];
     }
 
-    /** A code from the app or an unused recovery code, for an action by a signed-in admin. */
-    private static function stepUp(array $user, string $code, Request $request): void
+    /** A code from the app or an unused recovery code, for a sensitive action by a signed-in admin (step-up). */
+    public static function confirmCode(array $user, string $code, Request $request): void
     {
         $user = UserRepository::find((int) $user['id']) ?? throw HttpException::unauthorized();
         $how = self::accept($user, $code, $request);

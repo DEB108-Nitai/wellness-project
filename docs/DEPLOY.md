@@ -110,6 +110,8 @@ cd ~/transenigma.com
 ```
 `create-admin` asks for the password twice, and checks it against the password policy. The password is **visible while you type**, so make sure nobody is watching the screen. It is stored only as an Argon2id hash.
 
+**The primary admin:** the first admin created on the server is the primary admin, the only one who can add or remove admins in the console (Admins page). To name another one from the server (for example if the primary admin has left): `/usr/local/php82/bin/php api/bin/create-admin.php --primary admin@transenigma.com`.
+
 **Two-step sign-in (every admin):**
 - At the first sign-in on the live site, the admin scans a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator…) and saves **10 recovery codes**. After that, every admin sign-in needs a code from the app.
 - The app secret is encrypted with `app.secret`. Setting a new `app.secret` makes saved app secrets unreadable: admins then sign in with a recovery code and use **Security → Move to a new phone**, or are reset as below. So set the final `app.secret` **before** the admins set up their phones.

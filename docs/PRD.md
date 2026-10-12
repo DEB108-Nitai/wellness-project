@@ -150,7 +150,7 @@ IDs are referenced by phases and test cases. **(F#)** marks a prototype fault th
 | AUTH-7 | **Sessions:** native PHP sessions stored server-side. Cookie `te_sid` has `HttpOnly`, `Secure` (in production) and `SameSite=Lax`. The session ID is regenerated at sign-in. Lifetime is 30 days, renewed on activity; admins have a 12 h idle timeout. |
 | AUTH-8 | **CSRF:** a token is issued per session (returned by `GET /api/auth/me`) and must be sent as the `X-CSRF-Token` header on every request that changes data. The `Origin` header must match the site. |
 | AUTH-9 | **Sign out** destroys the server session. The UI updates immediately through a global auth context. **(F20)** |
-| AUTH-10 | **Roles:** `user` or `admin`. The first admin is created from the command line (`php api/bin/create-admin.php you@domain.com`). After that, admins can promote or demote users from the console. No email pattern ever grants a role. **(F2)** |
+| AUTH-10 | **Roles:** `user` or `admin`. The first admin is created from the command line (`php api/bin/create-admin.php you@domain.com`). After that, several admins can work at once, but **only the primary admin** adds or removes admins or hands the primary role to another admin, each time confirmed with their authenticator code (owner decision 2026-10-12, Phase 5 slice F2). The first admin becomes the primary admin; the command line can name a new one (`--primary`). No email pattern ever grants a role. **(F2)** |
 | AUTH-11 | **Disabled accounts** cannot sign in, and any active sessions are rejected on their next request. |
 | AUTH-12 | **Account page** (`/account`): change name, change password (current password required), resend verification, view own challenge registrations. |
 | AUTH-13 | Every sign-in, sign-up, password reset, role change and lockout is written to the audit log. |
@@ -213,7 +213,7 @@ All lists are paginated, searched and filtered **on the server** (25 per page by
 | ADM-3 | **Exports (CSV, streamed):** participants with scores, and optionally the 166 item answers (for research); registrations; messages; newsletter subscribers. Spreadsheet formula injection is neutralised. Every export is written to the audit log. |
 | ADM-4 | **Challenge registrations:** filter by program (STI/PTI/TTI), status, cohort and date; change status; add notes; view the full record. |
 | ADM-5 | **Messages:** list and detail; mark handled or unhandled. |
-| ADM-6 | **Users:** list and search; view a user (their sessions and registrations); change role; disable or enable. Admins cannot demote or disable themselves. |
+| ADM-6 | **Users:** list and search; view a user (their sessions and registrations); disable or enable. Admin rights are changed on the Admins page by the primary admin only (AUTH-10). Nobody disables or anonymises their own account; another admin's account is changed only by the primary admin, and the primary admin's own account not at all. |
 | ADM-7 | **FAQs:** create, edit, delete, reorder, publish or unpublish. |
 | ADM-8 | **Settings:** site name, support email, announcement text and on/off, maintenance mode, sign-up open, challenge registration open, items per page (5–10), min age, too-fast minutes. Every value is validated, and changes are audited. **(F10)** |
 | ADM-9 | **Question set and norms:** read-only view of the item set (key, factor, attention checks) and the active norm table. |

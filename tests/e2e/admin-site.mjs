@@ -3,7 +3,7 @@
 // Usage: node tests/e2e/admin-site.mjs   (needs XAMPP + npm run dev + Chrome)
 import { execFileSync } from 'node:child_process';
 import { launch } from './cdp.mjs';
-import { finishAdminSignIn } from './admin-signin.mjs';
+import { finishAdminSignIn, promoteToAdmin } from './admin-signin.mjs';
 
 const BASE = 'http://localhost:3000';
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
@@ -40,7 +40,7 @@ try {
   await pause(3100);
   await page.clickText('Create account', 'button');
   await page.waitFor(`location.pathname !== '/signup'`, 20000);
-  execFileSync('C:/xampp/php/php.exe', [`${ROOT}api/bin/create-admin.php`, email], { input: 'y\n' });
+  promoteToAdmin(ROOT, email); // verified first: create-admin.php promotes only confirmed accounts
   await finishAdminSignIn(page, BASE, email, PASSWORD);
   step('admin signed in with two-step sign-in');
 

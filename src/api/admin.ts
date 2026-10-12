@@ -403,6 +403,13 @@ export const AUDIT_LABELS: Record<string, string> = {
   FAQ_UPDATED: 'Edited an FAQ',
   FAQ_DELETED: 'Deleted an FAQ',
   FAQ_REORDERED: 'Reordered the FAQs',
+  USER_DISABLED: 'Disabled an account',
+  USER_ENABLED: 'Enabled an account',
+  USER_ANONYMISED: 'Anonymised an account',
+  ADMIN_ADDED: 'Added an admin',
+  ADMIN_REMOVED: 'Removed an admin',
+  PRIMARY_ADMIN_TRANSFERRED: 'Handed over the primary admin role',
+  PRIMARY_ADMIN_SET_CLI: 'Primary admin set (server)',
 };
 
 // ------------------------------------------------------------------ security (ADM-12)
@@ -534,4 +541,70 @@ export const siteAdminApi = {
   audit: (f: AuditFilters) => api.get<Paged<AuditRow> & { actions: string[] }>(`/admin/audit${siteQuery({ ...f, perPage: 50 })}`),
   items: () => api.get<{ itemSet: { version: string; description: string }; items: ItemRow[] }>('/admin/items'),
   norms: () => api.get<NormsData>('/admin/norms'),
+};
+
+// ------------------------------------------------------------------ users and the admin team (slices F, F2)
+
+export interface AdminUserRow {
+  id: number;
+  name: string;
+  /** Null once the account is anonymised. */
+  email: string | null;
+  role: 'user' | 'admin';
+  isPrimaryAdmin: boolean;
+  status: 'active' | 'disabled';
+  anonymised: boolean;
+  emailVerified: boolean;
+  hasPassword: boolean;
+  hasGoogle: boolean;
+  twoStep: boolean;
+  createdAt: string | null;
+  lastLoginAt: string | null;
+}
+
+export interface AdminUserDetail extends AdminUserRow {
+  tests: { ref: string; status: SessionStatus; startedAt: string | null; completedAt: string | null }[];
+  registrations: { ref: string; program: ProgramCode; status: RegistrationStatus; createdAt: string | null }[];
+  messages: number;
+  newsletter: 'subscribed' | 'unsubscribed' | null;
+  /** `by` is set when someone else (an admin, or the server) did it. */
+  activity: { action: string; createdAt: string | null; by: string | null }[];
+}
+
+export interface UserFilters {
+  q?: string;
+  role?: 'user' | 'admin';
+  status?: 'active' | 'disabled' | 'anonymised';
+  page?: number;
+}
+
+export interface TeamAdmin {
+  id: number;
+  name: string;
+  email: string;
+  isPrimary: boolean;
+  status: 'active' | 'disabled';
+  twoStep: boolean;
+  addedBy: string | null;
+  addedAt: string | null;
+  lastLoginAt: string | null;
+  isYou: boolean;
+}
+
+export interface Team {
+  youArePrimary: boolean;
+  admins: TeamAdmin[];
+}
+
+export const usersAdminApi = {
+  list: (f: UserFilters) =>
+    api.get<Paged<AdminUserRow> & { counts: { all: number; admins: number; disabled: number; new30: number } }>(`/admin/users${siteQuery({ ...f, perPage: 25 })}`),
+  detail: (id: number) => api.get<AdminUserDetail>(`/admin/users/${id}`),
+  setStatus: (id: number, status: 'active' | 'disabled') => api.patch<AdminUserRow>(`/admin/users/${id}`, { status }),
+  anonymise: (id: number, confirmEmail: string) => api.post<AdminUserDetail>(`/admin/users/${id}/anonymise`, { confirmEmail }),
+
+  team: () => api.get<Team>('/admin/admins'),
+  addAdmin: (email: string, code: string) => api.post<Team>('/admin/admins', { email, code }),
+  removeAdmin: (id: number, code: string) => api.post<Team>(`/admin/admins/${id}/remove`, { code }),
+  makePrimary: (id: number, code: string) => api.post<Team>(`/admin/admins/${id}/make-primary`, { code }),
 };

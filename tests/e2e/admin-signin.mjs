@@ -1,5 +1,6 @@
 // Shared E2E helper: admin sign-in with two-step sign-in (ADM-12). The authenticator app is played by
 // totp() below (RFC 6238, the same algorithm as api/src/Support/Totp.php), so the real browser flow is used.
+import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 
 const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -50,4 +51,13 @@ export async function finishAdminSignIn(page, base, email, password, next = '/ad
 /** Sign out through the API (same as the menu's Sign out). */
 export async function signOut(page) {
   await page.eval(`fetch('/api/auth/me').then((r) => r.json()).then((j) => fetch('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': j.data.csrfToken } }))`);
+}
+
+/**
+ * Make a freshly signed-up test account an admin from the server's command line. create-admin.php only promotes
+ * email-verified accounts, so the test confirms the address first (as clicking the emailed link would).
+ */
+export function promoteToAdmin(root, email) {
+  execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', 'transenigma'], { input: `UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE email = '${email}'` });
+  execFileSync('C:/xampp/php/php.exe', [`${root}api/bin/create-admin.php`, email], { input: 'y\n' });
 }

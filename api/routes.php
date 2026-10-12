@@ -12,6 +12,7 @@ use Transenigma\Controllers\AdminContentController;
 use Transenigma\Controllers\AdminController;
 use Transenigma\Controllers\AdminParticipantsController;
 use Transenigma\Controllers\AdminSiteController;
+use Transenigma\Controllers\AdminUsersController;
 use Transenigma\Controllers\AssessmentController;
 use Transenigma\Controllers\AuthController;
 use Transenigma\Controllers\ChallengeController;
@@ -142,4 +143,14 @@ return static function (Router $r): void {
     $r->get('/admin/audit', [AdminSiteController::class, 'audit'], $admin);
     $r->get('/admin/items', [AdminSiteController::class, 'items'], $admin);
     $r->get('/admin/norms', [AdminSiteController::class, 'norms'], $admin);
+
+    // --- Admin: user accounts (slice F) and the admin team (slice F2, changes by the primary admin only) ---
+    $r->get('/admin/users', [AdminUsersController::class, 'users'], $admin);
+    $r->get("/admin/users/$id", [AdminUsersController::class, 'user'], $admin);
+    $r->patch("/admin/users/$id", [AdminUsersController::class, 'updateUser'], $admin);
+    $r->post("/admin/users/$id/anonymise", [AdminUsersController::class, 'anonymise'], $admin);
+    $r->get('/admin/admins', [AdminUsersController::class, 'admins'], $admin);
+    $r->post('/admin/admins', [AdminUsersController::class, 'addAdmin'], $admin);
+    $r->post("/admin/admins/$id/remove", [AdminUsersController::class, 'removeAdmin'], $admin);
+    $r->post("/admin/admins/$id/make-primary", [AdminUsersController::class, 'makePrimary'], $admin);
 };

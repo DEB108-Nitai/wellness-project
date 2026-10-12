@@ -343,7 +343,41 @@ Owner asks: research papers and consultancy projects managed from the admin, and
     - two admins creating the same category name in the same instant;
     - the tab keyboard pattern.
   - **Tests:** API 123 → 132. New E2E `admin-site.mjs`; `admin-content.mjs` now also adds a project in a new consultancy category, and it removes its admin afterwards.
-- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin** (deferred by the owner), then Finish.
+- **Slice F. Users (ADM-6, ADM-11, AUTH-11):**
+  - **List** (`/admin/users`): search by name or email; role and status filters; counts.
+  - **Detail** (`/admin/users/:id`): tests (linking to the participant page), 60-day registrations, contact messages, newsletter, and recent activity (with who did it).
+  - **Disable or enable:** disabling signs the person out at once.
+  - **Anonymise** (an erasure request, typed-email confirmation, can't be undone):
+    - removes the name, email and password/Google link everywhere, plus nickname, occupation and own-words gender on tests;
+    - registrations lose name, email, phone, city, goal and notes;
+    - contact messages, newsletter sign-up and email log are deleted;
+    - audit entries naming the address lose those details;
+    - **answers and scores are kept**;
+    - audited without personal data.
+  - **Rules:** nobody acts on their own account; another admin's account is changed only by the primary admin; the primary admin's own account not at all. Admins can't be anonymised (remove admin access first).
+- **Slice F2. Multiple admins, one primary admin (owner rule):** migration 026.
+  - **Exactly one primary admin,** enforced by a unique key in the database. The first admin is the primary one. **Locally that is the owner's account (user 1).**
+  - **Admins page** (`/admin/admins`): the primary admin **adds an admin** (an existing active, email-verified account), **removes** one, or **hands over** the primary role (only to an admin with two-step sign-in). Each needs their authenticator code.
+  - **What happens to the person:**
+    - added admins are signed out and set up two-step sign-in at their next sign-in;
+    - removed admins are signed out and their authenticator is forgotten;
+    - everyone concerned gets an email;
+    - everything is audited.
+  - **Other admins** see the list read-only, and the server refuses them with `PRIMARY_ADMIN_ONLY`.
+  - **Server fallback:** `create-admin.php --primary <email>` names a new primary admin (for example if the primary admin has left).
+  - **PRD** AUTH-10 and ADM-6 updated for this rule.
+- **Fresh-eyes review:** no critical issues; 2 major issues confirmed and fixed.
+  - A hand-over racing a removal could leave no primary admin. It now re-checks the target under a row lock and rolls back unless both changes land.
+  - The anonymise clean-up of audit details matched similar addresses (`al@x.com` also matched `sal@x.com`). It now matches the exact quoted value.
+
+  Minor fixes:
+  - disable and remove check that the account didn't change meanwhile;
+  - free-text review comments are erased too;
+  - `create-admin.php` refuses unverified or disabled accounts (the E2E helper `promoteToAdmin` confirms the test address first);
+  - visible reasons on the Admins page;
+  - a retry button on the users list.
+- **Tests:** API 132 → 144. New E2E `admin-users.mjs`. It never touches the owner's account, so the primary-only actions are covered by the API tests.
+- **Still in Phase 5:** Finish (full admin E2E, final review, docs, CLAUDE.md sync, push and PR).
 
 ---
 
@@ -382,11 +416,11 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 ### Phase 5 — Admin console (next)
 - [ ] Dashboard: tests started and completed, completion rate, flagged sessions, new users, new messages, recent audit events.
 - [ ] Participants: search and filters, detail view (demographics, timing, quality, 16 + 5 scores, item answers). Streamed CSV including optional item answers.
-- [ ] Users: list and search, view, change role, disable/enable (admins can't demote or disable themselves).
+- [x] Users: list and search, view, disable/enable; admin rights by the primary admin only (slices F, F2).
 - [x] Contact messages: list, mark handled. Newsletter subscribers: list and export (slice H).
 - [x] FAQs: create, edit, delete, reorder, publish (slice H).
 - [x] Question set and norms: read-only view. Audit log: filters (slice H).
-- [ ] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers.
+- [x] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers (slice F).
 - [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 
 ### Phase 6 — UI polish

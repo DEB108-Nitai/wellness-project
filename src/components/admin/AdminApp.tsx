@@ -6,6 +6,8 @@ import {
   BookOpen,
   Briefcase,
   ClipboardList,
+  Contact,
+  Crown,
   FileQuestion,
   History,
   Inbox,
@@ -21,6 +23,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AdminOverview } from './AdminOverview';
+import { AdminsAdmin } from './AdminsAdmin';
 import { AuditAdmin } from './AuditAdmin';
 import { ConsultancyAdmin } from './ConsultancyAdmin';
 import { FaqsAdmin } from './FaqsAdmin';
@@ -33,6 +36,7 @@ import { ResearchAdmin } from './ResearchAdmin';
 import { SecurityAdmin } from './SecurityAdmin';
 import { SettingsPanel } from './SettingsPanel';
 import { SubscribersAdmin } from './SubscribersAdmin';
+import { UserDetail, UsersAdmin } from './UsersAdmin';
 import { VisitorsAdmin } from './VisitorsAdmin';
 import { PageHeader } from './ui';
 
@@ -49,6 +53,7 @@ const NAV: { heading: string | null; items: NavItem[] }[] = [
       { to: '/admin/visitors', label: 'Visitors', icon: BarChart3 },
       { to: '/admin/participants', label: 'Participants & results', icon: UsersRound },
       { to: '/admin/registrations', label: '60-Day registrations', icon: ClipboardList },
+      { to: '/admin/users', label: 'Users', icon: Contact },
     ],
   },
   {
@@ -70,6 +75,7 @@ const NAV: { heading: string | null; items: NavItem[] }[] = [
     heading: 'System',
     items: [
       { to: '/admin/question-set', label: 'Question set & norms', icon: ListChecks },
+      { to: '/admin/admins', label: 'Admins', icon: Crown },
       { to: '/admin/audit', label: 'Audit log', icon: History },
       { to: '/admin/settings', label: 'Settings', icon: Settings },
       { to: '/admin/security', label: 'Security', icon: ShieldCheck },
@@ -197,6 +203,9 @@ export default function AdminApp() {
               }
             />
             <Route path="security" element={<SecurityAdmin />} />
+            <Route path="users" element={<UsersAdmin />} />
+            <Route path="users/:id" element={<UserDetail />} />
+            <Route path="admins" element={<AdminsAdmin />} />
             <Route path="messages" element={<MessagesAdmin />} />
             <Route path="subscribers" element={<SubscribersAdmin />} />
             <Route path="faqs" element={<FaqsAdmin />} />

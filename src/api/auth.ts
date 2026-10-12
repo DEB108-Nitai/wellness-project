@@ -5,6 +5,8 @@ export interface AuthUser {
   name: string;
   email: string;
   role: 'user' | 'admin';
+  /** The one admin who adds and removes admins (slice F2). */
+  isPrimaryAdmin: boolean;
   emailVerified: boolean;
   hasPassword: boolean;
   hasGoogle: boolean;
