@@ -1,8 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, Loader2, Search, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, Eye, Loader2, X } from 'lucide-react';
 import { ApiError } from '../../api/client';
-import { PROGRAMS, ProgramCode } from '../../api/challenge';
-import { AdminRegistration, adminApi, REGISTRATION_STATUSES, RegistrationPage, RegistrationStatus } from '../../api/admin';
+import { ProgramCode } from '../../api/challenge';
+import { AdminRegistration, adminApi, REGISTRATION_STATUSES, RegistrationFilters, RegistrationPage, RegistrationStatus } from '../../api/admin';
 
 export const PROGRAM_BADGE: Record<ProgramCode, string> = {
   STI: 'bg-teal-50 text-teal-800 border-teal-200',
@@ -18,140 +18,60 @@ export const STATUS_BADGE: Record<RegistrationStatus, string> = {
   cancelled: 'bg-rose-50 text-rose-700 border-rose-200',
 };
 
-const fmtDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+export const fmtDate = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
-/** 60-Day Challenge registrations for all three programs, on server data (PRD ADM-4). */
-export const RegistrationsPanel: React.FC = () => {
-  const [program, setProgram] = useState<ProgramCode | ''>('');
-  const [status, setStatus] = useState<RegistrationStatus | ''>('');
-  const [search, setSearch] = useState('');
-  const [q, setQ] = useState('');
+/**
+ * The registrations table for the filters chosen on the page (PRD ADM-4). The page owns the filters, so the
+ * charts above, this table and the CSV export always show the same slice.
+ */
+export const RegistrationsTable: React.FC<{ filters: RegistrationFilters; onChanged?: () => void }> = ({ filters, onChanged }) => {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<RegistrationPage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<AdminRegistration | null>(null);
+  const key = JSON.stringify(filters);
 
-  // Debounce the search box.
+  useEffect(() => setPage(1), [key]);
+
+  // Only the latest request may update the table (a quick filter change must not show an older page).
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      setQ(search.trim());
-      setPage(1);
-    }, 350);
-    return () => window.clearTimeout(t);
-  }, [search]);
-
-  const load = useCallback(async () => {
+    let alive = true;
     setError(null);
-    try {
-      setData(await adminApi.registrations({ program: program || undefined, status: status || undefined, q: q || undefined, page, perPage: 25 }));
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not load registrations.');
-    }
-  }, [program, status, q, page]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
+    adminApi
+      .registrations({ ...filters, page, perPage: 25 })
+      .then((d) => alive && setData(d))
+      .catch((err) => alive && setError(err instanceof ApiError ? err.message : 'Could not load registrations.'));
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, page]);
 
   const onUpdated = (updated: AdminRegistration) => {
     setSelected(updated);
     setData((d) => (d ? { ...d, items: d.items.map((r) => (r.id === updated.id ? updated : r)) } : d));
+    onChanged?.(); // the tiles and charts above count statuses too
   };
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.perPage)) : 1;
-  const filters = { program: program || undefined, status: status || undefined, q: q || undefined };
 
   return (
-    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-bold text-slate-900 font-heading flex items-center gap-2">
-            60-Day Challenge Registrations
-          </h2>
-          <p className="text-xs text-slate-500">Sonic (STI), Philosophical (PTI) and Transcendental (TTI) — newest first.</p>
-        </div>
+    <section className="bg-white rounded-2xl border border-slate-200 shadow-xs" aria-label="Registrations">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-100">
+        <h2 className="text-sm font-bold text-slate-900">
+          Registrations {data && <span className="font-medium text-slate-400">({data.total})</span>}
+        </h2>
         <a
           href={adminApi.registrationsCsvUrl(filters)}
-          className="self-start px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl flex items-center gap-1.5"
+          className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold"
         >
-          <Download className="w-3.5 h-3.5" /> Export CSV
+          <Download className="w-3.5 h-3.5" aria-hidden="true" /> Export CSV
         </a>
       </div>
 
-      {/* Program summary chips */}
-      {data && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {(['STI', 'PTI', 'TTI'] as ProgramCode[]).map((code) => {
-            const counts = data.counts[code] ?? {};
-            const total = Object.values(counts).reduce((a, b) => a + (b ?? 0), 0);
-            return (
-              <button
-                key={code}
-                onClick={() => {
-                  setProgram(program === code ? '' : code);
-                  setPage(1);
-                }}
-                className={`text-left p-4 rounded-2xl border transition-all cursor-pointer ${program === code ? 'ring-2 ring-indigo-500' : ''} ${PROGRAM_BADGE[code]}`}
-              >
-                <span className="text-[11px] font-bold uppercase tracking-wider">{PROGRAMS[code].short}</span>
-                <span className="block text-2xl font-bold font-mono">{total}</span>
-                <span className="text-[11px]">{counts.registered ?? 0} new · {counts.confirmed ?? 0} confirmed</span>
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {error && <p className="px-5 pt-4 text-sm text-rose-600">{error}</p>}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, email, phone, city or reference…"
-            className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:border-indigo-500"
-            aria-label="Search registrations"
-          />
-        </div>
-        <select
-          value={program}
-          onChange={(e) => {
-            setProgram(e.target.value as ProgramCode | '');
-            setPage(1);
-          }}
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl"
-          aria-label="Program"
-        >
-          <option value="">All programs</option>
-          {(['STI', 'PTI', 'TTI'] as ProgramCode[]).map((c) => (
-            <option key={c} value={c}>
-              {PROGRAMS[c].short}
-            </option>
-          ))}
-        </select>
-        <select
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as RegistrationStatus | '');
-            setPage(1);
-          }}
-          className="px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl capitalize"
-          aria-label="Status"
-        >
-          <option value="">All statuses</option>
-          {REGISTRATION_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {error && <p className="text-sm text-rose-600">{error}</p>}
-
-      {/* Table */}
-      <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+      <div className={`overflow-x-auto transition-opacity ${data && !error ? '' : 'opacity-70'}`}>
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px]">
             <tr>
@@ -161,14 +81,16 @@ export const RegistrationsPanel: React.FC = () => {
               <th className="py-3 px-4">Program</th>
               <th className="py-3 px-4">Status</th>
               <th className="py-3 px-4">Registered</th>
-              <th className="py-3 px-4" />
+              <th className="py-3 px-4">
+                <span className="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {!data && (
               <tr>
                 <td colSpan={7} className="py-10 text-center">
-                  <Loader2 className="w-5 h-5 animate-spin text-indigo-600 mx-auto" />
+                  <Loader2 className="w-5 h-5 animate-spin text-teal-600 mx-auto" aria-label="Loading" />
                 </td>
               </tr>
             )}
@@ -196,7 +118,7 @@ export const RegistrationsPanel: React.FC = () => {
                     onClick={() => setSelected(r)}
                     className="px-2.5 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <Eye className="w-3.5 h-3.5" /> Open
+                    <Eye className="w-3.5 h-3.5" aria-hidden="true" /> Open
                   </button>
                 </td>
               </tr>
@@ -213,9 +135,9 @@ export const RegistrationsPanel: React.FC = () => {
       </div>
 
       {data && data.total > data.perPage && (
-        <div className="flex items-center justify-between text-xs text-slate-600">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-xs text-slate-600">
           <span>
-            {data.total} registrations · page {data.page} of {totalPages}
+            Page {data.page} of {totalPages}
           </span>
           <div className="flex gap-2">
             <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="p-2 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Previous page">
@@ -229,7 +151,7 @@ export const RegistrationsPanel: React.FC = () => {
       )}
 
       {selected && <RegistrationDetail registration={selected} onClose={() => setSelected(null)} onUpdated={onUpdated} />}
-    </div>
+    </section>
   );
 };
 

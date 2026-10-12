@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Briefcase, ClipboardList, LayoutDashboard, Menu, Settings, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, BookOpen, Briefcase, ClipboardList, LayoutDashboard, Menu, Settings, UsersRound, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { AdminOverview } from './AdminOverview';
 import { ResearchAdmin } from './ResearchAdmin';
+import { ParticipantsAdmin } from './ParticipantsAdmin';
+import { VisitorsAdmin } from './VisitorsAdmin';
+import { ParticipantDetail } from './ParticipantDetail';
 import { ConsultancyAdmin } from './ConsultancyAdmin';
-import { RegistrationsPanel } from './RegistrationsPanel';
+import { RegistrationsAdmin } from './RegistrationsAdmin';
 import { SettingsPanel } from './SettingsPanel';
 import { PageHeader } from './ui';
 
@@ -16,6 +19,8 @@ import { PageHeader } from './ui';
  */
 const NAV: { to: string; label: string; icon: React.ElementType; end?: boolean }[] = [
   { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/admin/visitors', label: 'Visitors', icon: BarChart3 },
+  { to: '/admin/participants', label: 'Participants & results', icon: UsersRound },
   { to: '/admin/registrations', label: '60-Day registrations', icon: ClipboardList },
   { to: '/admin/research', label: 'Research papers', icon: BookOpen },
   { to: '/admin/consultancy', label: 'Consultancy projects', icon: Briefcase },
@@ -121,15 +126,10 @@ export default function AdminApp() {
         <div className="max-w-6xl mx-auto">
           <Routes>
             <Route index element={<AdminOverview />} />
-            <Route
-              path="registrations"
-              element={
-                <div className="space-y-6">
-                  <PageHeader title="60-Day registrations" description="Everyone who registered for STI, PTI or TTI. Open a registration to confirm it or add notes." />
-                  <RegistrationsPanel />
-                </div>
-              }
-            />
+            <Route path="registrations" element={<RegistrationsAdmin />} />
+            <Route path="visitors" element={<VisitorsAdmin />} />
+            <Route path="participants" element={<ParticipantsAdmin />} />
+            <Route path="participants/:ref" element={<ParticipantDetail />} />
             <Route path="research" element={<ResearchAdmin />} />
             <Route path="consultancy" element={<ConsultancyAdmin />} />
             <Route

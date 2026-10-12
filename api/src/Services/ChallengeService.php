@@ -141,6 +141,85 @@ final class ChallengeService
         ];
     }
 
+    /**
+     * Charts for the admin registrations page, over the same filters as the list: registrations per day and
+     * program, and the breakdowns by program, status, schedule, struggle, age band, city and country.
+     * The daily series covers the chosen dates, or the last 30 days.
+     */
+    public static function stats(array $filters): array
+    {
+        [$where, $params] = self::filterSql($filters);
+        $rows = Database::all(
+            "SELECT r.program, r.status, r.cohort_timing, r.struggles, r.age, r.city, r.country, DATE(r.created_at) AS day
+             FROM challenge_registrations r $where",
+            $params
+        );
+
+        $to = !empty($filters['to']) ? $filters['to'] : gmdate('Y-m-d');
+        $from = !empty($filters['from']) ? $filters['from'] : gmdate('Y-m-d', strtotime("$to -29 days"));
+        $days = [];
+        for ($d = strtotime("$from 00:00:00 UTC"), $end = strtotime("$to 00:00:00 UTC"); $d <= $end && count($days) < 400; $d += 86400) {
+            $days[gmdate('Y-m-d', $d)] = array_fill_keys(self::PROGRAMS, 0);
+        }
+
+        $bump = static function (array &$bucket, ?string $key): void {
+            if ($key !== null && $key !== '') {
+                $bucket[$key] = ($bucket[$key] ?? 0) + 1;
+            }
+        };
+        $byProgram = array_fill_keys(self::PROGRAMS, 0);
+        $byStatus = array_fill_keys(self::STATUSES, 0);
+        $byCohort = array_fill_keys(self::TIMINGS, 0);
+        $ages = ['18–24' => 0, '25–34' => 0, '35–44' => 0, '45–54' => 0, '55+' => 0, 'Not given' => 0];
+        $struggles = $cities = $countries = [];
+        foreach ($rows as $r) {
+            $byProgram[$r['program']]++;
+            $byStatus[$r['status']]++;
+            $byCohort[$r['cohort_timing']]++;
+            if (isset($days[$r['day']])) {
+                $days[$r['day']][$r['program']]++;
+            }
+            foreach (json_decode((string) $r['struggles'], true) ?: [] as $s) {
+                $bump($struggles, (string) $s);
+            }
+            $age = $r['age'] === null ? null : (int) $r['age'];
+            $band = match (true) {
+                $age === null => 'Not given',
+                $age < 25 => '18–24',
+                $age < 35 => '25–34',
+                $age < 45 => '35–44',
+                $age < 55 => '45–54',
+                default => '55+',
+            };
+            $ages[$band]++;
+            // Cities are typed freely: group "pune", "Pune " and "PUNE" together.
+            $city = $r['city'] === null ? null : mb_convert_case(trim($r['city']), MB_CASE_TITLE);
+            $bump($cities, $city);
+            $bump($countries, $r['country']);
+        }
+        $pairs = static fn (array $counts): array => array_map(
+            static fn ($k, $v): array => ['label' => (string) $k, 'count' => $v], array_keys($counts), array_values($counts)
+        );
+        $top = static function (array $counts, int $n) use ($pairs): array {
+            arsort($counts);
+            return $pairs(array_slice($counts, 0, $n, true));
+        };
+
+        return [
+            'total' => count($rows),
+            'from' => $from,
+            'to' => $to,
+            'byDay' => array_map(static fn ($day, $counts): array => ['day' => $day] + $counts, array_keys($days), array_values($days)),
+            'byProgram' => $pairs($byProgram),
+            'byStatus' => $pairs($byStatus),
+            'byCohort' => $pairs($byCohort),
+            'ageBands' => $pairs($ages),
+            'struggles' => $top($struggles, 10),
+            'cities' => $top($cities, 8),
+            'countries' => $top($countries, 8),
+        ];
+    }
+
     public static function update(int $id, array $changes, array $admin, Request $request): array
     {
         $row = Database::one('SELECT * FROM challenge_registrations WHERE id = ?', [$id]) ?? throw HttpException::notFound('Registration not found.');
@@ -194,6 +273,19 @@ final class ChallengeService
         if (!empty($f['status'])) {
             $where[] = 'r.status = ?';
             $params[] = $f['status'];
+        }
+        if (!empty($f['cohort'])) {
+            $where[] = 'r.cohort_timing = ?';
+            $params[] = $f['cohort'];
+        }
+        // Dates are whole days (YYYY-MM-DD), inclusive, in the stored (UTC) time.
+        if (!empty($f['from'])) {
+            $where[] = 'r.created_at >= ?';
+            $params[] = $f['from'] . ' 00:00:00';
+        }
+        if (!empty($f['to'])) {
+            $where[] = 'r.created_at < ? + INTERVAL 1 DAY';
+            $params[] = $f['to'] . ' 00:00:00';
         }
         if (!empty($f['q'])) {
             $where[] = '(r.name LIKE ? OR r.email LIKE ? OR r.ref_code LIKE ? OR r.city LIKE ? OR r.phone LIKE ?)';

@@ -139,6 +139,49 @@ test('CSV export keeps every value in its own cell, even with backslash-quote tr
     assertSame($goal, $rows[1][11], 'goal cell intact');
 });
 
+test('registration charts count by day, program, status, schedule, age, struggle and city, over the same filters as the list', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $tag = 'Statsville' . bin2hex(random_bytes(2)); // isolates these rows through the q filter (city)
+    ChallengeService::register(registration(['program' => 'STI', 'age' => 22, 'city' => " $tag ", 'cohortTiming' => 'morning', 'struggles' => ['Distractions']]), authReq());
+    ChallengeService::register(registration(['program' => 'PTI', 'age' => 40, 'city' => strtolower($tag), 'cohortTiming' => 'evening']), authReq());
+    $third = ChallengeService::register(registration(['program' => 'PTI', 'city' => strtoupper($tag), 'cohortTiming' => 'evening', 'struggles' => ['Distractions', 'Stress & Anxiety']]), authReq());
+    Database::run("UPDATE challenge_registrations SET status = 'confirmed', age = NULL WHERE ref_code = ?", [$third['ref']]);
+
+    $s = ChallengeService::stats(['q' => $tag]);
+    $map = static fn (array $pairs): array => array_column($pairs, 'count', 'label');
+    assertSame(3, $s['total']);
+    assertSame(['STI' => 1, 'TTI' => 0, 'PTI' => 2], $map($s['byProgram']));
+    assertSame(2, $map($s['byStatus'])['registered']);
+    assertSame(1, $map($s['byStatus'])['confirmed']);
+    assertSame(['morning' => 1, 'evening' => 2, 'weekend' => 0], $map($s['byCohort']));
+    assertSame(['18–24' => 1, '25–34' => 0, '35–44' => 1, '45–54' => 0, '55+' => 0, 'Not given' => 1], $map($s['ageBands']));
+    assertSame(['label' => 'Distractions', 'count' => 3], $s['struggles'][0]);
+    assertSame([['label' => mb_convert_case($tag, MB_CASE_TITLE), 'count' => 3]], $s['cities'], 'city spellings grouped');
+    assertSame(30, count($s['byDay']), 'last 30 days by default');
+    $today = end($s['byDay']);
+    assertSame(gmdate('Y-m-d'), $today['day']);
+    assertSame(1, $today['STI']);
+    assertSame(2, $today['PTI']);
+
+    // Filters narrow the charts and the list alike.
+    assertSame(2, ChallengeService::stats(['q' => $tag, 'cohort' => 'evening'])['total']);
+    assertSame(2, ChallengeService::search(['q' => $tag, 'cohort' => 'evening'], 1, 25)['total']);
+    $yesterday = gmdate('Y-m-d', time() - 86400);
+    assertSame(0, ChallengeService::stats(['q' => $tag, 'to' => $yesterday])['total'], 'nothing registered before today');
+    assertSame(3, ChallengeService::stats(['q' => $tag, 'from' => gmdate('Y-m-d'), 'to' => gmdate('Y-m-d')])['total']);
+});
+
+test('registration filters reject impossible or reversed dates', function () {
+    $controller = new \Transenigma\Controllers\AdminController();
+    $get = static fn (array $q) => new \Transenigma\Core\Request('GET', '/admin/registrations/stats', $q, ['REMOTE_ADDR' => '10.0.0.8'], '');
+    foreach ([['from' => '2026-02-30'], ['to' => '12-10-2026'], ['from' => '2026-10-12', 'to' => '2026-10-01']] as $q) {
+        $e = assertThrows(HttpException::class, fn () => $controller->registrationStats($get($q)));
+        assertSame(422, $e->status, json_encode($q));
+    }
+});
+
 test('contact form stores the message and notifies support when configured', function () {
     useTestDatabase();
     asGuest();

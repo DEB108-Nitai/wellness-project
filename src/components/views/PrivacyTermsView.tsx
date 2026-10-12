@@ -80,6 +80,9 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
             <p>
               Participant records are secured with industry-standard encryption, unique reference tokens, and strict access controls. Data is exclusively utilized for personal developmental insights, program delivery, and platform administration. We do not sell participant data to external advertising networks.
             </p>
+            <p>
+              We count page visits anonymously to see how the site is used. This count uses no cookies, and we never store your IP address.
+            </p>
           </div>
 
           <div className="space-y-2">

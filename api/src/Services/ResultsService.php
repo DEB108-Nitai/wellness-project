@@ -151,7 +151,7 @@ final class ResultsService
     }
 
     /** @param list<string> $refs @return array<string, list<array{code:string,name:string,sten:int}>> */
-    private static function topTraits(array $refs): array
+    public static function topTraits(array $refs): array
     {
         if ($refs === []) {
             return [];

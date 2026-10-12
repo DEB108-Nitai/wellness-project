@@ -10,6 +10,7 @@ declare(strict_types=1);
 use Transenigma\Controllers\AccountController;
 use Transenigma\Controllers\AdminContentController;
 use Transenigma\Controllers\AdminController;
+use Transenigma\Controllers\AdminParticipantsController;
 use Transenigma\Controllers\AssessmentController;
 use Transenigma\Controllers\AuthController;
 use Transenigma\Controllers\ChallengeController;
@@ -19,6 +20,7 @@ use Transenigma\Controllers\HealthController;
 use Transenigma\Controllers\ResultsController;
 use Transenigma\Controllers\SettingsController;
 use Transenigma\Controllers\SiteController;
+use Transenigma\Controllers\VisitController;
 use Transenigma\Core\Router;
 
 return static function (Router $r): void {
@@ -77,9 +79,20 @@ return static function (Router $r): void {
     $r->get('/content/ventures', [ContentController::class, 'ventures']);
     $r->get('/content/stats', [ContentController::class, 'stats']);
 
+    // --- Private visit counter (Phase 5 slice D): no cookies, no raw IP stored ---
+    $r->post('/visit', [VisitController::class, 'record']);
+
     // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
     $admin = ['auth' => 'admin', 'maintenance' => false];
+    $r->get('/admin/dashboard', [AdminController::class, 'dashboard'], $admin);
     $r->get('/admin/registrations', [AdminController::class, 'registrations'], $admin);
+    $r->get('/admin/registrations/stats', [AdminController::class, 'registrationStats'], $admin);
+
+    // --- Admin participants: assessments and results (Phase 5 slice C) ---
+    $r->get('/admin/visitors', [VisitController::class, 'metrics'], $admin);
+    $r->get('/admin/sessions', [AdminParticipantsController::class, 'sessions'], $admin);
+    $r->get('/admin/sessions/{ref:TE-[2-9A-HJ-NP-Z]{6}}', [AdminParticipantsController::class, 'session'], $admin);
+    $r->get('/admin/export/sessions', [AdminParticipantsController::class, 'exportSessions'], $admin);
     $r->patch('/admin/registrations/{id:[0-9]+}', [AdminController::class, 'updateRegistration'], $admin);
     $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
     $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);

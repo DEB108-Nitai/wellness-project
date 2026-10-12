@@ -260,7 +260,35 @@ Owner asks: research papers and consultancy projects managed from the admin, and
   - fallbacks when stats fail;
   - more tests.
 - **Tests:** API 83 → 91 (`ContentAdminTest`). New E2E `tests/e2e/admin-content.mjs`: add a paper in a new category plus a project with an image, check the home, Research and Consultancy pages and counts, then remove both.
-- **Still in Phase 5:** B registrations charts, C participants and results, D visitor counter, E dashboard, F users and anonymise, **F2 multiple admins with one primary admin**, G admin 2FA, H messages/FAQs/audit/items.
+- **Slices B–E (same branch):**
+  - **B. 60-Day registrations** (`/admin/registrations`):
+    - one filter row (date range, program, status, schedule, search) drives the tiles, the hand-drawn charts (per day by program, program, status, schedule, age, struggles, cities), the table and the CSV export;
+    - `GET /admin/registrations/stats`; cohort and date filters (ADM-4);
+    - program colours checked for colour-vision deficiency.
+  - **C. Participants & results** (`/admin/participants[/:ref]`):
+    - every assessment with the account name and email, or "Guest" + nickname;
+    - status, progress, flags and strongest traits;
+    - the detail shows demographics, timing, quality, the 16 factors and 5 domains, and every answer (failed attention checks marked);
+    - two streamed CSVs (scores, and scores plus all 166 answers, matched by item code, with an "Item set" column);
+    - viewing someone's answers is audited (`ADMIN_VIEWED_ASSESSMENT`); the owner's share token is never sent (ADM-2, ADM-3).
+  - **D. Private visitor counter** (`/admin/visitors`): migration 023.
+    - `POST /api/visit` from every page change, after the sign-in state is known;
+    - nothing personal is stored: no cookie, IP, user agent or account id. A visitor is an HMAC with a **random salt per UTC day that the cron deletes** after the day, plus a signed-in yes/no;
+    - known pages only (others → `/other`, ids → `*`);
+    - skipped for admins, bots, automated browsers, and Global Privacy Control / Do Not Track;
+    - raw rows kept 90 days, daily totals kept for good;
+    - Privacy Policy gained one sentence.
+  - **E. Overview dashboard** (ADM-1): visitors, tests (7/30/all-time, completion rate, flags), accounts, registrations, content counts, new messages and the latest activity in plain words.
+  - **Fresh-eyes review of B–E:** no critical issues; 4 major issues confirmed and fixed:
+    - the counter stored account ids;
+    - the admin detail sent share tokens;
+    - a stale table after quick filter changes;
+    - export columns across question-set versions.
+    
+    Minor fixes: name hidden for anonymised accounts, path allowlist, one `/auth/me` on the first visit, admins not counted, a 1-year range cap, tooltips inside scrolling charts, chart accessibility.
+  - Dev fix: Vite watched `api/storage/mail` and reloaded the page whenever an email preview was written; it now watches only the frontend.
+  - **Tests:** API 91 → 103. New E2E: `admin-registrations.mjs`, `admin-participants.mjs`, `admin-visitors.mjs`.
+- **Still in Phase 5:** F users and anonymise, **F2 multiple admins with one primary admin**, G admin 2FA, H messages/FAQs/audit/items.
 
 ---
 

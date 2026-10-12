@@ -10,6 +10,7 @@ import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigate, viewForPath } from './lib/routes';
 import { applyPageMeta } from './lib/pageMeta';
+import { recordVisit } from './api/visits';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { AnnouncementBar } from './components/layout/AnnouncementBar';
@@ -94,10 +95,16 @@ function ScrollToTop() {
   return null;
 }
 
-/** Per-page title, description, canonical URL and robots rule (src/lib/pageMeta.ts). */
+/** Per-page title, description, canonical URL and robots rule (src/lib/pageMeta.ts), and the private visit count. */
 function PageMeta() {
   const { pathname } = useLocation();
+  const { user, loading } = useAuth();
   React.useEffect(() => applyPageMeta(pathname), [pathname]);
+  // Counted once the sign-in state is known, so the first visit shares AuthContext's /auth/me request.
+  React.useEffect(() => {
+    if (!loading) recordVisit(pathname, user?.role === 'admin');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, loading]);
   return null;
 }
 
