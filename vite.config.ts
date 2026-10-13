@@ -23,6 +23,15 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      // Never serve backend, test or note files from the dev server. The /api proxy only matches the
+      // literal prefix, so encoded paths (/%61pi/...) and /@fs/<abs path> would otherwise reach
+      // api/config/config.local.php (secrets) and api/storage/mail (reset links). Vite's defaults are kept.
+      fs: {
+        deny: [
+          '.env', '.env.*', '*.{crt,pem}', '**/.git/**',
+          ...['api', 'database', 'notes', 'tests'].map((dir) => `${path.resolve(__dirname, dir).replace(/\\/g, '/')}/**`),
+        ],
+      },
       // Forward /api/* to the PHP backend so the browser sees one origin (cookies + CSRF work as in production).
       proxy: {
         '/api': {

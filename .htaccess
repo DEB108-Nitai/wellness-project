@@ -1,0 +1,8 @@
+# Local XAMPP only (production serves dist/ + api/, see docs/DEPLOY.md; this file is never deployed).
+# Apache listens on the network, so expose only the API and the built site; refuse notes, .git, tests, etc.
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(api|dist)(/|$) - [L]
+    RewriteRule ^ - [F]
+</IfModule>

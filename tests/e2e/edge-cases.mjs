@@ -106,6 +106,30 @@ try {
   await page.screenshot(`${OUT}edge-02-restarted.png`);
   step('a test restarted elsewhere stops saving here and says why');
 
+  // ---------------------------------------------------------------- 4. Sign out mid-test leaves nothing behind
+  await page.clickText('Go to the current test', 'button');
+  await page.waitText('Before you begin');
+  await startTest(page);
+  await answerPage(page);
+  const perPage = await page.eval(`document.querySelectorAll('fieldset').length`);
+  // Straight away, before the autosave pause: the answers are only on this device so far.
+  const before = await page.eval(`Object.keys(localStorage).filter(k => k.startsWith('te_pending_')).length`);
+  await page.clickText('Edge Case', 'button');
+  await page.clickText('Sign Out', 'button');
+  await page.waitText('Sign In');
+  const left = await page.eval(`Object.keys(localStorage).filter(k => k.startsWith('te_pending_')).length`);
+  if (left !== 0) throw new Error(`${left} unsent-answer entries left after sign-out`);
+  step(`sign-out left no answers on the device (${before} pending before)`);
+
+  await page.goto(`${BASE}/login`);
+  await page.fill('input[type=email]', email);
+  await page.fill('input[type=password]', 'Calm-River-Lantern-42');
+  await page.clickText('Sign in', 'button');
+  await page.waitFor(`location.pathname !== '/login'`);
+  const saved = await page.eval(`fetch('/api/test/session').then(r => r.json()).then(j => j.data.answeredCount)`);
+  if (saved !== perPage) throw new Error(`expected ${perPage} answers saved to the account, got ${saved}`);
+  step(`the ${saved} answers given just before signing out were saved to the account`);
+
   console.log(`\nRESULT: PASS (${email}, ${ref})`);
 } catch (err) {
   console.error(`\nRESULT: FAIL — ${err.message}`);

@@ -214,6 +214,31 @@ Found after the owner finished the test as a guest, clicked "I already have an a
 - API: 77 passing (5 new).
 - New E2E `tests/e2e/edge-cases.mjs`.
 
+## 4e. CodeRabbit deep-scan fixes (branch `fix/auth-scan`, 2026-10-12)
+
+The owner ran a CodeRabbit deep scan and pasted 12 findings (1 duplicate). All 11 were checked against the code and were real or partly real.
+
+| # | Finding | Fix |
+|---|---|---|
+| F1 | A login rehash could write the old password over a reset that landed meanwhile | `rehashPassword($id, $oldHash, $newHash)` only replaces the hash it checked; otherwise sign-in fails |
+| F2 | A password change in flight could overwrite a reset and keep its session on the new version | `updatePassword(..., $expectedVersion)` writes only if `session_version` is unchanged; otherwise 401 and signed out. The session takes the version its own write created |
+| F3 | Google linked any `email_verified` address, and could replace an existing link | Link by email only when Google hosts the address (Gmail, or `hd` = the email's domain). Never replace a `google_sub` (`GOOGLE_ACCOUNT_MISMATCH`). Other addresses get `GOOGLE_LINK_REQUIRES_PASSWORD`; new accounts on them start unverified and get a verification email |
+| F4 | Local mail previews put raw user text in an HTML comment | Header escaped |
+| F5 | The E2E driver trusted whatever listened on a fixed debug port | Chrome picks a random port, read from `DevToolsActivePort` in its own temporary profile |
+| F6 | `npm run dev` listened on the LAN, and Vite could serve `api/config/config.local.php` and saved reset emails via `/%61pi/...` or `/@fs/...` | `server.fs.deny` covers `api/`, `database/`, `notes/` and `tests/` (keeping Vite's defaults). `dev` binds to localhost; `npm run dev:lan` is for phone testing |
+| F7 | A sign-up made with someone else's email got verified when the real owner clicked the link | Verification needs the signed-in account the link was sent for (`SIGN_IN_TO_VERIFY` / `WRONG_ACCOUNT`); a refused click keeps the link (`TokenService::peek`). A reset still lets the real owner take the account back |
+| F8 | The 60-day form said "already registered for <program>" to anyone | Same "Registered successfully" either way; the inbox gets the `challenge-already-registered` email instead |
+| F9 | The CSV export's backslash escape let `x\",=CMD()` become a new, unchecked cell | `fputcsv(..., escape: '')` (RFC 4180) |
+| F10 | Unsent test answers stayed in localStorage after Sign out | Sign-out saves them to the account first, then clears every `te_pending_*` key; other tabs stop (`te_signout` storage event) |
+| F11 | E2E screenshots, the journal and `.git` were reachable over the LAN (Vite and XAMPP Apache) | Vite deny list; a new repo-root `.htaccess` (local only, never deployed) allows only `api/` and `dist/` |
+
+**Tests:**
+- API: 83 passing (6 new).
+- `edge-cases.mjs` gained a sign-out check; guest-flow and redirects pass. Browser check of the verify link: signed out → sign in → confirmed.
+- Status checks: the bypass paths return 403 on Vite and Apache.
+
+**Before launch:** use fresh production secrets (Google client secret, `app.secret`), since the dev server was reachable on the LAN.
+
 ---
 
 ## 5. Prototype faults (from the first analysis)

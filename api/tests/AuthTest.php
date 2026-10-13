@@ -143,6 +143,46 @@ test('email verification link works once and only once', function () {
     assertSame('INVALID_TOKEN', assertThrows(HttpException::class, fn () => AuthService::verifyEmail('not-a-token', authReq()))->errorCode);
 });
 
+test('only the account that signed up can confirm its email, and a refused click keeps the link', function () {
+    useTestDatabase();
+    freshSession();
+    $mail = captureMail();
+    // Someone signs up with another person's address and a password they chose.
+    $email = uniqueEmail();
+    $squatter = AuthService::register('Squatter', $email, GOOD_PASSWORD, authReq());
+    $squatterSession = $_SESSION;
+    $token = tokenFromMail($mail[0]);
+
+    // The real inbox owner opens the link in their own browser, signed out: nothing is confirmed.
+    freshSession();
+    assertSame('SIGN_IN_TO_VERIFY', assertThrows(HttpException::class, fn () => AuthService::verifyEmail($token, authReq()))->errorCode);
+    // Or signed in as somebody else.
+    AuthService::register('Someone Else', uniqueEmail(), GOOD_PASSWORD, authReq());
+    assertSame('WRONG_ACCOUNT', assertThrows(HttpException::class, fn () => AuthService::verifyEmail($token, authReq()))->errorCode);
+    assertSame(null, UserRepository::find((int) $squatter['id'])['email_verified_at'], 'still unconfirmed');
+
+    // The owner takes the account back with a reset: verified for them, and the squatter is signed out.
+    freshSession();
+    AuthService::requestPasswordReset($email, authReq());
+    AuthService::resetPassword(tokenFromMail($mail[count($mail) - 1]), 'Owner-Takes-Back-31', authReq());
+    assertTrue(UserRepository::find((int) $squatter['id'])['email_verified_at'] !== null);
+    $_SESSION = $squatterSession;
+    AuthService::flush();
+    assertSame(null, AuthService::user(), 'squatter session ended by the reset');
+
+    // A refused click did not use the link up: the account's own session can still use a fresh one.
+    freshSession();
+    $mine = AuthService::register('Mine', uniqueEmail(), GOOD_PASSWORD, authReq());
+    $myToken = tokenFromMail($mail[count($mail) - 1]);
+    $me = $_SESSION;
+    freshSession();
+    assertThrows(HttpException::class, fn () => AuthService::verifyEmail($myToken, authReq()));
+    $_SESSION = $me;
+    AuthService::flush();
+    AuthService::verifyEmail($myToken, authReq());
+    assertTrue(UserRepository::find((int) $mine['id'])['email_verified_at'] !== null);
+});
+
 test('tokens expire and only the hash is stored', function () {
     useTestDatabase();
     captureMail();
@@ -207,6 +247,46 @@ test('changing the password keeps this session but signs out others', function (
     assertSame(null, AuthService::user(), 'other sessions must be signed out');
 });
 
+test('a password change that raced a reset neither overwrites it nor keeps the session', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    $user = AuthService::register('Race Me', uniqueEmail(), GOOD_PASSWORD, authReq());
+    $checked = AuthService::user(); // the snapshot this request authenticated with
+
+    // A password reset lands after the check but before the write.
+    UserRepository::updatePassword((int) $user['id'], PasswordPolicy::hash('Reset-By-Owner-77'));
+
+    $e = assertThrows(HttpException::class, fn () => AuthService::changePassword($checked, GOOD_PASSWORD, 'Attacker-Choice-99', authReq()));
+    assertSame(401, $e->status);
+    $row = UserRepository::find((int) $user['id']);
+    assertTrue(password_verify('Reset-By-Owner-77', $row['password_hash']), 'the reset password must survive');
+    AuthService::flush();
+    assertSame(null, AuthService::user(), 'the stale session must be signed out, not moved to the new version');
+});
+
+test('a login rehash only replaces the hash it checked, never a newer password', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    $email = uniqueEmail();
+    $user = AuthService::register('Old Hash', $email, GOOD_PASSWORD, authReq());
+    $legacy = password_hash(GOOD_PASSWORD, PASSWORD_BCRYPT);
+    Database::run('UPDATE users SET password_hash = ? WHERE id = ?', [$legacy, $user['id']]);
+    assertTrue(PasswordPolicy::needsRehash($legacy));
+
+    // A reset happens between the password check and the rehash write.
+    UserRepository::updatePassword((int) $user['id'], PasswordPolicy::hash('Reset-By-Owner-77'));
+    assertSame(false, UserRepository::rehashPassword((int) $user['id'], $legacy, PasswordPolicy::hash(GOOD_PASSWORD)));
+    assertTrue(password_verify('Reset-By-Owner-77', UserRepository::find((int) $user['id'])['password_hash']), 'reset kept');
+
+    // Without a race the upgrade still happens on sign-in.
+    Database::run('UPDATE users SET password_hash = ? WHERE id = ?', [$legacy, $user['id']]);
+    freshSession();
+    AuthService::attempt($email, GOOD_PASSWORD, authReq());
+    assertSame(false, PasswordPolicy::needsRehash(UserRepository::find((int) $user['id'])['password_hash']), 'upgraded to the current algorithm');
+});
+
 test('sign-up respects the signup_open setting', function () {
     useTestDatabase();
     freshSession();
@@ -232,7 +312,8 @@ function googleClaims(array $overrides = []): array
     return $overrides + [
         'iss' => 'https://accounts.google.com', 'aud' => 'test-client.apps.googleusercontent.com',
         'exp' => time() + 600, 'sub' => 'g-' . bin2hex(random_bytes(6)), 'email' => uniqueEmail(),
-        'email_verified' => true, 'name' => 'Google Person',
+        // Test addresses are @example.com; hd = the email's domain makes Google authoritative for it (Workspace).
+        'email_verified' => true, 'name' => 'Google Person', 'hd' => 'example.com',
     ];
 }
 
@@ -324,6 +405,51 @@ test('google sign-in refuses a disabled account, whether found by Google ID or b
     freshSession();
     assertSame('ACCOUNT_DISABLED', assertThrows(HttpException::class, fn () => runGoogleFlow(googleClaims(['email' => $email])))->errorCode);
     assertSame(null, AuthService::user());
+});
+
+test('google never links by an email it does not host, and never replaces an existing Google link', function () {
+    useTestDatabase();
+    freshSession();
+    captureMail();
+    $email = uniqueEmail();
+    $owner = AuthService::register('Current Owner', $email, GOOD_PASSWORD, authReq());
+    Database::run('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [$owner['id']]);
+
+    // A personal Google account on the (reassigned) company address: verified once, but Google is not its host.
+    freshSession();
+    $e = assertThrows(HttpException::class, fn () => runGoogleFlow(googleClaims(['email' => $email, 'hd' => null])));
+    assertSame('GOOGLE_LINK_REQUIRES_PASSWORD', $e->errorCode);
+    assertSame(null, AuthService::user(), 'not signed in');
+    $row = UserRepository::find((int) $owner['id']);
+    assertSame(null, $row['google_sub'], 'not linked');
+    assertTrue(password_verify(GOOD_PASSWORD, $row['password_hash']), 'password kept');
+
+    // A Workspace sign-in for that domain links; a second, different Google account then cannot take over.
+    runGoogleFlow(googleClaims(['email' => $email, 'sub' => 'g-first']));
+    assertSame((int) $owner['id'], (int) AuthService::user()['id']);
+    freshSession();
+    $e = assertThrows(HttpException::class, fn () => runGoogleFlow(googleClaims(['email' => $email, 'sub' => 'g-second'])));
+    assertSame('GOOGLE_ACCOUNT_MISMATCH', $e->errorCode);
+    assertSame('g-first', UserRepository::find((int) $owner['id'])['google_sub'], 'link unchanged');
+    assertSame(2, (int) Database::value("SELECT COUNT(*) FROM audit_logs WHERE action = 'AUTH_GOOGLE_LINK_REFUSED' AND entity_id = ?", [(string) $owner['id']]));
+});
+
+test('a new google account on an address Google does not host must confirm the email', function () {
+    useTestDatabase();
+    freshSession();
+    $mail = captureMail();
+    $claims = googleClaims(['hd' => null]);
+    runGoogleFlow($claims);
+    $user = AuthService::user();
+    assertSame($claims['email'], $user['email']);
+    assertSame(null, $user['email_verified_at'], 'not treated as proven');
+    assertSame(1, count($mail));
+    assertSame($claims['email'], $mail[0]['to']);
+
+    // Gmail addresses are hosted by Google, so they count as proven.
+    freshSession();
+    runGoogleFlow(googleClaims(['hd' => null, 'email' => 'te.' . bin2hex(random_bytes(4)) . '@gmail.com']));
+    assertTrue(AuthService::user()['email_verified_at'] !== null);
 });
 
 test('google callback rejects bad state, wrong audience, unverified email and open redirects', function () {

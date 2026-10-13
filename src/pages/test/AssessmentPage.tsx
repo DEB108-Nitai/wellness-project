@@ -425,7 +425,7 @@ const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () 
     },
     'signed-out': {
       title: 'You have been signed out',
-      text: 'Sign in again to carry on. Your latest answers are kept on this device and will be saved when you continue.',
+      text: 'Sign in again to carry on from where your answers were last saved.',
       action: (
         <Link to="/login?next=%2Ftest" className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
           Sign in to continue <ArrowRight className="w-4 h-4" />

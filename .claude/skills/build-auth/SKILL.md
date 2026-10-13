@@ -51,13 +51,15 @@ $ARGUMENTS
    - 256-bit random; only the SHA-256 hash is stored; single use with an atomic `consume`.
    - Verify links last 48 h, reset links 60 min.
    - Validate input before consuming a token, so a weak password doesn't burn the link.
-   - Verifying an email **never signs anyone in** (owner decision).
+   - Verifying an email **never signs anyone in** (owner decision), and only works for the **signed-in account the link was sent for** (`SIGN_IN_TO_VERIFY` / `WRONG_ACCOUNT`); check with `TokenService::peek` before `consume`, so a refused click keeps the link.
+   - Credential writes are conditional: `rehashPassword` only replaces the hash it verified; `changePassword` writes only if `session_version` is unchanged and then uses the version its own write created.
 6. **CSRF:**
    - Every non-GET route has `csrf` on, unless there is a written reason.
    - The `Origin` header, when sent, must equal `app.url` or `app.allowed_origins`.
    - GET routes never change state. Google `/start` and `/callback` are the exception: they are protected by OAuth `state`.
 7. **Google:**
    - Match by `google_sub`, then by email. Create a new account only when `signup_open`.
+   - Match by email **only when Google hosts the address** (`emailAuthoritative`: Gmail, or `hd` = the email's domain), and **never replace** an existing `google_sub`. New accounts on other addresses start unverified.
    - Linking drops an unproven password, to stop account pre-hijacking.
    - Check `iss`, `aud`, `exp`, `sub` and `email_verified`.
    - `next` passes through `safeNext()`, same-site paths only.

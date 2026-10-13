@@ -31,8 +31,12 @@ final class ChallengeService
     ];
     private const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
-    /** Public registration (CH-2 … CH-5). */
-    public static function register(array $data, Request $request): array
+    /**
+     * Public registration (CH-2 … CH-5). Returns the new registration, or null when this email already holds
+     * an active place in the program: the caller must answer exactly as for a new one, so the form never reveals
+     * who has registered for what. Only the inbox owner learns it, from the email sent instead.
+     */
+    public static function register(array $data, Request $request): ?array
     {
         if (!SettingsService::bool('challenge_registration_open')) {
             throw HttpException::forbidden('Registrations are currently closed. Please check back soon.', 'REGISTRATION_CLOSED');
@@ -54,17 +58,22 @@ final class ChallengeService
             }
         }
 
-        $existing = Database::value(
-            'SELECT ref_code FROM challenge_registrations WHERE email = ? AND program = ? AND status IN (' . self::placeholders(self::ACTIVE) . ') LIMIT 1',
+        $existing = Database::one(
+            'SELECT ref_code, name FROM challenge_registrations WHERE email = ? AND program = ? AND status IN (' . self::placeholders(self::ACTIVE) . ') LIMIT 1',
             [$data['email'], $data['program'], ...self::ACTIVE]
         );
+        $user = AuthService::user();
         if ($existing !== null) {
-            throw new HttpException(409, 'ALREADY_REGISTERED', sprintf(
-                'This email is already registered for %s. Check your inbox for the details we sent.', self::PROGRAM_NAMES[$data['program']]
-            ));
+            AuditService::log('CHALLENGE_DUPLICATE', $user ? 'user' : 'guest', $user ? (int) $user['id'] : null, 'challenge_registration', $existing['ref_code'], ['program' => $data['program']], $request);
+            Mailer::send($data['email'], 'challenge-already-registered', [
+                'name' => $existing['name'],
+                'program' => self::PROGRAM_NAMES[$data['program']],
+                'programCode' => $data['program'],
+                'ref' => $existing['ref_code'],
+            ]);
+            return null;
         }
 
-        $user = AuthService::user();
         for ($attempt = 0; ; $attempt++) {
             $ref = $data['program'] . '-60-' . self::randomCode();
             try {
@@ -158,13 +167,15 @@ final class ChallengeService
         [$where, $params] = self::filterSql($filters);
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel shows non-English names correctly
-        fputcsv($out, ['Reference', 'Program', 'Status', 'Name', 'Email', 'Phone', 'Age', 'City', 'Country', 'Timing', 'Struggles', 'Goal', 'Admin notes', 'Registered (UTC)']);
+        // escape '' = RFC 4180 (quotes doubled), as spreadsheets read it; PHP's default backslash escape lets
+        // a value like x\",=CMD() split into a new, unchecked cell.
+        fputcsv($out, ['Reference', 'Program', 'Status', 'Name', 'Email', 'Phone', 'Age', 'City', 'Country', 'Timing', 'Struggles', 'Goal', 'Admin notes', 'Registered (UTC)'], ',', '"', '');
         $stmt = Database::run("SELECT r.* FROM challenge_registrations r $where ORDER BY r.created_at DESC", $params);
         while ($r = $stmt->fetch()) {
             fputcsv($out, array_map([self::class, 'csvSafe'], [
                 $r['ref_code'], $r['program'], $r['status'], $r['name'], $r['email'], $r['phone'], $r['age'], $r['city'], $r['country'],
                 $r['cohort_timing'], implode('; ', json_decode($r['struggles'], true) ?: []), $r['primary_goal'], $r['admin_notes'], $r['created_at'],
-            ]));
+            ]), ',', '"', '');
         }
         fclose($out);
     }

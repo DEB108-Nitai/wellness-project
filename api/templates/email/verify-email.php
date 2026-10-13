@@ -9,6 +9,7 @@ return [
         . '<p style="margin:0 0 20px;">Welcome to ' . $e($vars['siteName']) . '! Please confirm that this is your email address so you can recover your account and receive your results and program updates.</p>'
         . '<p style="margin:0 0 24px;">' . $button . '</p>'
         . '<p style="margin:0 0 8px;font-size:13px;color:#64748b;">This link expires in 48 hours. If the button does not work, copy this address into your browser:</p>'
-        . '<p style="margin:0;font-size:12px;word-break:break-all;color:#64748b;">' . $e($vars['url']) . '</p>',
+        . '<p style="margin:0 0 16px;font-size:12px;word-break:break-all;color:#64748b;">' . $e($vars['url']) . '</p>'
+        . '<p style="margin:0;font-size:13px;color:#64748b;">If you did not create an account, you can ignore this email.</p>',
     'text' => "Hi {$vars['name']},\n\nWelcome to {$vars['siteName']}! Please confirm your email address by opening this link (valid for 48 hours):\n\n{$vars['url']}\n\nIf you did not create an account, you can ignore this email.",
 ];

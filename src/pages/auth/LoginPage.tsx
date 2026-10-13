@@ -13,6 +13,8 @@ const GOOGLE_ERRORS: Record<string, string> = {
   google_failed: 'We could not complete Google sign-in. Please try again.',
   signup_closed: 'New sign-ups are temporarily closed.',
   account_disabled: 'This account has been disabled. Please contact support.',
+  google_link_requires_password: 'An account with this email already exists. Please sign in with your password.',
+  google_account_mismatch: 'This email is already connected to a different Google account. Please use that Google account or your password.',
   rate_limited: 'Too many attempts. Please wait a few minutes and try again.',
 };
 
