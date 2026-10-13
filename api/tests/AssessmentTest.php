@@ -259,6 +259,14 @@ test('another user cannot see the report (fault 4) but an admin can', function (
     $report = ResultsService::forViewer($state['ref'], AuthService::user());
     assertSame(false, $report['isOwner']);
     assertSame(16, count($report['factors']));
+
+    // The owner's share link stays theirs: an admin opening the report never receives it, and the view is audited.
+    Database::run('UPDATE test_sessions SET share_token = ? WHERE public_ref = ?', [str_repeat('a', 32), $state['ref']]);
+    $show = new Request('GET', '/results/' . $state['ref'], [], ['REMOTE_ADDR' => '10.20.30.42'], '', Cookies::$jar);
+    $show->params = ['ref' => $state['ref']];
+    $shown = (new \Transenigma\Controllers\ResultsController())->show($show)->body['data'];
+    assertSame(false, array_key_exists('shareToken', $shown), 'no share token for an admin');
+    assertSame(1, (int) Database::value("SELECT COUNT(*) FROM audit_logs WHERE action = 'ADMIN_VIEWED_ASSESSMENT' AND entity_id = ? AND actor_user_id = ?", [$state['ref'], $other['id']]), 'admin view audited');
 });
 
 test('share links can be enabled and revoked, and hide private details', function () {

@@ -49,7 +49,7 @@ try {
   await page.waitText(`Question ${tag}`);
   await page.screenshot(`${OUT}admin-11-messages.png`, true);
   await page.clickText(`Question ${tag}`, 'button');
-  await page.waitText('next PTI cohort');
+  await page.waitFor(`document.querySelector('[role=dialog] a[href^="mailto:"]')`); // the list previews the text too
   if (!(await page.eval(`!!document.querySelector('[role=dialog] a[href^="mailto:${sender}"]')`))) throw new Error('no reply link');
   await page.screenshot(`${OUT}admin-12-message.png`);
   await page.clickText('Mark handled', '[role=dialog] button');
@@ -64,6 +64,8 @@ try {
   await page.goto(`${BASE}/admin/subscribers`);
   await page.waitText(reader);
   const csv = await page.eval(`fetch('/api/admin/export/subscribers?q=${reader}').then(r => r.text())`);
+  const csvType = await page.eval(`fetch('/api/admin/export/subscribers?q=${reader}').then(r => r.headers.get('content-type'))`);
+  if (!csvType?.startsWith('text/csv')) throw new Error(`export sent as ${csvType}`); // PHP output buffering must not let the JSON type win
   if (!csv.includes(reader) || csv.includes(tag.padEnd(32, '0'))) throw new Error('subscriber export wrong or leaks the token');
   await page.screenshot(`${OUT}admin-13-subscribers.png`);
   step('subscriber listed; export has the email and no unsubscribe token');

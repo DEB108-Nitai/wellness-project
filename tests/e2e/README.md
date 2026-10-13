@@ -18,7 +18,14 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 | `team-page.mjs` | Our Team page: six people in the old-homepage order, all photos load, 3/2/1 per row at 1440/768/390 px, no overflow, nav tab active, Contact button. Read-only |
 | `home-top.mjs` | Home page order: dark Transenigma intro → Research · Consultancy · Programs → 16PF assessment (no factor grid, no workshops, no sparkle icons) → 60-day programs; one h1; assessment button before programs; no duplicate program cards; no page overflow at 1440/768/390/360 px; intro buttons. Read-only |
 | `nav-flow.mjs` | Main navigation: Programs and 16PF Test dropdowns (hover, click, keyboard, outside click), program links scrolling to STI/PTI/TTI (also when the challenge filter hides them), mobile drawer groups. Read-only, creates no rows |
-| `phase4-flow.mjs <adminEmail> <adminPassword>` | STI → PTI → TTI order; PTI registration ("Registered successfully"); duplicate refused; joining a second program; contact form; newsletter; FAQs; admin registrations filter and status change; maintenance toggle |
+| `admin-flow.mjs` | **The whole loop:** STI → PTI → TTI order; 60-day registration (age, city, consent required; country starts on India); a repeat gets the same answer, is not stored and is emailed instead; contact message and newsletter; a temporary admin signs in with the authenticator code, confirms the registration, marks the message handled, adds a paper that the home and Research pages show at once, deletes it, opens a participant, toggles maintenance (visitors get 503); no sideways scroll at 390 px; a normal member sees "Administrators only" and gets 403 on every `/admin` API route (read from `api/routes.php`). Replaces `phase4-flow.mjs` |
+| `admin-2fa.mjs` | Admin two-step sign-in: setup with QR and recovery codes, later sign-ins need a code, a recovery code works once, new recovery codes, move to a new phone |
+| `admin-content.mjs` | A paper in a new research category and a consultancy project with an uploaded image in a new category; home, Research and Consultancy pages and every count follow; removing them restores the numbers |
+| `admin-registrations.mjs` | 60-Day registrations page: tiles, charts, filters and table agree (seeds 40 registrations) |
+| `admin-participants.mjs [TE-REF]` | Participants & results list, detail and CSV export, read-only on an existing completed test (default TE-LCHUHZ) |
+| `admin-visitors.mjs` | Private visitor counter: seeded page views, the automated browser is not counted, Visitors page at desktop and phone width |
+| `admin-site.mjs` | Messages, subscribers (export without unsubscribe tokens), FAQs (add, reorder, delete, shown on /faq), audit log, question set and norms |
+| `admin-users.mjs` | Users list and detail, disable/enable, anonymise; Admins page is read-only for a non-primary admin and the server refuses too |
 
 ```
 node tests/e2e/guest-flow.mjs
@@ -32,7 +39,8 @@ node tests/e2e/consultancy-page.mjs
 node tests/e2e/footer-contact.mjs
 node tests/e2e/page-meta.mjs
 npm run build && node tests/e2e/redirects.mjs
-node tests/e2e/phase4-flow.mjs admin@example.com "<password>"
+node tests/e2e/admin-flow.mjs
+node tests/e2e/admin-2fa.mjs      # and the other admin-*.mjs scripts
 ```
 
 The scripts create real records in the local `transenigma` database (accounts with `@example.com` addresses). Delete them afterwards; see `docs/PROGRESS.md` §8.

@@ -22,7 +22,12 @@ final class ResultsController
     /** GET /api/results/{ref} — owner or admin; guests get 401 RESULTS_LOCKED. */
     public function show(Request $request): Response
     {
-        return Response::ok(ResultsService::forViewer($request->param('ref'), AuthService::user()));
+        $viewer = AuthService::user();
+        $report = ResultsService::forViewer($request->param('ref'), $viewer);
+        if (!$report['isOwner']) { // only an admin gets here for someone else's report: audited like the admin detail page
+            AuditService::forUser($viewer, 'ADMIN_VIEWED_ASSESSMENT', 'test_session', $report['ref'], ['via' => 'report'], $request);
+        }
+        return Response::ok($report);
     }
 
     /** POST /api/results/{ref}/share */

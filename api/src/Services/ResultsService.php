@@ -26,7 +26,11 @@ final class ResultsService
         if ($session['status'] !== 'completed') {
             throw HttpException::conflict('This assessment has not been completed yet.', 'NOT_COMPLETED');
         }
-        return self::report($session, true) + ['isOwner' => $isOwner];
+        $report = self::report($session, true) + ['isOwner' => $isOwner];
+        if (!$isOwner) {
+            unset($report['shareToken']); // the owner's private link is theirs to hand out, not the admin's
+        }
+        return $report;
     }
 
     /** RES-4: public read-only view through a share link. */

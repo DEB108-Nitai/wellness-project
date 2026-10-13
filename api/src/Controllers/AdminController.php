@@ -72,7 +72,7 @@ final class AdminController
         header('Cache-Control: no-store');
         header('X-Content-Type-Options: nosniff');
         ChallengeService::exportCsv($f);
-        return new Response(200, null);
+        return Response::streamed();
     }
 
     /** GET /api/admin/settings */

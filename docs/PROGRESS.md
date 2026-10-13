@@ -124,7 +124,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 2 | Authentication: sign-up/in/out, verification, reset, Google OAuth, roles, admin CLI | ✅ Committed `e128497`. Live email and Google sign-in done in auth completion (§4c) |
 | 3 | Assessment and results: server sessions, scoring, guest flow, results gate, sharing, My Results | ✅ Committed `a1e342b` |
 | 4 | 60-Day Challenges (STI, PTI, TTI), contact, newsletter, FAQ, settings, maintenance | ✅ Committed |
-| 5 | Admin console on server data + anonymise user + admin 2FA | ⬜ Next |
+| 5 | Admin console on server data + anonymise user + admin 2FA | ✅ Done 2026-10-13 (branch `feature/admin-console`) |
 | 6 | UI polish, SEO, accessibility, performance of the bundle | ⬜ |
 | 7 | Production hardening and DreamHost deploy | ⬜ |
 
@@ -384,7 +384,20 @@ Owner asks: research papers and consultancy projects managed from the admin, and
   - Both country lists start on India.
   - Placeholders use Indian examples (Rahul Sharma, +91…).
   - A value of only spaces now counts as empty for every required field (`Validator`).
-- **Still in Phase 5:** Finish (full admin E2E, final review, docs, CLAUDE.md sync, push and PR).
+- **Phase 5 finish (2026-10-13):**
+  - **Full admin E2E:** `tests/e2e/admin-flow.mjs` replaces `phase4-flow.mjs`. It covers the visitor forms, the admin's code sign-in, the registration, the message, a paper shown live on the site, a participant, maintenance, and a member refused on all 52 admin API routes.
+  - **Fresh-eyes review** (feature-reviewer agent): no critical findings. Fixed after confirming each one:
+    - Anonymising an account that never verified its email no longer touches registrations, messages or the newsletter row filed under that address (they may belong to the real owner). The account detail doesn't show them either.
+    - An admin opening someone's full report never receives the owner's share link, and the view is audited (`ADMIN_VIEWED_ASSESSMENT`, via report).
+    - CSV exports were sent as JSON when PHP buffers output (XAMPP and DreamHost default). `Response::streamed()` fixes this, proven by a new check in `admin-site.mjs`.
+    - Anonymise refuses if the account changed meanwhile (`ACCOUNT_CHANGED`).
+    - The day's visit salt is deleted on the first visit of the next day, even without cron. The visit limit was raised to 1500 per address per hour (mobile networks share addresses).
+    - DEPLOY §8 now runs migrations before uploading new code.
+  - **Noted, not changed:**
+    - A new admin's first sign-in sets up their authenticator (trust on first use, as the PRD designs). Ask new admins to sign in right away.
+    - A failure halfway through a CSV export can leave a cut-off file.
+  - **Deploy safety:** `api/bin/preflight.php` checks PHP, extensions, production settings, DB, migrations, folders and `.htaccess` without printing secrets (DEPLOY §4).
+  - **Tests:** API 148, all admin E2E scripts, guest-flow and edge-cases pass.
 
 ---
 

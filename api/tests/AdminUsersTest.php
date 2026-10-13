@@ -265,6 +265,38 @@ test('anonymise clears only that address: audit details of a similar address sta
     assertSame(AdminUsersService::ANON_NAME, Database::value("SELECT name FROM challenge_registrations WHERE ref_code = 'PTI-GUEST1'"), 'a registration made as a guest with the same email');
 });
 
+test('anonymising an account that never verified its email leaves the real owner\'s registrations, messages and subscription alone', function () {
+    useTestDatabase();
+    [$primary] = teamAdmin(true);
+    captureMail();
+    $impostor = member('Not Them', false);
+    $email = $impostor['email'];
+    Database::run(
+        "INSERT INTO challenge_registrations (ref_code, program, user_id, name, email, phone, age, country, cohort_timing, struggles, consent_at)
+         VALUES ('PTI-OWNER1', 'PTI', NULL, 'Real Owner', ?, '+919888888888', 40, 'IN', 'evening', '[]', UTC_TIMESTAMP())",
+        [$email]
+    );
+    Database::run("INSERT INTO contact_messages (name, email, subject, message) VALUES ('Real Owner', ?, 'Hello', 'A real question.')", [$email]);
+    Database::run('INSERT INTO newsletter_subscribers (email, unsubscribe_token) VALUES (?, ?)', [$email, str_repeat('b', 32)]);
+
+    $detail = AdminUsersService::detail((int) $impostor['id']);
+    assertSame([[], 0, null], [$detail['registrations'], $detail['messages'], $detail['newsletter']], 'the detail shows nothing filed by email');
+
+    AdminUsersService::anonymise((int) $impostor['id'], $email, $primary, authReq());
+    assertSame('Real Owner', Database::value("SELECT name FROM challenge_registrations WHERE ref_code = 'PTI-OWNER1'"));
+    assertSame(1, (int) Database::value('SELECT COUNT(*) FROM contact_messages WHERE email = ?', [$email]));
+    assertSame(1, (int) Database::value('SELECT COUNT(*) FROM newsletter_subscribers WHERE email = ?', [$email]));
+    assertSame(AdminUsersService::ANON_NAME, Database::value('SELECT name FROM users WHERE id = ?', [$impostor['id']]), 'the account itself is anonymised');
+});
+
+test('a second anonymise of the same account is refused', function () {
+    useTestDatabase();
+    [$primary] = teamAdmin(true);
+    $m = member();
+    AdminUsersService::anonymise((int) $m['id'], $m['email'], $primary, authReq());
+    assertSame('ACCOUNT_ANONYMISED', assertThrows(HttpException::class, fn () => AdminUsersService::anonymise((int) $m['id'], "anon-{$m['id']}@invalid", $primary, authReq()))->errorCode);
+});
+
 test('a disable checked against a member does not land on someone promoted meanwhile', function () {
     useTestDatabase();
     [$primary] = teamAdmin(true);

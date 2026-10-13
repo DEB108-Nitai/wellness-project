@@ -61,6 +61,6 @@ final class AdminParticipantsController
             header('X-Content-Type-Options: nosniff');
         }
         AdminParticipantsService::exportCsv($f, $withAnswers);
-        return new Response(200, null);
+        return Response::streamed();
     }
 }

@@ -35,6 +35,7 @@ try {
   await page.viewport(1440, 1000);
   await signUp(page, `Erin Member ${tag}`, memberEmail);
   memberId = sql(`SELECT id FROM users WHERE email = '${memberEmail}'`);
+  sql(`UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ${memberId}`); // as clicking the emailed link would: anonymise erases records filed under a proven email only
   sql(`INSERT INTO contact_messages (name, email, subject, message) VALUES ('Erin', '${memberEmail}', 'Please delete my data', 'I would like my account erased.')`);
   await signOut(page);
   await signUp(page, 'E2E Users Admin', email);

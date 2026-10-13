@@ -47,7 +47,7 @@ $ARGUMENTS
 8. **Run the project checks.**
    - `npm run lint` (type-check) and `npm run build`. Watch the bundle-size warning.
    - `php api/tests/run.php` if anything under `api/` or `database/` changed.
-   - Any related e2e script (`tests/e2e/guest-flow.mjs`, `phase4-flow.mjs`). Delete the `@example.com` rows they create afterwards.
+   - Any related e2e script (`tests/e2e/guest-flow.mjs`, `admin-flow.mjs` and the matching `admin-*.mjs`). Delete the `@example.com` rows they create afterwards.
 9. **Fix only what you can reproduce.** Fix problems you can reproduce inside the scope of the request. Report anything else rather than expanding scope.
 10. **Summarise for the owner:**
     - what changed (as clickable file links);

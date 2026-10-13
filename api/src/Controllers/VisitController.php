@@ -16,8 +16,9 @@ final class VisitController
     /** POST /api/visit {path, referrer?} — counted silently; always 204-like ok so the page never cares. */
     public function record(Request $request): Response
     {
-        // Generous: a reader clicking around is fine, a script replaying the beacon is not.
-        if (!RateLimiter::tooMany('visit', $request->ip(), 300, 3600)) {
+        // Generous: a reader clicking around is fine, a script replaying the beacon is not. Mobile networks in India
+        // put many phones behind one address, so the limit is per address, not per person.
+        if (!RateLimiter::tooMany('visit', $request->ip(), 1500, 3600)) {
             RateLimiter::hit('visit', $request->ip(), PHP_INT_MAX, 3600);
             $data = Validator::validate($request->json(), ['path' => 'required|string|max:500', 'referrer' => 'nullable|string|max:500']);
             VisitService::record($data['path'], $data['referrer'] ?? null, AuthService::user() !== null, $request);

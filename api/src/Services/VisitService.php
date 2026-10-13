@@ -53,7 +53,11 @@ final class VisitService
     /** The day's random salt, created on first use (INSERT IGNORE keeps concurrent first visits consistent). */
     private static function salt(string $day): string
     {
-        Database::run('INSERT IGNORE INTO visit_salts (day, salt) VALUES (?, ?)', [$day, bin2hex(random_bytes(32))]);
+        $created = Database::run('INSERT IGNORE INTO visit_salts (day, salt) VALUES (?, ?)', [$day, bin2hex(random_bytes(32))])->rowCount();
+        if ($created === 1) {
+            // A new day began: yesterday's salt goes now, even if the daily cron job is not running.
+            Database::run('DELETE FROM visit_salts WHERE day < ?', [$day]);
+        }
         return (string) Database::value('SELECT salt FROM visit_salts WHERE day = ?', [$day]);
     }
 

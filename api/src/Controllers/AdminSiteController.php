@@ -55,7 +55,7 @@ final class AdminSiteController
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_MESSAGES', 'export', 'messages', $f, $request);
         $this->csvHeaders('messages');
         AdminSiteService::exportMessages($f);
-        return new Response(200, null);
+        return Response::streamed();
     }
 
     private function messageFilters(Request $request, array $extra = []): array
@@ -86,7 +86,7 @@ final class AdminSiteController
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_SUBSCRIBERS', 'export', 'subscribers', $f, $request);
         $this->csvHeaders('subscribers');
         AdminSiteService::exportSubscribers($f);
-        return new Response(200, null);
+        return Response::streamed();
     }
 
     // ------------------------------------------------------------------ FAQs

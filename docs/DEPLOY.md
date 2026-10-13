@@ -97,6 +97,13 @@ Set:
 
 The API finds this file automatically (`Core\Config`: `../../transenigma-config/config.php` relative to `api/`).
 
+**Then run the preflight check** (it never prints a secret, only whether each setting looks right):
+```
+cd ~/transenigma.com
+/usr/local/php82/bin/php api/bin/preflight.php
+```
+It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, mbstring, fileinfo, curl), the production settings (`env`, `debug` off, https `url`, a 64-hex `app.secret`, SMTP), the database connection and clocks, pending migrations, the admins, writable folders, `index.html` and both `.htaccess` files, and that the config file is outside the web root. Fix every **FAIL** line before going live, and run it again after step 5: it should end with `READY`.
+
 ---
 
 ## 5. Database and admin account
@@ -104,7 +111,7 @@ The API finds this file automatically (`Core\Config`: `../../transenigma-config/
 DreamHost's PHP 8.2 command-line binary is usually `/usr/local/php82/bin/php`.
 ```
 cd ~/transenigma.com
-/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…020)
+/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…026)
 /usr/local/php82/bin/php api/bin/migrate.php --status   # all applied
 /usr/local/php82/bin/php api/bin/create-admin.php you@transenigma.com "Your Name"
 ```
@@ -199,8 +206,9 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 ## 8. Updating the site later
 
 1. On a developer machine: pull, `npm ci`, tests, `npm run build`.
-2. Upload the new `dist/` contents (replace `assets/`; old hashed files can be deleted), plus any changed `api/` files and new `database/migrations/` files. **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
-3. Over SSH: `/usr/local/php82/bin/php api/bin/migrate.php` (applies only the new migrations).
+2. **Database first.** Upload the new `database/migrations/` files and run `/usr/local/php82/bin/php api/bin/migrate.php` over SSH (it applies only the new ones). Migrations only add things, so the old code keeps working with the new tables and columns. The other way round, new code would ask for columns that don't exist yet and every page would fail until the migration ran.
+3. Then upload the changed `api/` files, and last the new `dist/` contents (replace `assets/`; old hashed files can be deleted). **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
+4. Run `/usr/local/php82/bin/php api/bin/preflight.php` again; it should end with `READY`.
 
 ## 9. Rolling back
 

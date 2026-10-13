@@ -21,7 +21,18 @@ final class Response
         public readonly int $status,
         public readonly ?array $body,
         public readonly array $headers = [],
+        private readonly bool $streamed = false,
     ) {
+    }
+
+    /**
+     * The body was already written (a CSV export) with its own headers. Sending nothing more matters when PHP buffers
+     * output (php.ini output_buffering, the shared-hosting default): headers would not be sent yet, and the JSON
+     * Content-Type would replace the export's text/csv.
+     */
+    public static function streamed(): self
+    {
+        return new self(200, null, [], true);
     }
 
     public static function ok(mixed $data = null, int $status = 200): self
@@ -60,6 +71,9 @@ final class Response
 
     public function send(): void
     {
+        if ($this->streamed) {
+            return;
+        }
         if (!headers_sent()) {
             http_response_code($this->status);
             foreach (self::BASE_HEADERS + $this->headers as $name => $value) {
