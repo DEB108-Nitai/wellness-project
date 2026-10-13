@@ -33,9 +33,9 @@ try {
   await page.waitText('Philosophical Therapeutic Intervention 60-Day Challenge');
   await page.fill('#reg-name', 'Kiran Rao');
   await page.fill('#reg-email', email);
-  await page.fill('#reg-phone', '+1 512 555 0142');
+  await page.fill('#reg-phone', '+91 98765 43210');
   await page.fill('#reg-age', '27');
-  await page.fill('#reg-city', 'Austin');
+  await page.fill('#reg-city', 'Pune');
   await page.clickText('Evening Track', 'button');
   await page.clickText('Stress & Anxiety', 'button');
   await page.screenshot(`${OUT}13-register-form.png`);
@@ -54,7 +54,9 @@ try {
   await page.clickText('Start the PTI Challenge', 'button');
   await page.fill('#reg-name', 'Kiran Rao');
   await page.fill('#reg-email', email);
-  await page.fill('#reg-phone', '+1 512 555 0142');
+  await page.fill('#reg-phone', '+91 98765 43210');
+  await page.fill('#reg-age', '27');
+  await page.fill('#reg-city', 'Pune');
   await page.eval(`document.querySelector('[role=dialog] input[type=checkbox]').click()`);
   await sleep(3200);
   await page.clickText('Confirm 60-Day Challenge Registration', 'button');

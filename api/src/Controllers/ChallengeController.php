@@ -24,9 +24,9 @@ final class ChallengeController
             'name' => 'required|string|min:2|max:100',
             'email' => 'required|email',
             'phone' => 'required|string|max:20|regex:/^\+?[0-9 ()\-.]{7,20}$/',
-            'age' => 'int|min:1|max:100',
-            'city' => 'string|max:100',
-            'country' => 'string|max:2',
+            'age' => 'required|int|min:18|max:100',
+            'city' => 'required|string|max:100',
+            'country' => 'required|string|max:2',
             'cohortTiming' => 'required|in:' . implode(',', ChallengeService::TIMINGS),
             'struggles' => 'array|max:10',
             'primaryGoal' => 'string|max:1000',
@@ -35,7 +35,7 @@ final class ChallengeController
         if (!$data['consent']) {
             throw HttpException::validation(['consent' => 'Please accept the privacy notice to register.']);
         }
-        if (isset($data['country']) && !Countries::isValid($data['country'])) {
+        if (!Countries::isValid($data['country'])) {
             throw HttpException::validation(['country' => 'Please choose a valid country.']);
         }
         // Same answer whether or not the email was already registered (no disclosure of who joined what).

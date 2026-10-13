@@ -28,7 +28,10 @@ final class AssessmentService
     private const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
     public const GENDERS = ['female', 'male', 'non_binary', 'prefer_not_to_say', 'self_describe'];
-    public const EDUCATION = ['high_school', 'bachelors', 'masters', 'doctorate', 'other'];
+    public const EDUCATION = [
+        'below_secondary', 'secondary', 'high_school', 'diploma', 'undergraduate', 'bachelors',
+        'professional', 'masters', 'mphil', 'doctorate', 'postdoc', 'other',
+    ];
 
     // ------------------------------------------------------------------ ownership
 

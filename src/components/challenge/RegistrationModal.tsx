@@ -4,6 +4,7 @@ import { AlertCircle, BookOpen, Check, CheckCircle2, Compass, Loader2, Send, Vol
 import { ApiError } from '../../api/client';
 import { challengeApi, CohortTiming, ProgramCode, PROGRAMS, STRUGGLES } from '../../api/challenge';
 import { useAuth } from '../../context/AuthContext';
+import { useCountries } from '../../hooks/useCountries';
 
 interface Props {
   initialProgram: ProgramCode;
@@ -27,6 +28,8 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [city, setCity] = useState('');
+  const countries = useCountries();
+  const [country, setCountry] = useState(countries.guess);
   const [cohortTiming, setCohortTiming] = useState<CohortTiming>('morning');
   const [struggles, setStruggles] = useState<string[]>([]);
   const [primaryGoal, setPrimaryGoal] = useState('');
@@ -62,8 +65,14 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
     e.preventDefault();
     setError(null);
     setFieldErrors({});
-    if (!consent) {
-      setFieldErrors({ consent: 'Please accept to continue.' });
+    const errs: Record<string, string> = {};
+    const ageNum = Number(age);
+    if (!Number.isInteger(ageNum) || ageNum < 18 || ageNum > 100) errs.age = 'Please enter an age between 18 and 100.';
+    if (!city.trim()) errs.city = 'Please enter your city.';
+    if (!country) errs.country = 'Please choose your country.';
+    if (!consent) errs.consent = 'Please accept to continue.';
+    if (Object.keys(errs).length) {
+      setFieldErrors(errs);
       return;
     }
     setSubmitting(true);
@@ -73,8 +82,9 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
-        ...(age ? { age: Number(age) } : {}),
-        ...(city.trim() ? { city: city.trim() } : {}),
+        age: ageNum,
+        city: city.trim(),
+        country,
         cohortTiming,
         struggles,
         ...(primaryGoal.trim() ? { primaryGoal: primaryGoal.trim() } : {}),
@@ -172,39 +182,56 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                   <label htmlFor="reg-name" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Full Name <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-name" required autoComplete="name" maxLength={100} placeholder="e.g. Maya Lin" value={name} onChange={(e) => setName(e.target.value)} className={`${input} ${border('name')}`} />
+                  <input id="reg-name" required autoComplete="name" maxLength={100} placeholder="e.g. Rahul Sharma" value={name} onChange={(e) => setName(e.target.value)} className={`${input} ${border('name')}`} />
                   {fieldError('name')}
                 </div>
                 <div>
                   <label htmlFor="reg-email" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Email Address <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-email" type="email" required autoComplete="email" placeholder="you@domain.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${input} ${border('email')}`} />
+                  <input id="reg-email" type="email" required autoComplete="email" placeholder="rahul@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} className={`${input} ${border('email')}`} />
                   {fieldError('email')}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label htmlFor="reg-phone" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Phone / WhatsApp <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-phone" type="tel" required autoComplete="tel" maxLength={20} placeholder="+1 / +91 ..." value={phone} onChange={(e) => setPhone(e.target.value)} className={`${input} font-mono ${border('phone')}`} />
+                  <input id="reg-phone" type="tel" required autoComplete="tel" maxLength={20} placeholder="+91 98765 43210" value={phone} onChange={(e) => setPhone(e.target.value)} className={`${input} font-mono ${border('phone')}`} />
                   {fieldError('phone')}
                 </div>
                 <div>
                   <label htmlFor="reg-age" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
-                    Age
+                    Age <span className="text-rose-500">*</span>
                   </label>
                   <input id="reg-age" type="number" inputMode="numeric" min={18} max={100} value={age} onChange={(e) => setAge(e.target.value)} className={`${input} font-mono ${border('age')}`} />
                   {fieldError('age')}
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label htmlFor="reg-city" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
-                    City
+                    City <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-city" autoComplete="address-level2" maxLength={100} placeholder="e.g. Pune, Austin" value={city} onChange={(e) => setCity(e.target.value)} className={`${input} ${border('city')}`} />
+                  <input id="reg-city" autoComplete="address-level2" maxLength={100} placeholder="e.g. Pune" value={city} onChange={(e) => setCity(e.target.value)} className={`${input} ${border('city')}`} />
                   {fieldError('city')}
+                </div>
+                <div>
+                  <label htmlFor="reg-country" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                    Country <span className="text-rose-500">*</span>
+                  </label>
+                  <select id="reg-country" autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value)} className={`${input} ${border('country')}`}>
+                    <option value="">Select your country…</option>
+                    {countries.list.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  {fieldError('country')}
                 </div>
               </div>
 

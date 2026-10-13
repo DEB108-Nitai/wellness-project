@@ -24,8 +24,9 @@ export interface RegistrationInput {
   name: string;
   email: string;
   phone: string;
-  age?: number;
-  city?: string;
+  age: number;
+  city: string;
+  country: string;
   cohortTiming: CohortTiming;
   struggles: string[];
   primaryGoal?: string;

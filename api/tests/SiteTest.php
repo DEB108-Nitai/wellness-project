@@ -97,6 +97,19 @@ test('registration validates phone, age, struggles and respects the open/closed 
     }
 });
 
+test('the 60-day form needs age, city and country as well as name, email and phone', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $send = static fn (array $body) => (new \Transenigma\Controllers\ChallengeController())->register(new Request('POST', '/challenge/registrations', [],
+        ['REMOTE_ADDR' => '10.30.40.50', 'CONTENT_TYPE' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR)));
+    $full = registration(['formElapsedMs' => 10000]);
+    $e = assertThrows(HttpException::class, fn () => $send(array_diff_key($full, ['age' => 1, 'city' => 1, 'country' => 1])));
+    assertSame(['age', 'city', 'country'], array_keys($e->fields), 'each missing field is named');
+    assertSame(['country'], array_keys(assertThrows(HttpException::class, fn () => $send(['country' => 'XX'] + $full))->fields), 'unknown country refused');
+    assertSame(201, $send($full)->status, 'a complete form registers');
+});
+
 test('admin can change status and notes; CSV export neutralises formulas', function () {
     useTestDatabase();
     asGuest();

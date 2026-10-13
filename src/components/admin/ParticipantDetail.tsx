@@ -3,13 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink } from 'lucide-react';
 import { ParticipantDetail as Detail, participantsApi } from '../../api/admin';
 import { ApiError } from '../../api/client';
+import { EDUCATION_LABELS } from '../../api/assessment';
 import { fmtDateTime, STATUS_LABEL } from './ParticipantsAdmin';
 import { Badge, ErrorBox, LoadingBlock, Panel } from './ui';
 
 /** One assessment in full: who, demographics, timing, quality, the 16 factors, the 5 domains and every answer. */
 const ANSWER = ['', 'Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'];
 const GENDER: Record<string, string> = { female: 'Female', male: 'Male', non_binary: 'Non-binary', prefer_not_to_say: 'Prefers not to say', self_describe: 'Self-described' };
-const EDUCATION: Record<string, string> = { high_school: 'High school', bachelors: "Bachelor's", masters: "Master's", doctorate: 'Doctorate', other: 'Other' };
+const EDUCATION: Record<string, string> = EDUCATION_LABELS;
 
 /** A compact sten scale 1–10: the low-average-high bands as a track, the score as a dot. */
 const StenRow: React.FC<{ name: string; low?: string; high?: string; sten: number; band: string }> = ({ name, low, high, sten, band }) => (

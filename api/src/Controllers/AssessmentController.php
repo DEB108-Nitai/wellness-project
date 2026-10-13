@@ -60,9 +60,9 @@ final class AssessmentController
             'age' => 'required|int|min:1|max:100',
             'gender' => 'required|in:' . implode(',', AssessmentService::GENDERS),
             'genderText' => 'string|max:60',
-            'nickname' => 'string|max:60',
-            'education' => 'in:' . implode(',', AssessmentService::EDUCATION),
-            'occupation' => 'string|max:100',
+            'nickname' => 'required|string|max:60',
+            'education' => 'required|in:' . implode(',', AssessmentService::EDUCATION),
+            'occupation' => 'required|string|max:100',
         ]);
         if (!Countries::isValid($data['country'])) {
             throw HttpException::validation(['country' => 'Please choose your country.']);

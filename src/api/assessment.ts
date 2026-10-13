@@ -29,16 +29,44 @@ export interface SessionState {
 }
 
 export type Gender = 'female' | 'male' | 'non_binary' | 'prefer_not_to_say' | 'self_describe';
-export type Education = 'high_school' | 'bachelors' | 'masters' | 'doctorate' | 'other';
+export type Education =
+  | 'below_secondary'
+  | 'secondary'
+  | 'high_school'
+  | 'diploma'
+  | 'undergraduate'
+  | 'bachelors'
+  | 'professional'
+  | 'masters'
+  | 'mphil'
+  | 'doctorate'
+  | 'postdoc'
+  | 'other';
+
+/** Highest education, in order; the same list is checked on the server (AssessmentService::EDUCATION). */
+export const EDUCATION_LABELS: Record<Education, string> = {
+  below_secondary: 'Below Class 10',
+  secondary: 'Class 10 (Secondary)',
+  high_school: 'Class 12 (Higher Secondary)',
+  diploma: 'Diploma / ITI / Polytechnic',
+  undergraduate: "Studying for a bachelor's degree",
+  bachelors: "Bachelor's degree (BA, BSc, BCom, BTech…)",
+  professional: 'Professional degree (MBBS, LLB, CA, CS…)',
+  masters: "Master's degree (MA, MSc, MBA, MTech…)",
+  mphil: 'MPhil',
+  doctorate: 'PhD / Doctorate',
+  postdoc: 'Postdoctoral',
+  other: 'Other',
+};
 
 export interface Demographics {
   country: string;
   age: number;
   gender: Gender;
   genderText?: string;
-  nickname?: string;
-  education?: Education;
-  occupation?: string;
+  nickname: string;
+  education: Education;
+  occupation: string;
 }
 
 export interface FactorScore {

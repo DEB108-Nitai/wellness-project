@@ -28,7 +28,7 @@ function testRequest(): Request
 
 function demographics(array $overrides = []): array
 {
-    return $overrides + ['country' => 'IN', 'age' => 30, 'gender' => 'female', 'nickname' => 'Asha'];
+    return $overrides + ['country' => 'IN', 'age' => 30, 'gender' => 'female', 'nickname' => 'Asha', 'education' => 'bachelors', 'occupation' => 'Teacher'];
 }
 
 /** Answer every item (attention checks correctly) in batches like the browser does. */
@@ -94,6 +94,19 @@ test('minimum age 18 and self-described gender are enforced', function () {
     asGuest();
     assertSame(422, assertThrows(HttpException::class, fn () => AssessmentService::start(demographics(['age' => 17]), testRequest()))->status);
     assertSame(422, assertThrows(HttpException::class, fn () => AssessmentService::start(demographics(['gender' => 'self_describe']), testRequest()))->status);
+});
+
+test('the pre-test form needs every field: name on the report, education and occupation too', function () {
+    useTestDatabase();
+    asGuest();
+    $start = static fn (array $demographics) => (new AssessmentController())->start(new Request('POST', '/test/session', [],
+        ['REMOTE_ADDR' => '10.20.30.41', 'CONTENT_TYPE' => 'application/json'],
+        json_encode(['consent' => ['terms' => true, 'notDiagnosis' => true], 'demographics' => $demographics], JSON_THROW_ON_ERROR), Cookies::$jar));
+    $e = assertThrows(HttpException::class, fn () => $start(['country' => 'IN', 'age' => 30, 'gender' => 'male']));
+    assertSame(['nickname', 'education', 'occupation'], array_keys($e->fields), 'each missing field is named');
+    $e = assertThrows(HttpException::class, fn () => $start(demographics(['nickname' => '   ', 'education' => 'kindergarten'])));
+    assertSame(['nickname', 'education'], array_keys($e->fields), 'blank name and unknown education refused');
+    assertSame(201, $start(demographics(['education' => 'diploma']))->status, 'a new education level is accepted');
 });
 
 test('autosave validates items and values, upserts answers and accumulates real time', function () {

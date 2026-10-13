@@ -86,7 +86,7 @@ export const SignupPage: React.FC = () => {
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={fieldErrors.name}
-          placeholder="e.g. Maya Lin"
+          placeholder="e.g. Rahul Sharma"
           maxLength={100}
         />
         <TextField

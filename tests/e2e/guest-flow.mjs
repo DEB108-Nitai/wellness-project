@@ -28,6 +28,8 @@ try {
   await page.fill('#age', '29');
   await page.fill('#gender', 'female');
   await page.fill('#nickname', 'Asha');
+  await page.fill('#education', 'bachelors');
+  await page.fill('#occupation', 'Teacher');
   await page.screenshot(`${OUT}02-demographics.png`);
   await page.clickText('Begin assessment', 'button');
   await page.waitText('Statement 1 of 166');

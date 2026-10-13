@@ -377,6 +377,13 @@ Owner asks: research papers and consultancy projects managed from the admin, and
   - visible reasons on the Admins page;
   - a retry button on the users list.
 - **Tests:** API 132 → 144. New E2E `admin-users.mjs`. It never touches the owner's account, so the primary-only actions are covered by the API tests.
+- **Form changes (owner, 2026-10-13):**
+  - Before the test, every field is required (name on report, highest education and occupation joined country, age and gender), on the server too.
+  - Education has 12 Indian-style levels (Class 10, Class 12, Diploma / ITI, professional degrees, MPhil, postdoc…).
+  - The 60-day form asks City **and** Country; age, city and country are required.
+  - Both country lists start on India.
+  - Placeholders use Indian examples (Rahul Sharma, +91…).
+  - A value of only spaces now counts as empty for every required field (`Validator`).
 - **Still in Phase 5:** Finish (full admin E2E, final review, docs, CLAUDE.md sync, push and PR).
 
 ---

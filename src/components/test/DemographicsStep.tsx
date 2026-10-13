@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
-import { Demographics, Education, Gender } from '../../api/assessment';
-import { COUNTRY_CODES } from '../../data/countries';
+import { Demographics, EDUCATION_LABELS, Education, Gender } from '../../api/assessment';
+import { useCountries } from '../../hooks/useCountries';
 
 interface Props {
   minAge: number;
@@ -21,33 +21,11 @@ const GENDERS: { value: Gender; label: string }[] = [
   { value: 'self_describe', label: 'Self-describe' },
 ];
 
-const EDUCATION: { value: Education; label: string }[] = [
-  { value: 'high_school', label: 'High school' },
-  { value: 'bachelors', label: "Bachelor's degree" },
-  { value: 'masters', label: "Master's degree" },
-  { value: 'doctorate', label: 'Doctorate / professional' },
-  { value: 'other', label: 'Other' },
-];
+const EDUCATION = Object.entries(EDUCATION_LABELS) as [Education, string][];
 
 const fieldClass =
   'w-full h-11 px-3.5 bg-white border rounded-xl text-sm text-slate-900 focus:outline-hidden focus:ring-4 focus:ring-teal-500/15 focus:border-teal-500';
 const labelClass = 'block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5';
-
-/** Country names in the visitor's language, sorted; preselects the country from the browser locale. */
-function useCountries() {
-  return useMemo(() => {
-    let names: Intl.DisplayNames | null = null;
-    try {
-      names = new Intl.DisplayNames([navigator.language, 'en'], { type: 'region' });
-    } catch {
-      names = null;
-    }
-    const list = COUNTRY_CODES.map((code) => ({ code, name: names?.of(code) ?? code }));
-    list.sort((a, b) => a.name.localeCompare(b.name));
-    const guess = navigator.language.split('-')[1]?.toUpperCase() ?? '';
-    return { list, guess: (COUNTRY_CODES as readonly string[]).includes(guess) ? guess : '' };
-  }, []);
-}
 
 /** TEST-2: demographics, validated again on the server. */
 export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, submitting, error, fieldErrors, onBack, onSubmit }) => {
@@ -70,6 +48,9 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
     if (!Number.isInteger(ageNum) || ageNum < minAge || ageNum > 100) errs.age = `Please enter an age between ${minAge} and 100.`;
     if (!gender) errs.gender = 'Please choose an option.';
     if (gender === 'self_describe' && !genderText.trim()) errs.genderText = 'Please describe your gender, or choose another option.';
+    if (!nickname.trim()) errs.nickname = 'Please enter the name to show on your report.';
+    if (!education) errs.education = 'Please choose your highest education.';
+    if (!occupation.trim()) errs.occupation = 'Please enter your occupation or field.';
     setLocalErrors(errs);
     if (Object.keys(errs).length) return;
 
@@ -78,9 +59,9 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
       age: ageNum,
       gender: gender as Gender,
       ...(gender === 'self_describe' ? { genderText: genderText.trim() } : {}),
-      ...(nickname.trim() ? { nickname: nickname.trim() } : {}),
-      ...(education ? { education } : {}),
-      ...(occupation.trim() ? { occupation: occupation.trim() } : {}),
+      nickname: nickname.trim(),
+      education: education as Education,
+      occupation: occupation.trim(),
     });
   };
 
@@ -163,31 +144,33 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label htmlFor="nickname" className={labelClass}>
-              Name on your report <span className="normal-case font-normal text-slate-400">(optional)</span>
+              Name on your report <span className="text-rose-500">*</span>
             </label>
-            <input id="nickname" value={nickname} maxLength={60} onChange={(e) => setNickname(e.target.value)} placeholder="e.g. Alex" className={`${fieldClass} ${border('nickname')}`} />
+            <input id="nickname" value={nickname} maxLength={60} onChange={(e) => setNickname(e.target.value)} placeholder="e.g. Arjun" className={`${fieldClass} ${border('nickname')}`} />
             {err('nickname')}
           </div>
           <div>
             <label htmlFor="education" className={labelClass}>
-              Education <span className="normal-case font-normal text-slate-400">(optional)</span>
+              Highest education <span className="text-rose-500">*</span>
             </label>
-            <select id="education" value={education} onChange={(e) => setEducation(e.target.value as Education)} className={`${fieldClass} border-slate-300`}>
-              <option value="">Prefer not to say</option>
-              {EDUCATION.map((ed) => (
-                <option key={ed.value} value={ed.value}>
-                  {ed.label}
+            <select id="education" value={education} onChange={(e) => setEducation(e.target.value as Education)} className={`${fieldClass} ${border('education')}`}>
+              <option value="">Select…</option>
+              {EDUCATION.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </select>
+            {err('education')}
           </div>
         </div>
 
         <div>
           <label htmlFor="occupation" className={labelClass}>
-            Occupation or field <span className="normal-case font-normal text-slate-400">(optional)</span>
+            Occupation or field <span className="text-rose-500">*</span>
           </label>
-          <input id="occupation" value={occupation} maxLength={100} onChange={(e) => setOccupation(e.target.value)} placeholder="e.g. Software engineering, Teaching" className={`${fieldClass} border-slate-300`} />
+          <input id="occupation" value={occupation} maxLength={100} onChange={(e) => setOccupation(e.target.value)} placeholder="e.g. Software engineer, Teacher, Student" className={`${fieldClass} ${border('occupation')}`} />
+          {err('occupation')}
         </div>
 
         {error && (
