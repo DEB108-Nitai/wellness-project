@@ -119,7 +119,7 @@ final class VisitService
         $purged = Database::run('DELETE FROM page_views WHERE day < UTC_DATE() - INTERVAL ' . self::RAW_DAYS . ' DAY')->rowCount();
         // Past days' salts go: from now on their visitor codes can't be traced or linked.
         Database::run('DELETE FROM visit_salts WHERE day < UTC_DATE()');
-        return ['days' => $days, 'purged' => $purged];
+        return ['aggregated' => $days, 'purged' => $purged];
     }
 
     /**

@@ -17,19 +17,20 @@ const PROGRAM_BUTTONS: { code: ProgramCode; icon: React.ElementType; active: str
   { code: 'TTI', icon: Compass, active: 'bg-amber-600 text-white shadow-xs' },
 ];
 
-const input = 'w-full px-3 py-2 text-xs bg-slate-50 border rounded-xl text-slate-900 focus:bg-white focus:outline-hidden focus:border-teal-500';
+// Phones: 44 px tall and 16 px text (smaller text makes iPhones zoom in on focus). Compact on laptops and up.
+const input = 'w-full px-3 py-3 lg:py-2 text-base lg:text-xs bg-slate-50 border rounded-xl text-slate-900 focus:bg-white focus:outline-hidden focus:border-teal-500';
 
 /** One registration form for all three 60-day programs (PRD CH-2 … CH-5). */
 export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) => {
   const { user } = useAuth();
-  const [program, setProgram] = useState<ProgramCode>(initialProgram);
+  const [programs, setPrograms] = useState<ProgramCode[]>([initialProgram]);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState('');
   const [age, setAge] = useState('');
   const [city, setCity] = useState('');
   const countries = useCountries();
-  const [country, setCountry] = useState(countries.guess);
+  const [country, setCountry] = useState(''); // chosen by the visitor, never assumed
   const [cohortTiming, setCohortTiming] = useState<CohortTiming>('morning');
   const [struggles, setStruggles] = useState<string[]>([]);
   const [primaryGoal, setPrimaryGoal] = useState('');
@@ -58,6 +59,9 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
     return () => window.removeEventListener('keydown', onKey);
   }, [requestClose]);
 
+  const toggleProgram = (code: ProgramCode) =>
+    setPrograms((p) => (p.includes(code) ? p.filter((x) => x !== code) : [...p, code]));
+
   const toggleStruggle = (item: string) =>
     setStruggles((s) => (s.includes(item) ? s.filter((x) => x !== item) : [...s, item]));
 
@@ -66,6 +70,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
     setError(null);
     setFieldErrors({});
     const errs: Record<string, string> = {};
+    if (programs.length === 0) errs.programs = 'Please choose at least one program.';
     const ageNum = Number(age);
     if (!Number.isInteger(ageNum) || ageNum < 18 || ageNum > 100) errs.age = 'Please enter an age between 18 and 100.';
     if (!city.trim()) errs.city = 'Please enter your city.';
@@ -78,7 +83,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
     setSubmitting(true);
     try {
       await challengeApi.register({
-        program,
+        programs: PROGRAM_BUTTONS.map((b) => b.code).filter((c) => programs.includes(c)),
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -116,7 +121,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
       aria-labelledby="registration-title"
     >
       <div className="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 relative my-auto max-h-[92vh] overflow-y-auto overscroll-contain">
-        <button onClick={requestClose} className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer" aria-label="Close">
+        <button onClick={requestClose} className="absolute top-3 right-3 lg:top-5 lg:right-5 p-3 lg:p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 cursor-pointer" aria-label="Close">
           <X className="w-5 h-5" />
         </button>
 
@@ -139,34 +144,41 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                 <span className="text-xs font-bold text-amber-800 uppercase tracking-wider bg-amber-100 px-2.5 py-0.5 rounded border border-amber-300">
                   60 Days Challenge Intake
                 </span>
-                <span className="text-xs font-bold text-teal-800 uppercase tracking-wider bg-teal-100 px-2.5 py-0.5 rounded border border-teal-300">
-                  {PROGRAMS[program].short}
-                </span>
               </div>
               <h3 id="registration-title" className="text-xl sm:text-2xl font-bold font-heading text-slate-900 pt-1">
-                {PROGRAMS[program].name} 60-Day Challenge
+                60-Day Challenge Registration
               </h3>
-              <p className="text-xs text-slate-500">Complete your registration to join our upcoming 60-day cohort. Free — no prerequisites required.</p>
+              <p className="text-xs text-slate-500">Choose one or more programs, then complete your details. Free — no prerequisites required.</p>
             </div>
 
-            {/* Program selector */}
-            <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 rounded-xl" role="radiogroup" aria-label="Program">
-              {PROGRAM_BUTTONS.map(({ code, icon: Icon, active }) => (
-                <button
-                  key={code}
-                  type="button"
-                  role="radio"
-                  aria-checked={program === code}
-                  onClick={() => setProgram(code)}
-                  className={`py-2 px-1.5 text-center text-[11px] sm:text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                    program === code ? active : 'text-slate-700 hover:text-slate-900'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span>{PROGRAMS[code].short}</span>
-                </button>
-              ))}
-            </div>
+            {/* Program choice: tick one or more */}
+            <fieldset aria-describedby={fieldErrors.programs ? 'reg-programs-error' : undefined}>
+              <legend className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                Programs <span className="text-rose-500">*</span>
+              </legend>
+              <div className={`grid grid-cols-1 sm:grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-slate-100 rounded-xl ${fieldErrors.programs ? 'ring-1 ring-rose-400' : ''}`}>
+                {PROGRAM_BUTTONS.map(({ code, icon: Icon, active }) => {
+                  const on = programs.includes(code);
+                  return (
+                    <label
+                      key={code}
+                      className={`relative min-h-11 py-2 px-3 sm:px-1.5 text-center text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-teal-500 ${
+                        on ? active : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+                      }`}
+                    >
+                      <input type="checkbox" className="sr-only" checked={on} onChange={() => toggleProgram(code)} aria-label={PROGRAMS[code].name} />
+                      {on ? <Check className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> : <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />}
+                      <span>{PROGRAMS[code].short}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {fieldErrors.programs && (
+                <p id="reg-programs-error" className="mt-1 text-[11px] text-rose-600">
+                  {fieldErrors.programs}
+                </p>
+              )}
+            </fieldset>
 
             <form onSubmit={submit} className="space-y-4" noValidate>
               {/* Honeypot: hidden from people and assistive tech */}
@@ -206,7 +218,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                   <label htmlFor="reg-age" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Age <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-age" type="number" inputMode="numeric" min={18} max={100} value={age} onChange={(e) => setAge(e.target.value)} className={`${input} font-mono ${border('age')}`} />
+                  <input id="reg-age" type="number" required inputMode="numeric" min={18} max={100} value={age} onChange={(e) => setAge(e.target.value)} className={`${input} font-mono ${border('age')}`} />
                   {fieldError('age')}
                 </div>
               </div>
@@ -216,14 +228,14 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                   <label htmlFor="reg-city" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     City <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-city" autoComplete="address-level2" maxLength={100} placeholder="e.g. Pune" value={city} onChange={(e) => setCity(e.target.value)} className={`${input} ${border('city')}`} />
+                  <input id="reg-city" required autoComplete="address-level2" maxLength={100} placeholder="e.g. Pune" value={city} onChange={(e) => setCity(e.target.value)} className={`${input} ${border('city')}`} />
                   {fieldError('city')}
                 </div>
                 <div>
                   <label htmlFor="reg-country" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Country <span className="text-rose-500">*</span>
                   </label>
-                  <select id="reg-country" autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value)} className={`${input} ${border('country')}`}>
+                  <select id="reg-country" required autoComplete="country" value={country} onChange={(e) => setCountry(e.target.value)} className={`${input} ${border('country')}`}>
                     <option value="">Select your country…</option>
                     {countries.list.map((c) => (
                       <option key={c.code} value={c.code}>
@@ -248,7 +260,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                       type="button"
                       aria-pressed={cohortTiming === t.id}
                       onClick={() => setCohortTiming(t.id as CohortTiming)}
-                      className={`py-2 px-1 text-center text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+                      className={`min-h-11 lg:min-h-0 py-2 px-1 text-center text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
                         cohortTiming === t.id ? 'bg-amber-100 text-amber-900 border-amber-400 font-bold shadow-2xs' : 'bg-slate-50 text-slate-600 border-slate-200'
                       }`}
                     >
@@ -267,7 +279,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                       type="button"
                       aria-pressed={struggles.includes(item)}
                       onClick={() => toggleStruggle(item)}
-                      className={`py-1.5 px-2.5 text-left rounded-lg border text-[11px] font-medium transition-all flex items-center justify-between gap-1 cursor-pointer ${
+                      className={`min-h-11 lg:min-h-0 py-1.5 px-2.5 text-left rounded-lg border text-[11px] font-medium transition-all flex items-center justify-between gap-1 cursor-pointer ${
                         struggles.includes(item) ? 'bg-teal-50 text-teal-800 border-teal-400 font-bold' : 'bg-slate-50 text-slate-600 border-slate-200'
                       }`}
                     >
@@ -295,9 +307,9 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
               </div>
 
               <label className="flex items-start gap-2.5 text-[11px] text-slate-600 cursor-pointer">
-                <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 w-4 h-4 accent-teal-600" />
+                <input id="reg-consent" type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5 w-4 h-4 accent-teal-600" />
                 <span>
-                  I agree to be contacted about this program by email or phone, and to the{' '}
+                  I agree to be contacted about {programs.length > 1 ? 'these programs' : 'this program'} by email or phone, and to the{' '}
                   <Link to="/privacy" target="_blank" className="underline text-teal-700">
                     Privacy Policy
                   </Link>

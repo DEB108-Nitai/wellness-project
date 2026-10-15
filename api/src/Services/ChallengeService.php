@@ -31,18 +31,35 @@ final class ChallengeService
     ];
     private const REF_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 
+    /** Display order everywhere on the site: Program 01, 02, 03. */
+    public const DISPLAY_ORDER = ['STI', 'PTI', 'TTI'];
+
     /**
-     * Public registration (CH-2 … CH-5). Returns the new registration, or null when this email already holds
-     * an active place in the program: the caller must answer exactly as for a new one, so the form never reveals
-     * who has registered for what. Only the inbox owner learns it, from the email sent instead.
+     * Public registration for one program (CH-2 … CH-5). Returns the new registration, or null when this email
+     * already holds an active place in it. See registerMany().
      */
     public static function register(array $data, Request $request): ?array
+    {
+        return self::registerMany(['programs' => [$data['program']]] + $data, $request)[0] ?? null;
+    }
+
+    /**
+     * One form, one or more programs: each chosen program gets its own registration and reference. A program this
+     * email already holds an active place in is skipped. The caller answers exactly as for a new registration, so
+     * the form never reveals who has registered for what; only the inbox owner learns it, from the one email sent.
+     * Returns the new registrations, in display order.
+     */
+    public static function registerMany(array $data, Request $request): array
     {
         if (!SettingsService::bool('challenge_registration_open')) {
             throw HttpException::forbidden('Registrations are currently closed. Please check back soon.', 'REGISTRATION_CLOSED');
         }
         RateLimiter::hit('challenge_register', $request->ip(), 10, 3600);
 
+        $programs = array_values(array_intersect(self::DISPLAY_ORDER, $data['programs'] ?? []));
+        if ($programs === [] || count($programs) !== count($data['programs'])) {
+            throw HttpException::validation(['programs' => 'Please choose at least one program.']);
+        }
         $minAge = SettingsService::int('min_age');
         if (isset($data['age']) && $data['age'] < $minAge) {
             throw HttpException::validation(['age' => "Participants must be at least $minAge years old."]);
@@ -58,36 +75,62 @@ final class ChallengeService
             }
         }
 
-        $existing = Database::one(
-            'SELECT ref_code, name FROM challenge_registrations WHERE email = ? AND program = ? AND status IN (' . self::placeholders(self::ACTIVE) . ') LIMIT 1',
-            [$data['email'], $data['program'], ...self::ACTIVE]
-        );
         $user = AuthService::user();
-        if ($existing !== null) {
-            AuditService::log('CHALLENGE_DUPLICATE', $user ? 'user' : 'guest', $user ? (int) $user['id'] : null, 'challenge_registration', $existing['ref_code'], ['program' => $data['program']], $request);
-            Mailer::send($data['email'], 'challenge-already-registered', [
-                'name' => $existing['name'],
-                'program' => self::PROGRAM_NAMES[$data['program']],
-                'programCode' => $data['program'],
-                'ref' => $existing['ref_code'],
-            ]);
-            return null;
-        }
+        $actor = [$user ? 'user' : 'guest', $user ? (int) $user['id'] : null];
+        [$created, $already] = Database::transaction(static function () use ($programs, $data, $struggles, $user, $request, $actor): array {
+            $created = [];
+            $already = [];
+            foreach ($programs as $program) {
+                $existing = Database::one(
+                    'SELECT ref_code, name FROM challenge_registrations WHERE email = ? AND program = ? AND status IN (' . self::placeholders(self::ACTIVE) . ') LIMIT 1',
+                    [$data['email'], $program, ...self::ACTIVE]
+                );
+                if ($existing !== null) {
+                    AuditService::log('CHALLENGE_DUPLICATE', $actor[0], $actor[1], 'challenge_registration', $existing['ref_code'], ['program' => $program], $request);
+                    $already[] = ['code' => $program, 'name' => self::PROGRAM_NAMES[$program], 'ref' => $existing['ref_code'], 'registeredName' => $existing['name']];
+                    continue;
+                }
+                $id = self::insert($program, $data, $struggles, $user, $request);
+                $row = Database::one('SELECT * FROM challenge_registrations WHERE id = ?', [$id]);
+                AuditService::log('CHALLENGE_REGISTERED', $actor[0], $actor[1], 'challenge_registration', $row['ref_code'], ['program' => $program], $request);
+                $created[] = self::toPublic($row);
+            }
+            return [$created, $already];
+        });
 
+        $list = static fn (array $items): array => array_map(static fn (array $i): array => ['code' => $i['code'], 'name' => $i['name'], 'ref' => $i['ref']], $items);
+        if ($created !== []) {
+            Mailer::send($data['email'], 'challenge-registered', [
+                'name' => $data['name'],
+                'programs' => array_map(static fn (array $r): array => ['code' => $r['program'], 'name' => self::PROGRAM_NAMES[$r['program']], 'ref' => $r['ref']], $created),
+                'already' => $list($already),
+            ]);
+        } else {
+            // Only already-held places: greet by the name on file, not whatever was typed this time.
+            Mailer::send($data['email'], 'challenge-already-registered', [
+                'name' => $already[0]['registeredName'],
+                'programs' => $list($already),
+            ]);
+        }
+        return $created;
+    }
+
+    /** One new row with a fresh reference (retried on the rare reference clash). Returns its id. */
+    private static function insert(string $program, array $data, array $struggles, ?array $user, Request $request): int
+    {
         for ($attempt = 0; ; $attempt++) {
-            $ref = $data['program'] . '-60-' . self::randomCode();
+            $ref = $program . '-60-' . self::randomCode();
             try {
-                $id = Database::insert(
+                return Database::insert(
                     'INSERT INTO challenge_registrations (ref_code, program, user_id, name, email, phone, age, city, country,
                         cohort_timing, struggles, primary_goal, consent_at, ip_hash)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UTC_TIMESTAMP(), ?)',
                     [
-                        $ref, $data['program'], $user ? (int) $user['id'] : null, $data['name'], $data['email'], $data['phone'],
+                        $ref, $program, $user ? (int) $user['id'] : null, $data['name'], $data['email'], $data['phone'],
                         $data['age'] ?? null, $data['city'] ?? null, $data['country'] ?? null, $data['cohortTiming'],
                         json_encode($struggles, JSON_UNESCAPED_UNICODE), $data['primaryGoal'] ?? null, $request->ipHash(),
                     ]
                 );
-                break;
             } catch (PDOException $e) {
                 if ($attempt < 5 && str_contains($e->getMessage(), 'uq_registrations_ref')) {
                     continue;
@@ -95,15 +138,6 @@ final class ChallengeService
                 throw $e;
             }
         }
-
-        AuditService::log('CHALLENGE_REGISTERED', $user ? 'user' : 'guest', $user ? (int) $user['id'] : null, 'challenge_registration', $ref, ['program' => $data['program']], $request);
-        Mailer::send($data['email'], 'challenge-registered', [
-            'name' => $data['name'],
-            'program' => self::PROGRAM_NAMES[$data['program']],
-            'programCode' => $data['program'],
-            'ref' => $ref,
-        ]);
-        return self::toPublic(Database::one('SELECT * FROM challenge_registrations WHERE id = ?', [$id]));
     }
 
     /**

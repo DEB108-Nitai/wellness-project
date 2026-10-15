@@ -381,7 +381,8 @@ Owner asks: research papers and consultancy projects managed from the admin, and
   - Before the test, every field is required (name on report, highest education and occupation joined country, age and gender), on the server too.
   - Education has 12 Indian-style levels (Class 10, Class 12, Diploma / ITI, professional degrees, MPhil, postdoc…).
   - The 60-day form asks City **and** Country; age, city and country are required.
-  - Both country lists start on India.
+  - The pre-test country list starts on India. The 60-day form's country starts empty and must be chosen (owner, 2026-10-15).
+  - The 60-day form is one form with 3 tick-boxes (STI, PTI, TTI; at least one). Each ticked program is saved as its own registration and reference; one confirmation email lists them all (owner, 2026-10-15).
   - Placeholders use Indian examples (Rahul Sharma, +91…).
   - A value of only spaces now counts as empty for every required field (`Validator`).
 - **Phase 5 finish (2026-10-13):**

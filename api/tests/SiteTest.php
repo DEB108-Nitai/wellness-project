@@ -110,6 +110,52 @@ test('the 60-day form needs age, city and country as well as name, email and pho
     assertSame(201, $send($full)->status, 'a complete form registers');
 });
 
+test('one form can register for several programs: a row and reference each, one email listing them all', function () {
+    useTestDatabase();
+    asGuest();
+    $mail = captureMail();
+    $email = uniqueEmail();
+    $regs = ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['TTI', 'STI']]), authReq());
+    assertSame(['STI', 'TTI'], array_column($regs, 'program'), 'display order, whatever order they were ticked');
+    assertSame(2, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$email]));
+    assertSame(1, count($mail), 'one email for the whole form');
+    assertTrue(str_contains($mail[0]['subject'], 'STI and TTI'));
+    assertTrue(str_contains($mail[0]['text'], $regs[0]['ref']) && str_contains($mail[0]['text'], $regs[1]['ref']), 'both references');
+
+    // STI is already held: only PTI is new, and the one email says STI was kept as it was.
+    $more = ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['STI', 'PTI']]), authReq());
+    assertSame(['PTI'], array_column($more, 'program'));
+    assertSame(2, count($mail));
+    assertTrue(str_starts_with($mail[1]['subject'], 'Registered successfully'));
+    assertTrue(str_contains($mail[1]['text'], 'already registered for the Sonic Therapeutic Intervention (STI)') && str_contains($mail[1]['text'], $regs[0]['ref']));
+
+    // Everything chosen is already held: nothing stored, one "already registered" email with each reference.
+    assertSame([], ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['STI', 'PTI', 'TTI']]), authReq()));
+    assertSame(3, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$email]));
+    assertSame(3, count($mail));
+    assertTrue(str_starts_with($mail[2]['subject'], 'You are already registered'));
+    assertTrue(str_contains($mail[2]['subject'], 'STI, PTI, TTI'));
+    assertTrue(str_contains($mail[2]['text'], $more[0]['ref']));
+});
+
+test('the form needs at least one listed program; a single program from an older page still works', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $send = static fn (array $body) => (new \Transenigma\Controllers\ChallengeController())->register(new Request('POST', '/challenge/registrations', [],
+        ['REMOTE_ADDR' => '10.30.40.51', 'CONTENT_TYPE' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR)));
+    $full = array_diff_key(registration(['formElapsedMs' => 10000]), ['program' => 1]);
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send($full))->fields), 'none chosen');
+    assertSame('Please choose at least one program.', assertThrows(HttpException::class, fn () => $send(['programs' => []] + $full))->fields['programs']);
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send(['programs' => ['STI', 'XYZ']] + $full))->fields), 'unknown program');
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send(['programs' => ['STI', 'STI']] + $full))->fields), 'the same program twice');
+    assertSame(201, $send(['programs' => ['STI', 'PTI', 'TTI']] + $full)->status);
+    assertSame(3, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$full['email']]));
+    $legacy = ['program' => 'PTI', 'email' => uniqueEmail()] + $full;
+    assertSame(201, $send($legacy)->status, 'older page sends one program');
+    assertSame('PTI', Database::value('SELECT program FROM challenge_registrations WHERE email = ?', [$legacy['email']]));
+});
+
 test('admin can change status and notes; CSV export neutralises formulas', function () {
     useTestDatabase();
     asGuest();

@@ -20,7 +20,8 @@ export const STRUGGLES = [
 ] as const;
 
 export interface RegistrationInput {
-  program: ProgramCode;
+  /** One or more programs; each becomes its own registration. */
+  programs: ProgramCode[];
   name: string;
   email: string;
   phone: string;

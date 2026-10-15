@@ -146,14 +146,14 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
             <label htmlFor="nickname" className={labelClass}>
               Name on your report <span className="text-rose-500">*</span>
             </label>
-            <input id="nickname" value={nickname} maxLength={60} onChange={(e) => setNickname(e.target.value)} placeholder="e.g. Arjun" className={`${fieldClass} ${border('nickname')}`} />
+            <input id="nickname" required value={nickname} maxLength={60} onChange={(e) => setNickname(e.target.value)} placeholder="e.g. Arjun" className={`${fieldClass} ${border('nickname')}`} />
             {err('nickname')}
           </div>
           <div>
             <label htmlFor="education" className={labelClass}>
               Highest education <span className="text-rose-500">*</span>
             </label>
-            <select id="education" value={education} onChange={(e) => setEducation(e.target.value as Education)} className={`${fieldClass} ${border('education')}`}>
+            <select id="education" required value={education} onChange={(e) => setEducation(e.target.value as Education)} className={`${fieldClass} ${border('education')}`}>
               <option value="">Select…</option>
               {EDUCATION.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -169,7 +169,7 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
           <label htmlFor="occupation" className={labelClass}>
             Occupation or field <span className="text-rose-500">*</span>
           </label>
-          <input id="occupation" value={occupation} maxLength={100} onChange={(e) => setOccupation(e.target.value)} placeholder="e.g. Software engineer, Teacher, Student" className={`${fieldClass} ${border('occupation')}`} />
+          <input id="occupation" required value={occupation} maxLength={100} onChange={(e) => setOccupation(e.target.value)} placeholder="e.g. Software engineer, Teacher, Student" className={`${fieldClass} ${border('occupation')}`} />
           {err('occupation')}
         </div>
 

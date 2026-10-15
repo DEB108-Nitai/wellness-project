@@ -102,7 +102,7 @@ The API finds this file automatically (`Core\Config`: `../../transenigma-config/
 cd ~/transenigma.com
 /usr/local/php82/bin/php api/bin/preflight.php
 ```
-It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, mbstring, fileinfo, curl), the production settings (`env`, `debug` off, https `url`, a 64-hex `app.secret`, SMTP), the database connection and clocks, pending migrations, the admins, writable folders, `index.html` and both `.htaccess` files, and that the config file is outside the web root. Fix every **FAIL** line before going live, and run it again after step 5: it should end with `READY`.
+It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, mbstring, fileinfo, curl), the production settings (`env`, `debug` off, https `url`, a 64-hex `app.secret`, SMTP), the database connection and clocks, pending migrations, the admins, writable folders, `index.html` and both `.htaccess` files, and that the config file is outside the web root. Fix every **FAIL** line before going live. On this first run, the `migrations` line fails (nothing is applied yet) and the admins line is skipped; step 5 fixes both. Run it again after step 5: it should end with `READY`.
 
 ---
 
@@ -160,7 +160,10 @@ mv "$tmp" "$out"
 find "$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete   # only after a good backup
 # Admin-uploaded images are live content too (the database points at them).
 if [ -d "$HOME/transenigma.com/uploads" ]; then
-  tar -czf "$HOME/backups/transenigma-uploads-$(date +%F).tar.gz" -C "$HOME/transenigma.com" uploads
+  up="$HOME/backups/transenigma-uploads-$(date +%F).tar.gz"
+  tar -czf "$up.tmp" -C "$HOME/transenigma.com" uploads
+  tar -tzf "$up.tmp" > /dev/null                         # the archive is readable
+  mv "$up.tmp" "$up"
   find "$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
 fi
 ```

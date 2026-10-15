@@ -145,7 +145,7 @@ test('later sign-ins need a fresh code; a code cannot be used twice', function (
 
     freshSession();
     AuthService::attempt($admin['email'], GOOD_PASSWORD, authReq());
-    $used = Totp::code($secret, Totp::step()); // already used by the setup in signInAdmin()
+    $used = Totp::code($secret, (int) Database::value('SELECT totp_last_step FROM users WHERE id = ?', [$admin['id']])); // the step signInAdmin() consumed
     assertSame(422, assertThrows(HttpException::class, fn () => TwoFactorService::verify($used, authReq()))->status, 'replayed code refused');
 
     $next = Totp::code($secret, Totp::step() + 1);
@@ -341,7 +341,7 @@ test('the second-step mark belongs to one account: switching accounts or demotio
 test('the code just used to sign in gets its own message on the Security page, not a wrong-code strike', function () {
     useTestDatabase();
     [$admin, $secret] = signInAdmin();
-    $used = Totp::code($secret, Totp::step()); // used by the sign-in a moment ago
+    $used = Totp::code($secret, (int) Database::value('SELECT totp_last_step FROM users WHERE id = ?', [$admin['id']])); // the step the sign-in consumed
     $e = assertThrows(HttpException::class, fn () => TwoFactorService::regenerateRecoveryCodes($admin, $used, authReq()));
     assertTrue(str_contains($e->fields['code'], 'just used'));
     assertSame(0, (int) Database::value("SELECT COUNT(*) FROM audit_logs WHERE action = 'AUTH_2FA_FAILED' AND actor_user_id = ?", [$admin['id']]));

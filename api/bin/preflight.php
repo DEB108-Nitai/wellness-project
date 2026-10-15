@@ -67,11 +67,11 @@ try {
     $skew = abs((int) Database::value('SELECT TIMESTAMPDIFF(SECOND, UTC_TIMESTAMP(), ?)', [gmdate('Y-m-d H:i:s')]));
     $line($skew <= 120 ? 'ok' : 'WARN', 'database and PHP clocks agree', $skew <= 120 ? '' : "{$skew}s apart; codes and links may expire early");
     $pending = array_keys(array_filter((new Migrator(Config::path('migrations')))->status(), static fn ($applied) => !$applied));
-    $line($pending === [] ? 'ok' : 'WARN', 'migrations', $pending === [] ? 'all applied' : count($pending) . ' pending; run php api/bin/migrate.php');
+    $line($pending === [] ? 'ok' : ($prod ? 'FAIL' : 'WARN'), 'migrations', $pending === [] ? 'all applied' : count($pending) . ' pending; run php api/bin/migrate.php');
     if ($pending === []) {
         $admins = (int) Database::value("SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'");
         $primary = (int) Database::value('SELECT COUNT(*) FROM users WHERE is_primary_admin = 1');
-        $line($admins > 0 && $primary === 1 ? 'ok' : 'WARN', "admins: $admins, primary admin: $primary", $admins > 0 ? '' : 'run php api/bin/create-admin.php <email> "Name" --primary');
+        $line($admins > 0 && $primary === 1 ? 'ok' : ($prod ? 'FAIL' : 'WARN'), "admins: $admins, primary admin: $primary", $admins > 0 && $primary === 1 ? '' : 'run php api/bin/create-admin.php <email> "Name" --primary');
     }
 } catch (Throwable $e) {
     $line('FAIL', 'cannot connect', $e->getMessage() . ' (check db.host, db.name, db.user, db.pass)');

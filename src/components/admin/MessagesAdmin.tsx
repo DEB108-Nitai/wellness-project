@@ -60,7 +60,7 @@ export const MessagesAdmin: React.FC = () => {
       <div className="flex gap-1 border-b border-slate-200" role="tablist">
         {tabs.map((t) => (
           <button
-            key={t.label}
+            key={t.value || 'all'}
             role="tab"
             aria-selected={status === t.value}
             onClick={() => setStatus(t.value)}

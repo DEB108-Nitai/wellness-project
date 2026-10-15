@@ -40,7 +40,10 @@ async function fillRegistration(page) {
   await page.fill('#reg-phone', '+91 98765 43210');
   await page.fill('#reg-age', '27');
   await page.fill('#reg-city', 'Pune');
+  await page.fill('#reg-country', 'IN');
 }
+const consent = () => `document.getElementById('reg-consent').click()`;
+const ticked = () => `[...document.querySelectorAll('[role=dialog] fieldset input[type=checkbox]')].map(c => c.checked)`;
 
 // Every /admin API route from the route table, with sample values for its placeholders.
 const ADMIN_ROUTES = [...readFileSync(`${ROOT}api/routes.php`, 'utf8').matchAll(/\$r->(get|post|put|patch|delete)\(['"](\/admin[^'"]*)['"]/g)]
@@ -60,26 +63,31 @@ try {
   step('programs appear in order STI → PTI → TTI');
 
   await page.clickText('Start the PTI Challenge', 'button');
-  await page.waitText('Philosophical Therapeutic Intervention 60-Day Challenge');
-  if ((await page.eval(`document.getElementById('reg-country').value`)) !== 'IN') throw new Error('country does not start on India');
+  await page.waitText('60-Day Challenge Registration');
+  if (JSON.stringify(await page.eval(ticked())) !== '[false,true,false]') throw new Error('the PTI button should open the form with only PTI ticked');
+  if ((await page.eval(`document.getElementById('reg-country').value`)) !== '') throw new Error('country should start empty');
   await page.fill('#reg-name', 'Rahul Sharma');
   await page.fill('#reg-email', visitor);
   await page.fill('#reg-phone', '+91 98765 43210');
+  await page.clickText('Philosophical (PTI)', '[role=dialog] label'); // untick: nothing chosen
   await page.clickText('Confirm 60-Day Challenge Registration', 'button');
+  await page.waitText('Please choose at least one program.');
   await page.waitText('Please enter your city.');
+  await page.waitText('Please choose your country.');
   await page.waitText('Please accept to continue');
-  step('age, city and consent are required; country starts on India');
+  await page.clickText('Philosophical (PTI)', '[role=dialog] label');
+  step('a program, age, city, country and consent are required; the clicked program starts ticked, country starts empty');
   await fillRegistration(page);
   await page.clickText('Evening Track', 'button');
   await page.clickText('Stress & Anxiety', 'button');
-  await page.eval(`document.querySelector('[role=dialog] input[type=checkbox]').click()`);
+  await page.eval(consent());
   await pause(3200); // human-like fill time (spam guard)
   await page.clickText('Confirm 60-Day Challenge Registration', 'button');
   await page.waitText('Registered successfully');
   await page.clickText('Close', 'button');
   await page.clickText('Start the PTI Challenge', 'button');
   await fillRegistration(page);
-  await page.eval(`document.querySelector('[role=dialog] input[type=checkbox]').click()`);
+  await page.eval(consent());
   await pause(3200);
   await page.clickText('Confirm 60-Day Challenge Registration', 'button');
   await page.waitText('Registered successfully'); // same answer for a repeat: nobody can learn who joined what
@@ -88,13 +96,16 @@ try {
   await page.clickText('Close', 'button');
   await page.clickText('Start the PTI Challenge', 'button');
   await fillRegistration(page);
-  await page.clickText('Sonic (STI)', '[role=dialog] button');
-  await page.eval(`document.querySelector('[role=dialog] input[type=checkbox]').click()`);
+  await page.clickText('Sonic (STI)', '[role=dialog] label'); // PTI (already held) + STI in one form
+  await page.clickText('Transcendental (TTI)', '[role=dialog] label');
+  await page.eval(consent());
   await pause(3200);
   await page.clickText('Confirm 60-Day Challenge Registration', 'button');
   await page.waitText('Registered successfully');
   await page.clickText('Close', 'button');
-  step('PTI registered; a repeat gets the same answer, is not stored, and is emailed instead; STI joined too');
+  if (sql(`SELECT GROUP_CONCAT(program ORDER BY CAST(program AS CHAR)) FROM challenge_registrations WHERE email = '${visitor}'`) !== 'PTI,STI,TTI') throw new Error('STI and TTI were not both added');
+  if (sql(`SELECT COUNT(*) FROM email_log WHERE to_email = '${visitor}' AND template = 'challenge-registered'`) !== '2') throw new Error('expected one confirmation email per form');
+  step('PTI registered; a repeat gets the same answer, is not stored, and is emailed instead; STI and TTI joined in one form, one email');
 
   // 2. Visitor: contact message and newsletter.
   await page.goto(`${BASE}/contact`);

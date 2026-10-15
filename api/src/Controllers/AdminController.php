@@ -67,10 +67,12 @@ final class AdminController
     {
         $f = $this->registrationFilters($request);
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_REGISTRATIONS', 'export', 'registrations', $f, $request);
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="transenigma-registrations-' . gmdate('Ymd-His') . '.csv"');
-        header('Cache-Control: no-store');
-        header('X-Content-Type-Options: nosniff');
+        if (!headers_sent()) {
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename="transenigma-registrations-' . gmdate('Ymd-His') . '.csv"');
+            header('Cache-Control: no-store');
+            header('X-Content-Type-Options: nosniff');
+        }
         ChallengeService::exportCsv($f);
         return Response::streamed();
     }
