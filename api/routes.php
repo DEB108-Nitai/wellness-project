@@ -8,7 +8,11 @@
 declare(strict_types=1);
 
 use Transenigma\Controllers\AccountController;
+use Transenigma\Controllers\AdminContentController;
 use Transenigma\Controllers\AdminController;
+use Transenigma\Controllers\AdminParticipantsController;
+use Transenigma\Controllers\AdminSiteController;
+use Transenigma\Controllers\AdminUsersController;
 use Transenigma\Controllers\AssessmentController;
 use Transenigma\Controllers\AuthController;
 use Transenigma\Controllers\ChallengeController;
@@ -18,6 +22,8 @@ use Transenigma\Controllers\HealthController;
 use Transenigma\Controllers\ResultsController;
 use Transenigma\Controllers\SettingsController;
 use Transenigma\Controllers\SiteController;
+use Transenigma\Controllers\TwoFactorController;
+use Transenigma\Controllers\VisitController;
 use Transenigma\Core\Router;
 
 return static function (Router $r): void {
@@ -38,6 +44,11 @@ return static function (Router $r): void {
     $r->post('/auth/resend-verification', [AuthController::class, 'resendVerification'], ['auth' => 'user']);
     $r->get('/auth/google/start', [GoogleAuthController::class, 'start'], $open);
     $r->get('/auth/google/callback', [GoogleAuthController::class, 'callback'], $open);
+
+    // --- Admin two-step sign-in (Phase 5 slice G, ADM-12): the session is pending until the code passes ---
+    $r->post('/auth/2fa/setup', [TwoFactorController::class, 'setup'], $open);
+    $r->post('/auth/2fa/enable', [TwoFactorController::class, 'enable'], $open);
+    $r->post('/auth/2fa/verify', [TwoFactorController::class, 'verify'], $open);
 
     // --- Account ------------------------------------------------------------
     $r->patch('/account', [AccountController::class, 'update'], ['auth' => 'user']);
@@ -74,12 +85,72 @@ return static function (Router $r): void {
     $r->get('/content/research', [ContentController::class, 'research']);
     $r->get('/content/consultancy', [ContentController::class, 'consultancy']);
     $r->get('/content/ventures', [ContentController::class, 'ventures']);
+    $r->get('/content/stats', [ContentController::class, 'stats']);
+
+    // --- Private visit counter (Phase 5 slice D): no cookies, no raw IP stored ---
+    $r->post('/visit', [VisitController::class, 'record']);
 
     // --- Admin (Phase 4 subset; the full console arrives in Phase 5) ----------
     $admin = ['auth' => 'admin', 'maintenance' => false];
+    $r->get('/admin/dashboard', [AdminController::class, 'dashboard'], $admin);
     $r->get('/admin/registrations', [AdminController::class, 'registrations'], $admin);
+    $r->get('/admin/registrations/stats', [AdminController::class, 'registrationStats'], $admin);
+
+    // --- Admin participants: assessments and results (Phase 5 slice C) ---
+    $r->get('/admin/visitors', [VisitController::class, 'metrics'], $admin);
+    $r->get('/admin/sessions', [AdminParticipantsController::class, 'sessions'], $admin);
+    $r->get('/admin/sessions/{ref:TE-[2-9A-HJ-NP-Z]{6}}', [AdminParticipantsController::class, 'session'], $admin);
+    $r->get('/admin/export/sessions', [AdminParticipantsController::class, 'exportSessions'], $admin);
     $r->patch('/admin/registrations/{id:[0-9]+}', [AdminController::class, 'updateRegistration'], $admin);
     $r->get('/admin/export/registrations', [AdminController::class, 'exportRegistrations'], $admin);
     $r->get('/admin/settings', [AdminController::class, 'settings'], $admin);
     $r->put('/admin/settings', [AdminController::class, 'updateSettings'], $admin);
+    $r->get('/admin/security', [TwoFactorController::class, 'status'], $admin);
+    $r->post('/admin/security/recovery-codes', [TwoFactorController::class, 'regenerate'], $admin);
+    $r->post('/admin/security/authenticator', [TwoFactorController::class, 'startReplace'], $admin);
+    $r->post('/admin/security/authenticator/confirm', [TwoFactorController::class, 'confirmReplace'], $admin);
+
+    // --- Admin content: research papers and consultancy projects (Phase 5 slice A) ---
+    $r->get('/admin/research', [AdminContentController::class, 'research'], $admin);
+    $r->post('/admin/research/categories', [AdminContentController::class, 'createCategory'], $admin);
+    $r->patch('/admin/research/categories/{id:[0-9]+}', [AdminContentController::class, 'updateCategory'], $admin);
+    $r->delete('/admin/research/categories/{id:[0-9]+}', [AdminContentController::class, 'deleteCategory'], $admin);
+    $r->post('/admin/research/papers', [AdminContentController::class, 'createPaper'], $admin);
+    $r->patch('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'updatePaper'], $admin);
+    $r->delete('/admin/research/papers/{id:[0-9]+}', [AdminContentController::class, 'deletePaper'], $admin);
+    $r->get('/admin/consultancy', [AdminContentController::class, 'consultancy'], $admin);
+    $r->post('/admin/consultancy/categories', [AdminContentController::class, 'createGroup'], $admin);
+    $r->patch('/admin/consultancy/categories/{id:[0-9]+}', [AdminContentController::class, 'updateGroup'], $admin);
+    $r->delete('/admin/consultancy/categories/{id:[0-9]+}', [AdminContentController::class, 'deleteGroup'], $admin);
+    $r->post('/admin/consultancy/projects', [AdminContentController::class, 'createProject'], $admin);
+    $r->patch('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'updateProject'], $admin);
+    $r->delete('/admin/consultancy/projects/{id:[0-9]+}', [AdminContentController::class, 'deleteProject'], $admin);
+    $r->post('/admin/uploads/project-image', [AdminContentController::class, 'uploadProjectImage'], $admin);
+
+    // --- Admin: messages, subscribers, FAQs, audit log, question set (Phase 5 slice H) ---
+    $id = '{id:[0-9]+}';
+    $r->get('/admin/messages', [AdminSiteController::class, 'messages'], $admin);
+    $r->get("/admin/messages/$id", [AdminSiteController::class, 'message'], $admin);
+    $r->patch("/admin/messages/$id", [AdminSiteController::class, 'updateMessage'], $admin);
+    $r->get('/admin/export/messages', [AdminSiteController::class, 'exportMessages'], $admin);
+    $r->get('/admin/subscribers', [AdminSiteController::class, 'subscribers'], $admin);
+    $r->get('/admin/export/subscribers', [AdminSiteController::class, 'exportSubscribers'], $admin);
+    $r->get('/admin/faqs', [AdminSiteController::class, 'faqs'], $admin);
+    $r->post('/admin/faqs', [AdminSiteController::class, 'createFaq'], $admin);
+    $r->post('/admin/faqs/reorder', [AdminSiteController::class, 'reorderFaqs'], $admin);
+    $r->patch("/admin/faqs/$id", [AdminSiteController::class, 'updateFaq'], $admin);
+    $r->delete("/admin/faqs/$id", [AdminSiteController::class, 'deleteFaq'], $admin);
+    $r->get('/admin/audit', [AdminSiteController::class, 'audit'], $admin);
+    $r->get('/admin/items', [AdminSiteController::class, 'items'], $admin);
+    $r->get('/admin/norms', [AdminSiteController::class, 'norms'], $admin);
+
+    // --- Admin: user accounts (slice F) and the admin team (slice F2, changes by the primary admin only) ---
+    $r->get('/admin/users', [AdminUsersController::class, 'users'], $admin);
+    $r->get("/admin/users/$id", [AdminUsersController::class, 'user'], $admin);
+    $r->patch("/admin/users/$id", [AdminUsersController::class, 'updateUser'], $admin);
+    $r->post("/admin/users/$id/anonymise", [AdminUsersController::class, 'anonymise'], $admin);
+    $r->get('/admin/admins', [AdminUsersController::class, 'admins'], $admin);
+    $r->post('/admin/admins', [AdminUsersController::class, 'addAdmin'], $admin);
+    $r->post("/admin/admins/$id/remove", [AdminUsersController::class, 'removeAdmin'], $admin);
+    $r->post("/admin/admins/$id/make-primary", [AdminUsersController::class, 'makePrimary'], $admin);
 };

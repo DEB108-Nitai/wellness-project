@@ -33,7 +33,9 @@ async function refreshCsrfToken(): Promise<void> {
 
 async function request<T>(method: Method, path: string, body?: unknown, retry = true): Promise<T> {
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  // FormData (file uploads) sets its own multipart Content-Type with the boundary.
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (method !== 'GET') {
     if (!csrfToken) await refreshCsrfToken();
     headers['X-CSRF-Token'] = csrfToken ?? '';
@@ -44,7 +46,7 @@ async function request<T>(method: Method, path: string, body?: unknown, retry = 
     response = await fetch(BASE + path, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       credentials: 'same-origin',
     });
   } catch {
@@ -80,6 +82,8 @@ export const api = {
   put: <T>(path: string, body: unknown = {}) => request<T>('PUT', path, body),
   patch: <T>(path: string, body: unknown = {}) => request<T>('PATCH', path, body),
   delete: <T>(path: string) => request<T>('DELETE', path),
+  /** Multipart upload (admin images). */
+  upload: <T>(path: string, form: FormData) => request<T>('POST', path, form),
 };
 
 /** First field message or the general message — handy for compact error display. */

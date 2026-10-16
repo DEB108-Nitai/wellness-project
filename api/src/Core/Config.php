@@ -40,6 +40,12 @@ final class Config
         throw new RuntimeException('No configuration file found. Copy api/config/config.example.php to api/config/config.local.php.');
     }
 
+    /** The config file that was loaded (for api/bin/preflight.php; never printed with its contents). */
+    public static function file(): ?string
+    {
+        return self::$file;
+    }
+
     /** Replace values at runtime (used by the test runner to point at the test database). */
     public static function override(string $key, mixed $value): void
     {
@@ -94,6 +100,8 @@ final class Config
             'sessions' => API_ROOT . '/storage/sessions',
             'cache' => API_ROOT . '/storage/cache',
             'mail' => API_ROOT . '/storage/mail',
+            // Public uploads (admin images) beside index.html in the web root, served at /uploads/…
+            'uploads' => dirname(API_ROOT) . '/uploads',
             'migrations' => dirname(API_ROOT) . '/database/migrations',
             default => throw new RuntimeException("Unknown path '$name'"),
         };

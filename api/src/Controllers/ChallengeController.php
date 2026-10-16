@@ -19,14 +19,18 @@ final class ChallengeController
     {
         $body = $request->json();
         SpamGuard::check($body);
+        // One form, one or more programs. A single `program` is still accepted from a page loaded before the update.
+        if (!isset($body['programs']) && isset($body['program']) && is_string($body['program'])) {
+            $body['programs'] = [$body['program']];
+        }
         $data = Validator::validate($body, [
-            'program' => 'required|in:' . implode(',', ChallengeService::PROGRAMS),
+            'programs' => 'required|array|max:3', // an empty list gets its own message from registerMany()
             'name' => 'required|string|min:2|max:100',
             'email' => 'required|email',
             'phone' => 'required|string|max:20|regex:/^\+?[0-9 ()\-.]{7,20}$/',
-            'age' => 'int|min:1|max:100',
-            'city' => 'string|max:100',
-            'country' => 'string|max:2',
+            'age' => 'required|int|min:18|max:100',
+            'city' => 'required|string|max:100',
+            'country' => 'required|string|max:2',
             'cohortTiming' => 'required|in:' . implode(',', ChallengeService::TIMINGS),
             'struggles' => 'array|max:10',
             'primaryGoal' => 'string|max:1000',
@@ -35,11 +39,16 @@ final class ChallengeController
         if (!$data['consent']) {
             throw HttpException::validation(['consent' => 'Please accept the privacy notice to register.']);
         }
-        if (isset($data['country']) && !Countries::isValid($data['country'])) {
+        foreach ($data['programs'] as $program) {
+            if (!is_string($program) || !in_array($program, ChallengeService::PROGRAMS, true)) {
+                throw HttpException::validation(['programs' => 'Please choose from the listed programs.']);
+            }
+        }
+        if (!Countries::isValid($data['country'])) {
             throw HttpException::validation(['country' => 'Please choose a valid country.']);
         }
         // Same answer whether or not the email was already registered (no disclosure of who joined what).
-        ChallengeService::register($data, $request);
+        ChallengeService::registerMany($data, $request);
         return Response::created(['message' => 'Registered successfully']);
     }
 

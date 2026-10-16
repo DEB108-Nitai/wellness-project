@@ -33,7 +33,9 @@ final class Validator
 
         foreach ($rules as $field => $ruleString) {
             $rules_ = self::parse($ruleString);
-            $present = array_key_exists($field, $input) && $input[$field] !== null && $input[$field] !== '';
+            // Only spaces counts as empty, so a required field can't be passed with "   ".
+            $present = array_key_exists($field, $input) && $input[$field] !== null
+                && !(is_string($input[$field]) && trim($input[$field]) === '');
 
             if (!$present) {
                 if (array_key_exists('required', $rules_)) {

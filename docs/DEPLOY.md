@@ -58,6 +58,8 @@ DreamHost serves the domain from `/home/<user>/transenigma.com/`. The config fil
     ├── robots.txt, sitemap.xml │  contents of dist/
     ├── assets/  brand/  images/┘
     ├── api/                    ← the api/ folder (see below)
+    ├── uploads/                ← images admins upload (created on first upload, mode 755). LIVE CONTENT:
+    │                              never delete or overwrite it when deploying; it is backed up nightly (§6)
     └── database/
         └── migrations/         ← database/migrations/ (read by migrate.php; blocked from the web by .htaccess)
 ```
@@ -95,6 +97,13 @@ Set:
 
 The API finds this file automatically (`Core\Config`: `../../transenigma-config/config.php` relative to `api/`).
 
+**Then run the preflight check** (it never prints a secret, only whether each setting looks right):
+```
+cd ~/transenigma.com
+/usr/local/php82/bin/php api/bin/preflight.php
+```
+It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, mbstring, fileinfo, curl), the production settings (`env`, `debug` off, https `url`, a 64-hex `app.secret`, SMTP), the database connection and clocks, pending migrations, the admins, writable folders, `index.html` and both `.htaccess` files, and that the config file is outside the web root. Fix every **FAIL** line before going live. On this first run, the `migrations` line fails (nothing is applied yet) and the admins line is skipped; step 5 fixes both. Run it again after step 5: it should end with `READY`.
+
 ---
 
 ## 5. Database and admin account
@@ -102,11 +111,21 @@ The API finds this file automatically (`Core\Config`: `../../transenigma-config/
 DreamHost's PHP 8.2 command-line binary is usually `/usr/local/php82/bin/php`.
 ```
 cd ~/transenigma.com
-/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…020)
+/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…026)
 /usr/local/php82/bin/php api/bin/migrate.php --status   # all applied
 /usr/local/php82/bin/php api/bin/create-admin.php you@transenigma.com "Your Name"
 ```
 `create-admin` asks for the password twice, and checks it against the password policy. The password is **visible while you type**, so make sure nobody is watching the screen. It is stored only as an Argon2id hash.
+
+**The primary admin:** the first admin created on the server is the primary admin, the only one who can add or remove admins in the console (Admins page). To name another one from the server (for example if the primary admin has left): `/usr/local/php82/bin/php api/bin/create-admin.php --primary admin@transenigma.com`.
+
+**Two-step sign-in (every admin):**
+- At the first sign-in on the live site, the admin scans a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator…) and saves **10 recovery codes**. After that, every admin sign-in needs a code from the app.
+- The app secret is encrypted with `app.secret`. Setting a new `app.secret` makes saved app secrets unreadable: admins then sign in with a recovery code and use **Security → Move to a new phone**, or are reset as below. So set the final `app.secret` **before** the admins set up their phones.
+- **Lost phone and recovery codes:** reset from the server, and the admin sets it up again at their next sign-in:
+  ```
+  /usr/local/php82/bin/php api/bin/create-admin.php --reset-2fa admin@transenigma.com
+  ```
 
 ---
 
@@ -139,6 +158,14 @@ gzip -t "$tmp"                                          # the archive is readabl
 zcat "$tmp" | tail -n 1 | grep -q "Dump completed"      # mysqldump finished the dump
 mv "$tmp" "$out"
 find "$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete   # only after a good backup
+# Admin-uploaded images are live content too (the database points at them).
+if [ -d "$HOME/transenigma.com/uploads" ]; then
+  up="$HOME/backups/transenigma-uploads-$(date +%F).tar.gz"
+  tar -czf "$up.tmp" -C "$HOME/transenigma.com" uploads
+  tar -tzf "$up.tmp" > /dev/null                         # the archive is readable
+  mv "$up.tmp" "$up"
+  find "$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
+fi
 ```
 
 - **Set up:** run `chmod 700 ~/bin/backup-db.sh`, then run the script once by hand and check that a `.sql.gz` file appears in `~/backups`.
@@ -170,7 +197,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 - [ ] 60-day program registration → "Registered successfully" → **confirmation email arrives**.
 - [ ] Contact form → **notification arrives at support@transenigma.com**.
 - [ ] Newsletter subscribe/unsubscribe.
-- [ ] Admin: sign in → Registrations and Settings work. A normal account is refused.
+- [ ] Admin: sign in → set up two-step sign-in on your phone → save the recovery codes → Registrations and Settings work. Sign out and in again: the code is asked for. A normal account is refused.
 - [ ] Phone check: menu drawer, research cards swipe, no sideways scrolling.
 - [ ] `https://transenigma.com/robots.txt` and `/sitemap.xml` load. Submit the sitemap in Google Search Console.
 - [ ] `https://transenigma.com/api/config/config.example.php` and `/database/migrations/` return **403**.
@@ -182,8 +209,9 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 ## 8. Updating the site later
 
 1. On a developer machine: pull, `npm ci`, tests, `npm run build`.
-2. Upload the new `dist/` contents (replace `assets/`; old hashed files can be deleted), plus any changed `api/` files and new `database/migrations/` files.
-3. Over SSH: `/usr/local/php82/bin/php api/bin/migrate.php` (applies only the new migrations).
+2. **Database first.** Upload the new `database/migrations/` files and run `/usr/local/php82/bin/php api/bin/migrate.php` over SSH (it applies only the new ones). Migrations only add things, so the old code keeps working with the new tables and columns. The other way round, new code would ask for columns that don't exist yet and every page would fail until the migration ran.
+3. Then upload the changed `api/` files, and last the new `dist/` contents (replace `assets/`; old hashed files can be deleted). **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
+4. Run `/usr/local/php82/bin/php api/bin/preflight.php` again; it should end with `READY`.
 
 ## 9. Rolling back
 

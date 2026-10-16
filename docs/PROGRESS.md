@@ -124,7 +124,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 2 | Authentication: sign-up/in/out, verification, reset, Google OAuth, roles, admin CLI | ✅ Committed `e128497`. Live email and Google sign-in done in auth completion (§4c) |
 | 3 | Assessment and results: server sessions, scoring, guest flow, results gate, sharing, My Results | ✅ Committed `a1e342b` |
 | 4 | 60-Day Challenges (STI, PTI, TTI), contact, newsletter, FAQ, settings, maintenance | ✅ Committed |
-| 5 | Admin console on server data + anonymise user + admin 2FA | ⬜ Next |
+| 5 | Admin console on server data + anonymise user + admin 2FA | ✅ Done 2026-10-13 (branch `feature/admin-console`) |
 | 6 | UI polish, SEO, accessibility, performance of the bundle | ⬜ |
 | 7 | Production hardening and DreamHost deploy | ⬜ |
 
@@ -241,6 +241,167 @@ The owner ran a CodeRabbit deep scan and pasted 12 findings (1 duplicate). All 1
 
 ---
 
+## 4f. Phase 5 admin console — slice A: research and consultancy content (branch `feature/admin-console`, 2026-10-12)
+
+Owner asks: research papers and consultancy projects managed from the admin, and every number on the site follows.
+
+- **Admin console rebuilt** as its own lazy-loaded bundle (`src/components/admin/AdminApp.tsx`, ~58 KB) with a sidebar, a phone drawer and real URLs (`/admin`, `/admin/registrations`, `/admin/research`, `/admin/consultancy`, `/admin/settings`). Shared admin UI kit: `src/components/admin/ui.tsx`. The old `AdminPortalView` was removed.
+- **Research** (`/admin/research`): add/edit/hide/delete papers (one "title or full citation" field, category or **+ New category**, year, https link). Categories can be renamed, retagged, reordered, hidden, and deleted when empty. A new category becomes a new home-page card.
+- **Consultancy** (`/admin/consultancy`): add/edit/hide/remove projects per section, with client name and an image upload (JPEG/PNG/WebP ≤ 2 MB, content-checked, random name, saved to `<webroot>/uploads/projects`, a folder that never runs scripts).
+- **Live numbers:** new `GET /api/content/stats`. The hard-coded "97 publications · 15 research fields", "After 97 publications", "Fifteen fields…", "9 client projects" and the `CLIENTS` list now come from the database. The `/research` meta description no longer names a number.
+- **Migration 022:** `publications.created_at` and `consultancy_projects.client_name` (backfilled for the 9 clients).
+- **Fresh-eyes review** (course lesson 41, a separate read-only agent): no critical issues. The confirmed fixes are in:
+  - uploads folder made world-readable (0755);
+  - DEPLOY: `uploads/` is live content (never delete; backed up nightly);
+  - cron sweeps uploads that were never saved;
+  - atomic category delete;
+  - modal focus and trap, drawer Escape/aria;
+  - reorder renumbers;
+  - fallbacks when stats fail;
+  - more tests.
+- **Tests:** API 83 → 91 (`ContentAdminTest`). New E2E `tests/e2e/admin-content.mjs`: add a paper in a new category plus a project with an image, check the home, Research and Consultancy pages and counts, then remove both.
+- **Slices B–E (same branch):**
+  - **B. 60-Day registrations** (`/admin/registrations`):
+    - one filter row (date range, program, status, schedule, search) drives the tiles, the hand-drawn charts (per day by program, program, status, schedule, age, struggles, cities), the table and the CSV export;
+    - `GET /admin/registrations/stats`; cohort and date filters (ADM-4);
+    - program colours checked for colour-vision deficiency.
+  - **C. Participants & results** (`/admin/participants[/:ref]`):
+    - every assessment with the account name and email, or "Guest" + nickname;
+    - status, progress, flags and strongest traits;
+    - the detail shows demographics, timing, quality, the 16 factors and 5 domains, and every answer (failed attention checks marked);
+    - two streamed CSVs (scores, and scores plus all 166 answers, matched by item code, with an "Item set" column);
+    - viewing someone's answers is audited (`ADMIN_VIEWED_ASSESSMENT`); the owner's share token is never sent (ADM-2, ADM-3).
+  - **D. Private visitor counter** (`/admin/visitors`): migration 023.
+    - `POST /api/visit` from every page change, after the sign-in state is known;
+    - nothing personal is stored: no cookie, IP, user agent or account id. A visitor is an HMAC with a **random salt per UTC day that the cron deletes** after the day, plus a signed-in yes/no;
+    - known pages only (others → `/other`, ids → `*`);
+    - skipped for admins, bots, automated browsers, and Global Privacy Control / Do Not Track;
+    - raw rows kept 90 days, daily totals kept for good;
+    - Privacy Policy gained one sentence.
+  - **E. Overview dashboard** (ADM-1): visitors, tests (7/30/all-time, completion rate, flags), accounts, registrations, content counts, new messages and the latest activity in plain words.
+  - **Fresh-eyes review of B–E:** no critical issues; 4 major issues confirmed and fixed:
+    - the counter stored account ids;
+    - the admin detail sent share tokens;
+    - a stale table after quick filter changes;
+    - export columns across question-set versions.
+    
+    Minor fixes: name hidden for anonymised accounts, path allowlist, one `/auth/me` on the first visit, admins not counted, a 1-year range cap, tooltips inside scrolling charts, chart accessibility.
+  - Dev fix: Vite watched `api/storage/mail` and reloaded the page whenever an email preview was written; it now watches only the frontend.
+  - **Tests:** API 91 → 103. New E2E: `admin-registrations.mjs`, `admin-participants.mjs`, `admin-visitors.mjs`.
+- **Slice G. Admin two-step sign-in (ADM-12, same branch):** migration 024.
+  - **Every admin sign-in** (password or Google) needs a 6-digit code from an authenticator app. Until the code passes, the session is "pending": the server treats it as signed out, with no admin access.
+  - **First sign-in:** set up the app (QR code, or a typed key) → confirm a code → **10 recovery codes** shown once (copy / download, "I have saved them" check).
+  - **Later sign-ins:** the code, or a recovery code (single use; the admin is emailed with how many are left).
+  - **Security page** (`/admin/security`): status, codes left, "Create new recovery codes", "Move to a new phone". Each needs a current code (or a recovery code, for a lost phone). Moving signs out the admin's other devices.
+  - **Server reset:** `create-admin.php --reset-2fa <email>` for an admin who lost both phone and codes. It signs them out everywhere, and they set it up again at the next sign-in.
+  - **Protection:**
+    - TOTP per RFC 6238 in plain PHP; the secret encrypted with AES-256-GCM (key from `app.secret`); recovery codes stored as SHA-256 only;
+    - a code can't be used twice (`totp_last_step`);
+    - 5 wrong codes per 15 minutes lock the step; 30 attempts per IP;
+    - the pending step lasts 10 minutes and ends if the password changes or the account is disabled;
+    - a session promoted to admin mid-way loses access until it signs in with a code;
+    - security emails for each change; everything audited (`AUTH_2FA_*`).
+  - **New npm package:** `qrcode` (owner-approved), plus its type definitions for development. It loads only on the 2FA screens; the main bundle didn't grow.
+  - **Fresh-eyes review:** no critical issues; 1 major issue confirmed and fixed. The second-step mark was not tied to an account, so if another person signed in on the same browser and was later promoted, they skipped the code. The mark now holds the admin's id and is dropped whenever the role isn't admin.
+    Minor fixes:
+    - attempts are counted before the check (no parallel bypass of the limit);
+    - a just-used code gets its own message, not a strike;
+    - a clear message and a log entry when the stored secret can't be decrypted;
+    - each ciphertext is bound to its account;
+    - setup secrets are encrypted in the session file.
+  - **Tests:** API 103 → 123 (RFC 6238 test vectors included). New E2E `admin-2fa.mjs`; shared helper `admin-signin.mjs` (plays the authenticator app). The four admin E2E scripts now sign in through the real second step. `phase4-flow.mjs` still expects an admin without 2FA (it is replaced by `admin-flow.mjs` in Finish).
+- **Consultancy categories (owner request 2026-10-12, same branch):** migration 025.
+  - Admins add, rename, reorder and delete (only when empty) consultancy categories, like research categories. "Add project" can create a new category in the same step.
+  - Each category has a **type**:
+    - **client work:** counted on the home page; client names are listed under "Clients and partners";
+    - **our products in development:** marked "In development" and not counted.
+
+    This replaces the rule that was hard-coded to the "Upcoming Products" section.
+  - A category's web address (`/consultancy#…`) never changes, so the old site's redirects keep working.
+- **Slice H. Messages, subscribers, FAQs, audit log, question set (ADM-3, 5, 7, 9, 10):**
+  - **Messages** (`/admin/messages`): New / Handled / All tabs, search, date range. Open a message to read it in full, use "Reply by email" (opens the email app), and mark it handled (who and when are recorded) or new again. CSV export. The Overview links to it.
+  - **Newsletter subscribers** (`/admin/subscribers`): counts (subscribed now, new in 30 days, unsubscribed), search, CSV export. Unsubscribe tokens never leave the server.
+  - **FAQs** (`/admin/faqs`): add (category picked from the list, or a new one typed), edit, hide, delete, reorder. The FAQ page follows straight away.
+  - **Audit log** (`/admin/audit`): filter by person, action, who (admin, member, visitor, server) and date. Actions are shown in plain words. Read-only: the API has no route that edits or deletes an entry.
+  - **Question set & norms** (`/admin/question-set`): the 166 statements (factor, reversed or not, attention checks with their expected answer) and the active norm table (16 factors with mean, SD, n and α; 5 domains). Read-only.
+  - **Admin menu** grouped under headings: People & numbers, Inbox, Website content, System.
+  - **Fresh-eyes review:** no critical issues; 2 major issues confirmed and fixed.
+    - Editing a project in an "in development" category erased its saved client name (the hidden field was sent empty).
+    - A paged list could leave the admin on an empty page after handling the last item.
+
+    Minor fixes:
+    - the reply link encodes the sender's address;
+    - one FAQ reorder at a time;
+    - 44 px tap targets;
+    - the "new" dot is announced to screen readers;
+    - FAQ categories typed in other capitals reuse the existing one;
+    - the content E2E cleans up after a failed run;
+    - a rollback test no longer depends on the SQL mode.
+
+    Noted, not changed:
+    - consultancy category reorder sends one request per category;
+    - two admins creating the same category name in the same instant;
+    - the tab keyboard pattern.
+  - **Tests:** API 123 → 132. New E2E `admin-site.mjs`; `admin-content.mjs` now also adds a project in a new consultancy category, and it removes its admin afterwards.
+- **Slice F. Users (ADM-6, ADM-11, AUTH-11):**
+  - **List** (`/admin/users`): search by name or email; role and status filters; counts.
+  - **Detail** (`/admin/users/:id`): tests (linking to the participant page), 60-day registrations, contact messages, newsletter, and recent activity (with who did it).
+  - **Disable or enable:** disabling signs the person out at once.
+  - **Anonymise** (an erasure request, typed-email confirmation, can't be undone):
+    - removes the name, email and password/Google link everywhere, plus nickname, occupation and own-words gender on tests;
+    - registrations lose name, email, phone, city, goal and notes;
+    - contact messages, newsletter sign-up and email log are deleted;
+    - audit entries naming the address lose those details;
+    - **answers and scores are kept**;
+    - audited without personal data.
+  - **Rules:** nobody acts on their own account; another admin's account is changed only by the primary admin; the primary admin's own account not at all. Admins can't be anonymised (remove admin access first).
+- **Slice F2. Multiple admins, one primary admin (owner rule):** migration 026.
+  - **Exactly one primary admin,** enforced by a unique key in the database. The first admin is the primary one. **Locally that is the owner's account (user 1).**
+  - **Admins page** (`/admin/admins`): the primary admin **adds an admin** (an existing active, email-verified account), **removes** one, or **hands over** the primary role (only to an admin with two-step sign-in). Each needs their authenticator code.
+  - **What happens to the person:**
+    - added admins are signed out and set up two-step sign-in at their next sign-in;
+    - removed admins are signed out and their authenticator is forgotten;
+    - everyone concerned gets an email;
+    - everything is audited.
+  - **Other admins** see the list read-only, and the server refuses them with `PRIMARY_ADMIN_ONLY`.
+  - **Server fallback:** `create-admin.php --primary <email>` names a new primary admin (for example if the primary admin has left).
+  - **PRD** AUTH-10 and ADM-6 updated for this rule.
+- **Fresh-eyes review:** no critical issues; 2 major issues confirmed and fixed.
+  - A hand-over racing a removal could leave no primary admin. It now re-checks the target under a row lock and rolls back unless both changes land.
+  - The anonymise clean-up of audit details matched similar addresses (`al@x.com` also matched `sal@x.com`). It now matches the exact quoted value.
+
+  Minor fixes:
+  - disable and remove check that the account didn't change meanwhile;
+  - free-text review comments are erased too;
+  - `create-admin.php` refuses unverified or disabled accounts (the E2E helper `promoteToAdmin` confirms the test address first);
+  - visible reasons on the Admins page;
+  - a retry button on the users list.
+- **Tests:** API 132 → 144. New E2E `admin-users.mjs`. It never touches the owner's account, so the primary-only actions are covered by the API tests.
+- **Form changes (owner, 2026-10-13):**
+  - Before the test, every field is required (name on report, highest education and occupation joined country, age and gender), on the server too.
+  - Education has 12 Indian-style levels (Class 10, Class 12, Diploma / ITI, professional degrees, MPhil, postdoc…).
+  - The 60-day form asks City **and** Country; age, city and country are required.
+  - The pre-test country list starts on India. The 60-day form's country starts empty and must be chosen (owner, 2026-10-15).
+  - The 60-day form is one form with 3 tick-boxes (STI, PTI, TTI; at least one). Each ticked program is saved as its own registration and reference; one confirmation email lists them all (owner, 2026-10-15).
+  - Placeholders use Indian examples (Rahul Sharma, +91…).
+  - A value of only spaces now counts as empty for every required field (`Validator`).
+- **Phase 5 finish (2026-10-13):**
+  - **Full admin E2E:** `tests/e2e/admin-flow.mjs` replaces `phase4-flow.mjs`. It covers the visitor forms, the admin's code sign-in, the registration, the message, a paper shown live on the site, a participant, maintenance, and a member refused on all 52 admin API routes.
+  - **Fresh-eyes review** (feature-reviewer agent): no critical findings. Fixed after confirming each one:
+    - Anonymising an account that never verified its email no longer touches registrations, messages or the newsletter row filed under that address (they may belong to the real owner). The account detail doesn't show them either.
+    - An admin opening someone's full report never receives the owner's share link, and the view is audited (`ADMIN_VIEWED_ASSESSMENT`, via report).
+    - CSV exports were sent as JSON when PHP buffers output (XAMPP and DreamHost default). `Response::streamed()` fixes this, proven by a new check in `admin-site.mjs`.
+    - Anonymise refuses if the account changed meanwhile (`ACCOUNT_CHANGED`).
+    - The day's visit salt is deleted on the first visit of the next day, even without cron. The visit limit was raised to 1500 per address per hour (mobile networks share addresses).
+    - DEPLOY §8 now runs migrations before uploading new code.
+  - **Noted, not changed:**
+    - A new admin's first sign-in sets up their authenticator (trust on first use, as the PRD designs). Ask new admins to sign in right away.
+    - A failure halfway through a CSV export can leave a cut-off file.
+  - **Deploy safety:** `api/bin/preflight.php` checks PHP, extensions, production settings, DB, migrations, folders and `.htaccess` without printing secrets (DEPLOY §4).
+  - **Tests:** API 148, all admin E2E scripts, guest-flow and edge-cases pass.
+
+---
+
 ## 5. Prototype faults (from the first analysis)
 
 | # | Fault | Status |
@@ -276,12 +437,12 @@ The owner ran a CodeRabbit deep scan and pasted 12 findings (1 duplicate). All 1
 ### Phase 5 — Admin console (next)
 - [ ] Dashboard: tests started and completed, completion rate, flagged sessions, new users, new messages, recent audit events.
 - [ ] Participants: search and filters, detail view (demographics, timing, quality, 16 + 5 scores, item answers). Streamed CSV including optional item answers.
-- [ ] Users: list and search, view, change role, disable/enable (admins can't demote or disable themselves).
-- [ ] Contact messages: list, mark handled. Newsletter subscribers: list and export.
-- [ ] FAQs: create, edit, delete, reorder, publish.
-- [ ] Question set and norms: read-only view. Audit log: filters.
-- [ ] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers.
-- [ ] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes.
+- [x] Users: list and search, view, disable/enable; admin rights by the primary admin only (slices F, F2).
+- [x] Contact messages: list, mark handled. Newsletter subscribers: list and export (slice H).
+- [x] FAQs: create, edit, delete, reorder, publish (slice H).
+- [x] Question set and norms: read-only view. Audit log: filters (slice H).
+- [x] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers (slice F).
+- [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 
 ### Phase 6 — UI polish
 - [ ] Consistency pass with shared components. Per-page titles and descriptions. Accessibility (WCAG 2.1 AA) and mobile pass.

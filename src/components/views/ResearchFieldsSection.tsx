@@ -79,11 +79,13 @@ export const ResearchFieldsSection: React.FC = () => {
           <div className="max-w-2xl space-y-3">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-700">Trans Enigma Research Foundation</p>
             <h2 id="research-fields-title" className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 font-heading text-balance">
-              Fifteen fields of research behind everything we build.
+              {data
+                ? `${data.totals.categories} ${data.totals.categories === 1 ? 'field' : 'fields'} of research behind everything we build.`
+                : 'Fields of research behind everything we build.'}
             </h2>
             <p className="text-base text-slate-600 leading-relaxed text-pretty">
-              {data?.totals.publications ?? 97} publications across psychology, leadership, governance, spirituality, materials
-              science and computing. Choose a field to read its papers.
+              {data ? `${data.totals.publications} publications` : 'Publications'} across psychology, leadership, governance,
+              spirituality, materials science and computing. Choose a field to read its papers.
             </p>
           </div>
           <Link

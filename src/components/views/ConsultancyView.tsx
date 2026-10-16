@@ -13,21 +13,6 @@ interface Props {
   onNavigate: (view: string) => void;
 }
 
-const UPCOMING = 'upcoming';
-
-// Client names as plain text (no third-party logos), in the order the old site listed the work.
-const CLIENTS = [
-  'SALPG',
-  'Mjunction (TATA-SAIL)',
-  'Oil India',
-  'ISKCON Kolkata',
-  'Kolkata Ventures',
-  'Annamrita',
-  'Centre for Quantum Technologies, NUS',
-  'Brainwave Science',
-  'Yogavihara',
-];
-
 const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> = ({ project, upcoming }) => (
   <li>
     <article className="group h-full flex flex-col rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-xs hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
@@ -71,7 +56,7 @@ const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> 
 );
 
 const GroupSection: React.FC<{ group: ConsultancyGroup }> = ({ group }) => {
-  const upcoming = group.slug === UPCOMING;
+  const upcoming = group.kind === 'products';
   return (
     <section id={group.slug} aria-labelledby={`${group.slug}-title`} className="scroll-mt-28">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-4">
@@ -114,9 +99,12 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
     return () => window.clearTimeout(t);
   }, [data, location.hash, location.key]);
 
-  const services = data?.groups.filter((g) => g.slug !== UPCOMING) ?? [];
-  const upcoming = data?.groups.find((g) => g.slug === UPCOMING);
+  // Client-work areas first; categories of our own products in development (admin-managed) after them.
+  const services = data?.groups.filter((g) => g.kind === 'clients') ?? [];
+  const products = data?.groups.filter((g) => g.kind === 'products') ?? [];
   const clientProjects = services.reduce((n, g) => n + g.projects.length, 0);
+  // Client names as plain text (no third-party logos), from the admin-managed projects.
+  const clients = [...new Set(services.flatMap((g) => g.projects.map((p) => p.clientName).filter((c): c is string => !!c)))];
 
   return (
     <div className="pb-24">
@@ -131,25 +119,27 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
           </p>
           {data && (
             <p className="text-sm font-semibold text-slate-700">
-              {clientProjects} client projects · {services.length} service areas · {upcoming?.projects.length ?? 0} upcoming products
+              {clientProjects} client projects · {services.length} service areas · {products.reduce((n, g) => n + g.projects.length, 0)} upcoming products
             </p>
           )}
         </div>
       </section>
 
       {/* Clients */}
+      {clients.length > 0 && (
       <section aria-labelledby="clients-title" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <h2 id="clients-title" className="text-center text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
           Clients and partners
         </h2>
         <ul className="mt-4 flex flex-wrap justify-center gap-x-2 gap-y-2.5">
-          {CLIENTS.map((c) => (
+          {clients.map((c) => (
             <li key={c} className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-700">
               {c}
             </li>
           ))}
         </ul>
       </section>
+      )}
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 space-y-20" aria-busy={!data && !loadError}>
         {loadError && (
@@ -177,11 +167,11 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
           <GroupSection key={g.slug} group={g} />
         ))}
 
-        {upcoming && (
-          <div className="rounded-[2rem] bg-gradient-to-b from-indigo-50/70 to-white border border-indigo-100 p-6 sm:p-10">
-            <GroupSection group={upcoming} />
+        {products.map((g) => (
+          <div key={g.slug} className="rounded-[2rem] bg-gradient-to-b from-indigo-50/70 to-white border border-indigo-100 p-6 sm:p-10">
+            <GroupSection group={g} />
           </div>
-        )}
+        ))}
       </div>
 
       {/* Contact prompt */}

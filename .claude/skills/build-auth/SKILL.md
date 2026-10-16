@@ -88,15 +88,33 @@ $ARGUMENTS
    - update `docs/PROGRESS.md` at the end of the phase;
    - remind the owner of the open items (company address/CIN/phone, support-mail recheck, DreamHost webmail check).
 
+## Admin two-step sign-in (ADM-12, built in Phase 5 slice G)
+- **Files:**
+  - `Support/Totp.php`: RFC 6238 and AES-256-GCM secret storage;
+  - `Services/TwoFactorService.php`;
+  - `Controllers/TwoFactorController.php`: `/auth/2fa/*`, `/admin/security*`;
+  - `pages/auth/TwoFactorPage.tsx`, `components/auth/TwoFactorParts.tsx`, `components/admin/SecurityAdmin.tsx`.
+- **`AuthService::signIn()` returns false for an admin.** The session holds `auth_pending` (10 minutes; tied to `session_version`), and `user()` is null until `completeSecondStep()`.
+- **`user()` rejects an admin session without `auth_2fa`.** Keep it that way: no path may set the admin session without the second step.
+- **A code is single use** (`totp_last_step`, a conditional UPDATE). Recovery codes are SHA-256 hashes, used up with a conditional UPDATE.
+- **Rate limits:** 5 wrong codes per admin per 15 minutes (`2fa`), plus 30 per IP (`2fa_ip`).
+- **Security-page actions need a step-up code** (app or recovery). Moving to a new phone bumps `session_version` and keeps this session (`keepSessionAt`).
+- **Tests:** use `signInAdmin()`, `freshCode()` and `markSecondStepPassed()` from `api/tests/_helpers.php`. E2E admins sign in with `tests/e2e/admin-signin.mjs`.
+
+## Users, anonymise and the admin team (built in Phase 5 slices F and F2)
+- **Users** (`Services/AdminUsersService.php`): disable or enable bumps `session_version`. Anonymise (ADM-11) runs in one transaction and must clear every place an address can live:
+  - `users`, `test_sessions` (nickname, occupation, gender_text, share_token, user agent, IP hash);
+  - `challenge_registrations`, `contact_messages`, `newsletter_subscribers`, `email_log`;
+  - `audit_logs.details`.
+
+  A new table holding personal data must be added there.
+- **Team** (`Services/AdminTeamService.php`):
+  - exactly one primary admin (unique key on `users.primary_lock`);
+  - only the primary admin adds, removes or hands over admin rights, each after `TwoFactorService::confirmCode`;
+  - nobody acts on their own account; the primary admin's account isn't changed in the console.
+
+  Server fallback: `create-admin.php --primary`.
+- **Tests:** `api/tests/AdminUsersTest.php`. E2E `tests/e2e/admin-users.mjs` (never touches the owner's account).
+
 ## Planned auth work still to build
-- **ADM-12 admin TOTP:**
-  - RFC 6238 (SHA-1, 6 digits, 30 s, ±1 step), written in plain PHP, with no library.
-  - The secret is encrypted with `app.secret` (`openssl_encrypt`, AES-256-GCM).
-  - 10 one-time recovery codes, stored hashed.
-  - Sign-in becomes a two-step flow: a password or Google session is "pending 2FA" until the code passes.
-  - Rate-limit code attempts. Audit enrol, use and reset.
-- **ADM-11 anonymise:**
-  - Clear name, email, nickname and contact details on the user, their sessions and their registrations; keep answers and scores.
-  - Bump `session_version` and set status to disabled.
-  - Confirm first; it can't be undone; audit it.
-- **AUTH-10/11 admin actions:** change role and disable/enable, with self-protection and auditing.
+- Nothing open in Phase 5. Phase 7: fresh secrets on the server and the live 2FA enrolment (docs/DEPLOY.md).

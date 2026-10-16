@@ -10,12 +10,14 @@ import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigate, viewForPath } from './lib/routes';
 import { applyPageMeta } from './lib/pageMeta';
+import { recordVisit } from './api/visits';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { AnnouncementBar } from './components/layout/AnnouncementBar';
 import { CookieNotice } from './components/layout/CookieNotice';
 import { VerifyEmailBanner } from './components/layout/VerifyEmailBanner';
 import { RequireAdmin, RequireAuth } from './components/auth/RouteGuards';
+import { PageSpinner } from './components/auth/FormControls';
 import { LandingView } from './components/views/LandingView';
 import { FactorsDirectoryView } from './components/views/FactorsDirectoryView';
 import { HowItWorksView } from './components/views/HowItWorksView';
@@ -26,7 +28,6 @@ import { ResearchView } from './components/views/ResearchView';
 import { ConsultancyView } from './components/views/ConsultancyView';
 import { ContactView } from './components/views/ContactView';
 import { PrivacyTermsView } from './components/views/PrivacyTermsView';
-import { AdminPortalView } from './components/views/AdminPortalView';
 import { LoginPage } from './pages/auth/LoginPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
@@ -94,10 +95,16 @@ function ScrollToTop() {
   return null;
 }
 
-/** Per-page title, description, canonical URL and robots rule (src/lib/pageMeta.ts). */
+/** Per-page title, description, canonical URL and robots rule (src/lib/pageMeta.ts), and the private visit count. */
 function PageMeta() {
   const { pathname } = useLocation();
+  const { user, loading } = useAuth();
   React.useEffect(() => applyPageMeta(pathname), [pathname]);
+  // Counted once the sign-in state is known, so the first visit shares AuthContext's /auth/me request.
+  React.useEffect(() => {
+    if (!loading) recordVisit(pathname, user?.role === 'admin');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, loading]);
   return null;
 }
 
@@ -116,6 +123,11 @@ function WithNavigate<P extends { onNavigate: (view: string, param?: string) => 
   return <Component {...({ onNavigate } as P)} />;
 }
 
+// The admin console is a separate bundle, downloaded only when an admin opens it (PRD §5).
+const AdminApp = React.lazy(() => import('./components/admin/AdminApp'));
+// Only admins reach the second sign-in step; it carries the QR code library, so it loads separately too.
+const TwoFactorPage = React.lazy(() => import('./pages/auth/TwoFactorPage'));
+
 export default function App() {
   return (
     <>
@@ -125,10 +137,30 @@ export default function App() {
     <Routes>
       {/* Focused onboarding screens (no site chrome) */}
       <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login/2fa"
+        element={
+          <React.Suspense fallback={<PageSpinner />}>
+            <TwoFactorPage />
+          </React.Suspense>
+        }
+      />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+
+      {/* Admin console: its own layout, no public site chrome */}
+      <Route
+        path="/admin/*"
+        element={
+          <RequireAdmin>
+            <React.Suspense fallback={<PageSpinner />}>
+              <AdminApp />
+            </React.Suspense>
+          </RequireAdmin>
+        }
+      />
 
       <Route element={<SiteLayout />}>
         <Route index element={<WithNavigate component={LandingView} />} />
@@ -160,14 +192,6 @@ export default function App() {
             <RequireAuth>
               <AccountPage />
             </RequireAuth>
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            <RequireAdmin>
-              <WithNavigate component={AdminPortalView} />
-            </RequireAdmin>
           }
         />
         <Route path="/unsubscribe" element={<UnsubscribePage />} />

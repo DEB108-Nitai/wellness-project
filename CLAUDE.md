@@ -27,7 +27,7 @@ PHP is XAMPP's: `C:\xampp\php\php.exe` (also `php` if on PATH).
 | Apply migrations / status / rebuild from scratch | `php api/bin/migrate.php` / `--status` / `--fresh` |
 | Create or promote an admin | `php api/bin/create-admin.php you@example.com "Name"` |
 | Daily housekeeping | `php api/bin/cron-daily.php` |
-| Browser E2E (needs XAMPP + `npm run dev` + Chrome) | `node tests/e2e/guest-flow.mjs`, `node tests/e2e/phase4-flow.mjs <adminEmail> <pw>` |
+| Browser E2E (needs XAMPP + `npm run dev` + Chrome) | `node tests/e2e/guest-flow.mjs`, `node tests/e2e/admin-flow.mjs` (full admin loop; more in `tests/e2e/README.md`) |
 
 E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clean them up afterwards (see `docs/PROGRESS.md`). If Apache serves the project elsewhere, set `TRANSENIGMA_API_TARGET` in `.env.local`. Full setup: `docs/DEVELOPMENT.md`. Deploying to DreamHost: `docs/DEPLOY.md`.
 
@@ -42,6 +42,11 @@ E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clea
 - Rate limiting is stored in MySQL; IPs are stored only as HMAC hashes. Security-relevant actions go through `AuditService`.
 - Email: `Services\Mailer` + templates in `api/templates/email/`. When `mail.host` is empty, emails are written to `api/storage/mail/` (open verification/reset links from there).
 - Non-owners of a resource get 404, not 403. Guest results are locked (401 `RESULTS_LOCKED`) until sign-up.
+- Admin API: every route under `/admin/*` uses the `$admin` option. `AuthorizationTest` and `tests/e2e/admin-flow.mjs` check that non-admins get 403 on all of them. Every admin write is audited. CSV exports stream through a shared helper (BOM, formula-neutralised cells).
+- Admin two-step sign-in (ADM-12): after a password or Google sign-in, an admin stays "pending" (`Session` `auth_pending`) until a TOTP or recovery code passes (`TwoFactorService`, `Support\Totp`). The TOTP secret is encrypted with a key derived from `app.secret`, so **changing `app.secret` means every admin enrols again**. Recovery path: `php api/bin/create-admin.php <email> --reset-2fa`.
+- Exactly one **primary admin** (`users.is_primary_admin`, unique `primary_lock`). Only the primary admin adds, removes or hands over admin rights, each with a fresh code (`confirmCode`). `create-admin.php --primary` makes one from the server.
+- Visitor counter: `POST /api/visit` stores a daily-rotating HMAC of IP + user-agent, never a cookie or raw IP. It skips `/admin*`, bots and automated browsers. Cron rolls raw rows into `daily_visits` and deletes them after 90 days.
+- Uploads (consultancy images) go to `paths.uploads` (default `<webroot>/uploads`, git-ignored, scripts blocked by its `.htaccess`). Keep this folder on redeploy.
 
 ### Scoring (16PF)
 - 163 IPIP items + 3 attention checks. Norms derived from Open Psychometrics data; source of truth is `docs/scoring/` (`norms.json`, `ipip16_items.tsv`, `reference_scoring.py`, `golden.json`).
@@ -57,4 +62,4 @@ E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clea
 - Global state: `context/AuthContext`, `ActiveSessionContext` (in-progress test), `SettingsContext` (public site settings, maintenance). `hooks/useAutosave.ts` batches answers with an offline queue.
 - Pages in `src/pages/` (auth, test, results, account); route paths in `src/lib/routes.ts`. The home page sections and admin portal live in `src/components/views/`; admin panels in `src/components/admin/`.
 - 60-Day Challenges: three programs in fixed order STI (Program 01), PTI (02), TTI (03), defined in `src/api/challenge.ts` (`PROGRAMS`) and the DB enum `challenge_registrations.program`. All three share the TTI layout; program copy is owner-approved — don't rewrite it. After registration the UI shows only "Registered successfully".
-- Roles are `user` and `admin` only.
+- Roles are `user` and `admin` only (plus the primary-admin flag above). Admin screens are a lazy-loaded bundle (`src/components/admin/AdminApp.tsx`, routes `/admin/*`); shared admin UI pieces live in `src/components/admin/ui.tsx`, and the hand-drawn SVG charts in `charts.tsx`.

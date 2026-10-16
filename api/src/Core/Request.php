@@ -8,6 +8,8 @@ use JsonException;
 final class Request
 {
     private const MAX_BODY_BYTES = 1_048_576; // 1 MB
+    /** Multipart uploads (admin images) may be larger; each file is checked again by its handler. */
+    private const MAX_UPLOAD_BYTES = 5_242_880; // 5 MB
 
     private ?array $json = null;
     /** @var array<string,string> route parameters */
@@ -20,6 +22,8 @@ final class Request
         private readonly array $server,
         private readonly string $rawBody,
         private readonly array $cookies = [],
+        /** Uploaded files ($_FILES shape) of a multipart/form-data request. */
+        private readonly array $files = [],
     ) {
     }
 
@@ -36,8 +40,13 @@ final class Request
         $path = '/' . trim(rawurldecode($uriPath), '/');
 
         $length = (int) ($_SERVER['CONTENT_LENGTH'] ?? 0);
-        if ($length > self::MAX_BODY_BYTES) {
+        // PHP parses multipart bodies into $_FILES itself (php://input is empty for them).
+        $multipart = str_starts_with(strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data');
+        if ($length > ($multipart ? self::MAX_UPLOAD_BYTES : self::MAX_BODY_BYTES)) {
             throw new HttpException(413, 'PAYLOAD_TOO_LARGE', 'Request body is too large.');
+        }
+        if ($multipart) {
+            return new self($method, $path, $_GET, $_SERVER, '', $_COOKIE, $_FILES);
         }
         $raw = in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'], true)
             ? (string) file_get_contents('php://input', false, null, 0, self::MAX_BODY_BYTES + 1)
@@ -71,6 +80,27 @@ final class Request
             throw HttpException::badRequest('JSON body must be an object.', 'INVALID_JSON');
         }
         return $this->json = $data;
+    }
+
+    /**
+     * One uploaded file of a multipart request: ['tmp' => path, 'size' => bytes, 'name' => client name],
+     * or null when the field is missing. Upload errors become a 422 on that field.
+     */
+    public function file(string $field): ?array
+    {
+        $f = $this->files[$field] ?? null;
+        if (!is_array($f) || is_array($f['error'] ?? null)) {
+            return null;
+        }
+        $error = (int) ($f['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            throw HttpException::validation([$field => in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+                ? 'The file is too large.' : 'The upload failed. Please try again.']);
+        }
+        return ['tmp' => (string) $f['tmp_name'], 'size' => (int) $f['size'], 'name' => (string) ($f['name'] ?? '')];
     }
 
     public function header(string $name): ?string

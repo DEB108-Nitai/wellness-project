@@ -29,6 +29,9 @@ async function startTest(page) {
   await page.fill('#country', 'IN');
   await page.fill('#age', '29');
   await page.fill('#gender', 'female');
+  await page.fill('#nickname', 'Asha');
+  await page.fill('#education', 'bachelors');
+  await page.fill('#occupation', 'Teacher');
   await page.clickText('Begin assessment', 'button');
   await page.waitText('Statement 1 of 166');
 }
@@ -122,6 +125,7 @@ try {
   step(`sign-out left no answers on the device (${before} pending before)`);
 
   await page.goto(`${BASE}/login`);
+  await page.waitText('Welcome back');
   await page.fill('input[type=email]', email);
   await page.fill('input[type=password]', 'Calm-River-Lantern-42');
   await page.clickText('Sign in', 'button');

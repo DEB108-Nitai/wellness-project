@@ -123,7 +123,7 @@ export const ContactView: React.FC = () => {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Maya Lin"
+                  placeholder="e.g. Rahul Sharma"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
@@ -137,7 +137,7 @@ export const ContactView: React.FC = () => {
                 <input
                   type="email"
                   required
-                  placeholder="maya@organization.com"
+                  placeholder="rahul@company.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"

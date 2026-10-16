@@ -44,6 +44,7 @@ return [
         'sessions' => null,
         'cache' => null,
         'migrations' => null,
+        'uploads' => null,                      // admin image uploads; default: <web root>/uploads (beside index.html)
     ],
 
     // Filled in during Phase 2 (owner provides values).

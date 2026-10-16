@@ -23,7 +23,7 @@ final class ContentService
         ], Database::all('SELECT id, name, role, credentials, photo FROM team_members WHERE is_published = 1 ORDER BY sort_order, id'));
     }
 
-    /** Research categories with their publications (newest first) and the totals. */
+    /** Research categories with their publications (newest year first; undated last) and the totals. */
     public static function research(): array
     {
         $categories = [];
@@ -33,7 +33,7 @@ final class ContentService
         $rows = Database::all(
             'SELECT p.id, p.category_id, p.citation, p.year, p.url FROM publications p
              JOIN research_categories c ON c.id = p.category_id AND c.is_published = 1
-             WHERE p.is_published = 1 ORDER BY p.category_id, p.sort_order, p.id'
+             WHERE p.is_published = 1 ORDER BY p.category_id, p.year IS NULL, p.year DESC, p.sort_order, p.id'
         );
         foreach ($rows as $p) {
             $cid = (int) $p['category_id'];
@@ -45,7 +45,8 @@ final class ContentService
             ];
             $categories[$cid]['count']++;
         }
-        $categories = array_values($categories);
+        // A category whose papers are all unpublished has nothing to show.
+        $categories = array_values(array_filter($categories, static fn (array $c): bool => $c['count'] > 0));
         return [
             'totals' => ['categories' => count($categories), 'publications' => count($rows)],
             'categories' => $categories,
@@ -70,11 +71,11 @@ final class ContentService
     public static function consultancy(): array
     {
         $groups = [];
-        foreach (Database::all('SELECT id, slug, name, tagline FROM consultancy_groups ORDER BY sort_order, id') as $g) {
-            $groups[(int) $g['id']] = ['slug' => $g['slug'], 'name' => $g['name'], 'tagline' => $g['tagline'], 'projects' => []];
+        foreach (Database::all('SELECT id, slug, name, tagline, kind FROM consultancy_groups ORDER BY sort_order, id') as $g) {
+            $groups[(int) $g['id']] = ['slug' => $g['slug'], 'name' => $g['name'], 'tagline' => $g['tagline'], 'kind' => $g['kind'], 'projects' => []];
         }
         $rows = Database::all(
-            'SELECT id, group_id, slug, name, description, image, url FROM consultancy_projects
+            'SELECT id, group_id, slug, name, client_name, description, image, url FROM consultancy_projects
              WHERE is_published = 1 ORDER BY group_id, sort_order, id'
         );
         foreach ($rows as $p) {
@@ -82,6 +83,7 @@ final class ContentService
                 'id' => (int) $p['id'],
                 'slug' => $p['slug'],
                 'name' => $p['name'],
+                'clientName' => $p['client_name'],
                 'description' => $p['description'],
                 'image' => $p['image'],
                 'url' => $p['url'],

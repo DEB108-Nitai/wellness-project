@@ -19,7 +19,7 @@ const PUBLIC: Record<string, Omit<Meta, 'index'>> = {
   '/research': {
     title: 'Research — Trans Enigma Research Foundation | Transenigma',
     description:
-      'Publications across 15 fields from the Trans Enigma Research Foundation (TERF), from computational psychology and AI-led drug discovery to Vedic psychology, leadership and governance.',
+      'Peer-reviewed publications from the Trans Enigma Research Foundation (TERF), from computational psychology and AI-led drug discovery to Vedic psychology, leadership and governance.',
   },
   '/consultancy': {
     title: 'Consultancy | Transenigma',

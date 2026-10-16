@@ -97,6 +97,65 @@ test('registration validates phone, age, struggles and respects the open/closed 
     }
 });
 
+test('the 60-day form needs age, city and country as well as name, email and phone', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $send = static fn (array $body) => (new \Transenigma\Controllers\ChallengeController())->register(new Request('POST', '/challenge/registrations', [],
+        ['REMOTE_ADDR' => '10.30.40.50', 'CONTENT_TYPE' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR)));
+    $full = registration(['formElapsedMs' => 10000]);
+    $e = assertThrows(HttpException::class, fn () => $send(array_diff_key($full, ['age' => 1, 'city' => 1, 'country' => 1])));
+    assertSame(['age', 'city', 'country'], array_keys($e->fields), 'each missing field is named');
+    assertSame(['country'], array_keys(assertThrows(HttpException::class, fn () => $send(['country' => 'XX'] + $full))->fields), 'unknown country refused');
+    assertSame(201, $send($full)->status, 'a complete form registers');
+});
+
+test('one form can register for several programs: a row and reference each, one email listing them all', function () {
+    useTestDatabase();
+    asGuest();
+    $mail = captureMail();
+    $email = uniqueEmail();
+    $regs = ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['TTI', 'STI']]), authReq());
+    assertSame(['STI', 'TTI'], array_column($regs, 'program'), 'display order, whatever order they were ticked');
+    assertSame(2, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$email]));
+    assertSame(1, count($mail), 'one email for the whole form');
+    assertTrue(str_contains($mail[0]['subject'], 'STI and TTI'));
+    assertTrue(str_contains($mail[0]['text'], $regs[0]['ref']) && str_contains($mail[0]['text'], $regs[1]['ref']), 'both references');
+
+    // STI is already held: only PTI is new, and the one email says STI was kept as it was.
+    $more = ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['STI', 'PTI']]), authReq());
+    assertSame(['PTI'], array_column($more, 'program'));
+    assertSame(2, count($mail));
+    assertTrue(str_starts_with($mail[1]['subject'], 'Registered successfully'));
+    assertTrue(str_contains($mail[1]['text'], 'already registered for the Sonic Therapeutic Intervention (STI)') && str_contains($mail[1]['text'], $regs[0]['ref']));
+
+    // Everything chosen is already held: nothing stored, one "already registered" email with each reference.
+    assertSame([], ChallengeService::registerMany(registration(['email' => $email, 'programs' => ['STI', 'PTI', 'TTI']]), authReq()));
+    assertSame(3, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$email]));
+    assertSame(3, count($mail));
+    assertTrue(str_starts_with($mail[2]['subject'], 'You are already registered'));
+    assertTrue(str_contains($mail[2]['subject'], 'STI, PTI, TTI'));
+    assertTrue(str_contains($mail[2]['text'], $more[0]['ref']));
+});
+
+test('the form needs at least one listed program; a single program from an older page still works', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $send = static fn (array $body) => (new \Transenigma\Controllers\ChallengeController())->register(new Request('POST', '/challenge/registrations', [],
+        ['REMOTE_ADDR' => '10.30.40.51', 'CONTENT_TYPE' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR)));
+    $full = array_diff_key(registration(['formElapsedMs' => 10000]), ['program' => 1]);
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send($full))->fields), 'none chosen');
+    assertSame('Please choose at least one program.', assertThrows(HttpException::class, fn () => $send(['programs' => []] + $full))->fields['programs']);
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send(['programs' => ['STI', 'XYZ']] + $full))->fields), 'unknown program');
+    assertSame(['programs'], array_keys(assertThrows(HttpException::class, fn () => $send(['programs' => ['STI', 'STI']] + $full))->fields), 'the same program twice');
+    assertSame(201, $send(['programs' => ['STI', 'PTI', 'TTI']] + $full)->status);
+    assertSame(3, (int) Database::value('SELECT COUNT(*) FROM challenge_registrations WHERE email = ?', [$full['email']]));
+    $legacy = ['program' => 'PTI', 'email' => uniqueEmail()] + $full;
+    assertSame(201, $send($legacy)->status, 'older page sends one program');
+    assertSame('PTI', Database::value('SELECT program FROM challenge_registrations WHERE email = ?', [$legacy['email']]));
+});
+
 test('admin can change status and notes; CSV export neutralises formulas', function () {
     useTestDatabase();
     asGuest();
@@ -137,6 +196,49 @@ test('CSV export keeps every value in its own cell, even with backslash-quote tr
     assertSame(14, count($rows[1]), 'no extra cells');
     assertSame($tricky, $rows[1][3], 'name cell intact');
     assertSame($goal, $rows[1][11], 'goal cell intact');
+});
+
+test('registration charts count by day, program, status, schedule, age, struggle and city, over the same filters as the list', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $tag = 'Statsville' . bin2hex(random_bytes(2)); // isolates these rows through the q filter (city)
+    ChallengeService::register(registration(['program' => 'STI', 'age' => 22, 'city' => " $tag ", 'cohortTiming' => 'morning', 'struggles' => ['Distractions']]), authReq());
+    ChallengeService::register(registration(['program' => 'PTI', 'age' => 40, 'city' => strtolower($tag), 'cohortTiming' => 'evening']), authReq());
+    $third = ChallengeService::register(registration(['program' => 'PTI', 'city' => strtoupper($tag), 'cohortTiming' => 'evening', 'struggles' => ['Distractions', 'Stress & Anxiety']]), authReq());
+    Database::run("UPDATE challenge_registrations SET status = 'confirmed', age = NULL WHERE ref_code = ?", [$third['ref']]);
+
+    $s = ChallengeService::stats(['q' => $tag]);
+    $map = static fn (array $pairs): array => array_column($pairs, 'count', 'label');
+    assertSame(3, $s['total']);
+    assertSame(['STI' => 1, 'TTI' => 0, 'PTI' => 2], $map($s['byProgram']));
+    assertSame(2, $map($s['byStatus'])['registered']);
+    assertSame(1, $map($s['byStatus'])['confirmed']);
+    assertSame(['morning' => 1, 'evening' => 2, 'weekend' => 0], $map($s['byCohort']));
+    assertSame(['18–24' => 1, '25–34' => 0, '35–44' => 1, '45–54' => 0, '55+' => 0, 'Not given' => 1], $map($s['ageBands']));
+    assertSame(['label' => 'Distractions', 'count' => 3], $s['struggles'][0]);
+    assertSame([['label' => mb_convert_case($tag, MB_CASE_TITLE), 'count' => 3]], $s['cities'], 'city spellings grouped');
+    assertSame(30, count($s['byDay']), 'last 30 days by default');
+    $today = end($s['byDay']);
+    assertSame(gmdate('Y-m-d'), $today['day']);
+    assertSame(1, $today['STI']);
+    assertSame(2, $today['PTI']);
+
+    // Filters narrow the charts and the list alike.
+    assertSame(2, ChallengeService::stats(['q' => $tag, 'cohort' => 'evening'])['total']);
+    assertSame(2, ChallengeService::search(['q' => $tag, 'cohort' => 'evening'], 1, 25)['total']);
+    $yesterday = gmdate('Y-m-d', time() - 86400);
+    assertSame(0, ChallengeService::stats(['q' => $tag, 'to' => $yesterday])['total'], 'nothing registered before today');
+    assertSame(3, ChallengeService::stats(['q' => $tag, 'from' => gmdate('Y-m-d'), 'to' => gmdate('Y-m-d')])['total']);
+});
+
+test('registration filters reject impossible or reversed dates', function () {
+    $controller = new \Transenigma\Controllers\AdminController();
+    $get = static fn (array $q) => new \Transenigma\Core\Request('GET', '/admin/registrations/stats', $q, ['REMOTE_ADDR' => '10.0.0.8'], '');
+    foreach ([['from' => '2026-02-30'], ['to' => '12-10-2026'], ['from' => '2026-10-12', 'to' => '2026-10-01']] as $q) {
+        $e = assertThrows(HttpException::class, fn () => $controller->registrationStats($get($q)));
+        assertSame(422, $e->status, json_encode($q));
+    }
 });
 
 test('contact form stores the message and notifies support when configured', function () {
