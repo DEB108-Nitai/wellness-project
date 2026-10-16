@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertTriangle, ChevronLeft, ChevronRight, Download, Search } from 'lucide-react';
+import { AlertTriangle, Download, Search } from 'lucide-react';
 import { ParticipantFilters, ParticipantPage, participantsApi, SessionStatus } from '../../api/admin';
 import { ApiError } from '../../api/client';
 import { ChartCard, SINGLE, StackedColumns } from './charts';
-import { Badge, ErrorBox, PageHeader, StatTile } from './ui';
+import { Badge, ErrorBox, PageHeader, Pager, StatTile } from './ui';
 
 /**
  * Participants & results (owner ask: test results against people's names; PRD ADM-2/3).
@@ -76,7 +76,6 @@ export const ParticipantsAdmin: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, page]);
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.perPage)) : 1;
   const completed = data?.byStatus.completed ?? 0;
   const rate = data && data.total ? Math.round((completed / data.total) * 100) : 0;
   const show = (v: number | string) => (data ? v : '—');
@@ -252,21 +251,7 @@ export const ParticipantsAdmin: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {data && data.total > data.perPage && (
-            <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-xs text-slate-600">
-              <span>
-                Page {data.page} of {totalPages}
-              </span>
-              <div className="flex gap-2">
-                <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="p-2 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Previous page">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="p-2 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Next page">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
+          {data && <Pager page={data.page} perPage={data.perPage} total={data.total} onPage={setPage} />}
         </section>
       </div>
     </div>

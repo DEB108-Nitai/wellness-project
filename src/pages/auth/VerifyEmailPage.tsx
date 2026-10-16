@@ -65,7 +65,7 @@ export const VerifyEmailPage: React.FC = () => {
           </p>
           <Link
             to={user ? '/' : '/login'}
-            className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+            className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold"
           >
             {user ? 'Continue' : 'Sign in'}
           </Link>
@@ -85,14 +85,14 @@ export const VerifyEmailPage: React.FC = () => {
                 await logout();
                 setState({ status: 'signin' });
               }}
-              className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer"
+              className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold cursor-pointer"
             >
               Sign out
             </button>
           ) : (
             <Link
               to={signInHref}
-              className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+              className="inline-flex h-12 items-center px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold"
             >
               Sign in
             </Link>

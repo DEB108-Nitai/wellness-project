@@ -109,15 +109,16 @@ try {
 
   // 2. Visitor: contact message and newsletter.
   await page.goto(`${BASE}/contact`);
-  await page.waitFor(`document.querySelector('form input')`);
-  await page.fill('form input[type=text]', 'Rahul Sharma');
-  await page.fill('form input[type=email]', visitor);
-  await page.eval(`(() => { const ta = document.querySelector('form textarea');
+  // `main`: the footer's newsletter form is on the page before the contact page itself has loaded.
+  await page.waitFor(`document.querySelector('main form textarea')`);
+  await page.fill('main form input[type=text]', 'Rahul Sharma');
+  await page.fill('main form input[type=email]', visitor);
+  await page.eval(`(() => { const ta = document.querySelector('main form textarea');
     Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call(ta, 'Namaste! Are the PTI circles available online from Pune? (${tag})');
     ta.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await pause(3200);
   await page.clickText('Send Message', 'button');
-  await page.waitFor(`!document.querySelector('form textarea')`);
+  await page.waitFor(`!document.querySelector('main form textarea')`);
   await page.fill('footer input[type=email]', visitor);
   await page.clickText('Subscribe', 'footer button');
   await page.waitText('Thank you for subscribing');

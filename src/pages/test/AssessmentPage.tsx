@@ -58,14 +58,21 @@ export const AssessmentPage: React.FC = () => {
   const totalItems = itemSet?.items.length ?? 0;
 
   // ------------------------------------------------------------------ load
+  // Only the newest load may change the screen. An older reply that arrives late (React runs this twice in
+  // development; a slow network can do it anywhere) would otherwise pull a visitor who already pressed
+  // Continue back to the consent step and clear their ticks.
+  const loadSeq = React.useRef(0);
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     setStep('loading');
     try {
       const [items, current] = await Promise.all([assessmentApi.items(), assessmentApi.current()]);
+      if (seq !== loadSeq.current) return;
       setItemSet(items);
       setDraft(current);
       setStep('consent');
     } catch (err) {
+      if (seq !== loadSeq.current) return;
       setLoadError(err instanceof ApiError ? err.message : 'We could not load the assessment. Please try again.');
       setStep('failed');
     }
@@ -258,7 +265,7 @@ export const AssessmentPage: React.FC = () => {
       <div className="max-w-lg mx-auto px-4 py-24 text-center space-y-4">
         <AlertCircle className="w-10 h-10 mx-auto text-rose-500" />
         <p className="text-slate-700">{loadError}</p>
-        <button onClick={load} className="px-5 h-11 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer">
+        <button onClick={load} className="px-5 h-11 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold cursor-pointer">
           Try again
         </button>
       </div>
@@ -418,7 +425,7 @@ const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () 
       title: 'This assessment was already submitted',
       text: 'It was finished in another tab or window, so there is nothing left to answer here.',
       action: (
-        <Link to={`/results/${reference}`} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Link to={`/results/${reference}`} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold">
           View my result <ArrowRight className="w-4 h-4" />
         </Link>
       ),
@@ -427,7 +434,7 @@ const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () 
       title: 'You have been signed out',
       text: 'Sign in again to carry on from where your answers were last saved.',
       action: (
-        <Link to="/login?next=%2Ftest" className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+        <Link to="/login?next=%2Ftest" className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold">
           Sign in to continue <ArrowRight className="w-4 h-4" />
         </Link>
       ),
@@ -436,7 +443,7 @@ const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () 
       title: 'We can no longer save this assessment here',
       text: 'Your latest answers are kept on this device. Reload the test to continue where you left off.',
       action: (
-        <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer">
+        <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold cursor-pointer">
           <RotateCcw className="w-4 h-4" /> Reload the test
         </button>
       ),
@@ -446,7 +453,7 @@ const SavingStopped: React.FC<{ reference: string; reason: string; onReload: () 
     title: 'This assessment was restarted',
     text: 'It was closed in another tab or window (for example with "Start over"), so it can no longer be continued here.',
     action: (
-      <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold cursor-pointer">
+      <button onClick={onReload} className="inline-flex h-12 items-center gap-2 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold cursor-pointer">
         <RotateCcw className="w-4 h-4" /> Go to the current test
       </button>
     ),

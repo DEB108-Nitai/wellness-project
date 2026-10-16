@@ -74,6 +74,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
   // A guest's finished test waiting for an account: the CTA leads back to it instead of a new test.
   const resultRef = !hasDraft ? pendingResult?.ref ?? null : null;
   const openTest = () => (resultRef ? onNavigate('results', resultRef) : onNavigate('test'));
+  // Inside the test the button would only reopen the same page, so it is hidden there.
+  const inTest = currentView === 'test';
   const goToSection = useSectionNavigate();
 
   // Desktop dropdown that is open (by id), and the expanded groups in the mobile drawer.
@@ -158,7 +160,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               <button
                 onClick={() => go({ label: 'Home', view: 'landing' })}
                 aria-label={`${BRAND.name} home`}
-                className="flex items-center text-left rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 cursor-pointer"
+                className="flex items-center min-h-11 text-left rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 cursor-pointer"
               >
                 <BrandLogo className="h-6 sm:h-7" />
               </button>
@@ -263,7 +265,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-800 transition-colors cursor-pointer shadow-2xs"
                   >
-                    <div className="w-5 h-5 rounded-full bg-teal-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                    <div className="w-5 h-5 rounded-full bg-teal-700 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                       {currentUser.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="max-w-[70px] xl:max-w-[95px] truncate">{currentUser.name}</span>
@@ -292,7 +294,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                             <PlayCircle className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                             <span>Continue Test</span>
                           </div>
-                          <span className="text-[10px] font-bold bg-teal-600 text-white px-1.5 py-0.5 rounded-full">
+                          <span className="text-[10px] font-bold bg-teal-700 text-white px-1.5 py-0.5 rounded-full">
                             {draftProgress}%
                           </span>
                         </button>
@@ -353,6 +355,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               )}
 
               {/* Assessment CTA: Compact & beautifully styled without screen overflow */}
+              {!inTest && (
               <button
                 onClick={openTest}
                 className={`px-3 xl:px-3.5 py-1.5 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
@@ -378,21 +381,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
                   </>
                 )}
               </button>
+              )}
             </div>
 
             {/* Mobile Controls */}
             <div className="flex lg:hidden items-center gap-2">
-              <button
-                onClick={openTest}
-                className="px-3 py-1 text-xs font-semibold text-slate-950 bg-teal-500 rounded-lg whitespace-nowrap"
-              >
-                {hasDraft ? `Resume (${draftProgress}%)` : resultRef ? 'See my result' : 'Take Test'}
-              </button>
+              {!inTest && (
+                <button
+                  onClick={openTest}
+                  className="min-h-11 px-3 text-xs font-semibold text-slate-950 bg-teal-500 rounded-lg whitespace-nowrap"
+                >
+                  {hasDraft ? `Resume (${draftProgress}%)` : resultRef ? 'See my result' : 'Take Test'}
+                </button>
+              )}
 
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 cursor-pointer"
+                className="p-3 -mr-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 cursor-pointer"
                 aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenuOpen}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>

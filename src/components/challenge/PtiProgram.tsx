@@ -118,7 +118,7 @@ export const PtiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
             </p>
             <button
               onClick={onRegister}
-              className="w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="min-h-11 lg:min-h-0 w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Start the PTI Challenge (Free)</span>
               <ArrowRight className="w-4 h-4" />

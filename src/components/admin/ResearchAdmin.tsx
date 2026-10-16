@@ -227,10 +227,10 @@ export const ResearchAdmin: React.FC = () => {
             {data.categories.map((c, i) => (
               <li key={c.id} className="flex flex-wrap sm:flex-nowrap items-center gap-3 px-5 py-3">
                 <div className="flex flex-col">
-                  <button onClick={() => move(c, -1)} disabled={i === 0} className={`${btn.icon} w-8 h-8 disabled:opacity-30`} aria-label={`Move ${c.name} up`}>
+                  <button onClick={() => move(c, -1)} disabled={i === 0} className={`${btn.icon} w-11 h-11 disabled:opacity-30`} aria-label={`Move ${c.name} up`}>
                     <ArrowUp className="w-4 h-4" />
                   </button>
-                  <button onClick={() => move(c, 1)} disabled={i === data.categories.length - 1} className={`${btn.icon} w-8 h-8 disabled:opacity-30`} aria-label={`Move ${c.name} down`}>
+                  <button onClick={() => move(c, 1)} disabled={i === data.categories.length - 1} className={`${btn.icon} w-11 h-11 disabled:opacity-30`} aria-label={`Move ${c.name} down`}>
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>

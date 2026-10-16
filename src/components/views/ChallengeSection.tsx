@@ -67,7 +67,7 @@ export const ChallengeSection: React.FC = () => {
           <div className="pt-2 flex flex-wrap items-center justify-center gap-2">
             <button
               onClick={() => setActiveTab('both')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              className={`inline-flex items-center min-h-11 lg:min-h-0 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 activeTab === 'both'
                   ? 'bg-slate-900 text-white shadow-md'
                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
@@ -77,7 +77,7 @@ export const ChallengeSection: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('sti')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-11 lg:min-h-0 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'sti'
                   ? 'bg-teal-700 text-white shadow-md'
                   : 'bg-white text-teal-800 border border-teal-200 hover:bg-teal-50'
@@ -88,7 +88,7 @@ export const ChallengeSection: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('pti')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-11 lg:min-h-0 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'pti'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'bg-white text-indigo-800 border border-indigo-200 hover:bg-indigo-50'
@@ -99,7 +99,7 @@ export const ChallengeSection: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('tti')}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`min-h-11 lg:min-h-0 px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                 activeTab === 'tti'
                   ? 'bg-amber-700 text-white shadow-md'
                   : 'bg-white text-amber-900 border border-amber-200 hover:bg-amber-50'

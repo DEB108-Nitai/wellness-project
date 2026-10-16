@@ -94,7 +94,7 @@ export const StiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
             </div>
             <button
               onClick={onRegister}
-              className="w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="min-h-11 lg:min-h-0 w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Join STI Challenge</span>
               <ArrowRight className="w-4 h-4" />

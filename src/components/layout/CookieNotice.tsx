@@ -32,7 +32,7 @@ export const CookieNotice: React.FC = () => {
           <div className="pt-1 flex items-center gap-2">
             <button
               onClick={handleAccept}
-              className="px-3.5 py-1.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors cursor-pointer"
+              className="min-h-11 lg:min-h-0 px-3.5 py-1.5 text-xs font-semibold bg-teal-700 hover:bg-teal-800 text-white rounded-lg transition-colors cursor-pointer"
             >
               Got it
             </button>

@@ -180,11 +180,11 @@ export const ResearchView: React.FC = () => {
                     data-slug={c.slug}
                     onClick={() => jump(c.slug)}
                     aria-current={active === c.slug ? 'true' : undefined}
-                    className={`shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors cursor-pointer ${
-                      active === c.slug ? 'bg-teal-600 border-teal-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-teal-300'
+                    className={`inline-flex items-center min-h-11 lg:min-h-0 shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-medium whitespace-nowrap border transition-colors cursor-pointer ${
+                      active === c.slug ? 'bg-teal-700 border-teal-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-teal-300'
                     }`}
                   >
-                    {c.name} <span className={active === c.slug ? 'text-teal-100' : 'text-slate-400'}>{c.count}</span>
+                    {c.name} <span className={active === c.slug ? 'text-teal-100' : 'text-slate-500'}>{c.count}</span>
                   </button>
                 ))}
               </div>
@@ -208,7 +208,7 @@ export const ResearchView: React.FC = () => {
                           }`}
                         >
                           <span>{c.name}</span>
-                          <span className={`shrink-0 text-xs mt-0.5 ${active === c.slug ? 'text-teal-700' : 'text-slate-400'}`}>{c.count}</span>
+                          <span className={`shrink-0 text-xs mt-0.5 ${active === c.slug ? 'text-teal-700' : 'text-slate-500'}`}>{c.count}</span>
                         </button>
                       </li>
                     ))}
@@ -233,7 +233,7 @@ export const ResearchView: React.FC = () => {
                         <li key={p.id} className="flex flex-col sm:flex-row gap-2.5 sm:gap-4 rounded-2xl bg-white border border-slate-200 p-4 sm:p-5 hover:border-teal-200 hover:shadow-xs transition-colors">
                           <span
                             className={`self-start shrink-0 w-14 h-7 rounded-lg text-xs font-bold flex items-center justify-center ${
-                              p.year ? 'bg-teal-50 text-teal-800' : 'bg-slate-50 text-slate-400'
+                              p.year ? 'bg-teal-50 text-teal-800' : 'bg-slate-50 text-slate-500'
                             }`}
                           >
                             {p.year ?? 'n.d.'}
@@ -245,7 +245,7 @@ export const ResearchView: React.FC = () => {
                                 href={p.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-4"
+                                className="min-h-11 lg:min-h-0 inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 hover:underline underline-offset-4"
                               >
                                 Read the paper
                                 <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />

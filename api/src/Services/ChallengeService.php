@@ -8,6 +8,7 @@ use Transenigma\Core\Database;
 use Transenigma\Core\HttpException;
 use Transenigma\Core\RateLimiter;
 use Transenigma\Core\Request;
+use Transenigma\Support\Csv;
 
 /**
  * 60-Day Challenge registrations for STI, TTI and PTI (PRD §4.4 CH-1 … CH-8).
@@ -278,17 +279,14 @@ final class ChallengeService
     public static function exportCsv(array $filters): void
     {
         [$where, $params] = self::filterSql($filters);
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM so Excel shows non-English names correctly
-        // escape '' = RFC 4180 (quotes doubled), as spreadsheets read it; PHP's default backslash escape lets
-        // a value like x\",=CMD() split into a new, unchecked cell.
-        fputcsv($out, ['Reference', 'Program', 'Status', 'Name', 'Email', 'Phone', 'Age', 'City', 'Country', 'Timing', 'Struggles', 'Goal', 'Admin notes', 'Registered (UTC)'], ',', '"', '');
+        $out = Csv::open();
+        Csv::row($out, ['Reference', 'Program', 'Status', 'Name', 'Email', 'Phone', 'Age', 'City', 'Country', 'Timing', 'Struggles', 'Goal', 'Admin notes', 'Registered (UTC)']);
         $stmt = Database::run("SELECT r.* FROM challenge_registrations r $where ORDER BY r.created_at DESC", $params);
         while ($r = $stmt->fetch()) {
-            fputcsv($out, array_map([self::class, 'csvSafe'], [
+            Csv::row($out, [
                 $r['ref_code'], $r['program'], $r['status'], $r['name'], $r['email'], $r['phone'], $r['age'], $r['city'], $r['country'],
                 $r['cohort_timing'], implode('; ', json_decode($r['struggles'], true) ?: []), $r['primary_goal'], $r['admin_notes'], $r['created_at'],
-            ]), ',', '"', '');
+            ]);
         }
         fclose($out);
     }
@@ -327,12 +325,6 @@ final class ChallengeService
             array_push($params, $like, $like, $like, $like, $like);
         }
         return [$where ? 'WHERE ' . implode(' AND ', $where) : '', $params];
-    }
-
-    public static function csvSafe(mixed $value): string
-    {
-        $s = (string) ($value ?? '');
-        return preg_match('/^[=+\-@\t\r]/', $s) ? "'" . $s : $s;
     }
 
     private static function toPublic(array $r): array

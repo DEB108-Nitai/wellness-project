@@ -54,7 +54,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
             placeholder="Search factors or traits..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-500"
+            className="w-full h-11 lg:h-auto pl-9 pr-3 py-2 text-base lg:text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:border-teal-500"
           />
         </div>
 
@@ -63,7 +63,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
+              className={`inline-flex items-center min-h-11 lg:min-h-0 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -92,7 +92,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
                 <div className="flex items-center gap-3">
                   <span
                     className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs font-heading ${
-                      isSelected ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-700'
+                      isSelected ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700'
                     }`}
                   >
                     {f.code}
@@ -103,7 +103,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
                   </div>
                 </div>
 
-                <div className="text-right text-[11px] text-slate-400 font-medium">
+                <div className="text-right text-[11px] text-slate-500 font-medium">
                   {f.lowLabel.split(',')[0]} ↔ {f.highLabel.split(',')[0]}
                 </div>
               </button>
@@ -118,7 +118,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
               <span className="text-xs font-bold font-mono text-teal-700 bg-teal-50 px-2.5 py-1 rounded-md">
                 Factor {activeFactor.code} · {activeFactor.category}
               </span>
-              <span className="text-xs text-slate-400">Order: #{activeFactor.sortOrder} of 16</span>
+              <span className="text-xs text-slate-500">Order: #{activeFactor.sortOrder} of 16</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-heading">
               {activeFactor.name}
@@ -181,7 +181,7 @@ export const FactorsDirectoryView: React.FC<FactorsDirectoryViewProps> = ({
           <div className="pt-2 text-center">
             <button
               onClick={() => onNavigate('test')}
-              className="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2"
             >
               <span>Test Your Score for Factor {activeFactor.code}</span>
               <ArrowRight className="w-4 h-4" />

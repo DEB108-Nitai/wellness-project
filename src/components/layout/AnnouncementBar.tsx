@@ -18,7 +18,7 @@ export const AnnouncementBar: React.FC<AnnouncementBarProps> = ({ text }) => {
       <button
         onClick={() => setDismissed(true)}
         aria-label="Dismiss announcement"
-        className="p-1 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors"
+        className="p-3.5 -my-2.5 -mr-3.5 lg:p-1 lg:m-0 hover:bg-slate-700 text-slate-400 hover:text-white rounded transition-colors"
       >
         <X className="w-4 h-4" />
       </button>

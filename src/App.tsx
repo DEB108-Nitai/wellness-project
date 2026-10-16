@@ -10,6 +10,7 @@ import { useSettings } from './context/SettingsContext';
 import { useAuth } from './context/AuthContext';
 import { useAppNavigate, viewForPath } from './lib/routes';
 import { applyPageMeta } from './lib/pageMeta';
+import { lazyPage } from './lib/lazyPage';
 import { recordVisit } from './api/visits';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -19,27 +20,32 @@ import { VerifyEmailBanner } from './components/layout/VerifyEmailBanner';
 import { RequireAdmin, RequireAuth } from './components/auth/RouteGuards';
 import { PageSpinner } from './components/auth/FormControls';
 import { LandingView } from './components/views/LandingView';
-import { FactorsDirectoryView } from './components/views/FactorsDirectoryView';
-import { HowItWorksView } from './components/views/HowItWorksView';
-import { BenefitsView } from './components/views/BenefitsView';
-import { FAQView } from './components/views/FAQView';
-import { TeamView } from './components/views/TeamView';
-import { ResearchView } from './components/views/ResearchView';
-import { ConsultancyView } from './components/views/ConsultancyView';
-import { ContactView } from './components/views/ContactView';
-import { PrivacyTermsView } from './components/views/PrivacyTermsView';
-import { LoginPage } from './pages/auth/LoginPage';
-import { SignupPage } from './pages/auth/SignupPage';
-import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
-import { VerifyEmailPage } from './pages/auth/VerifyEmailPage';
-import { AccountPage } from './pages/AccountPage';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { UnsubscribePage } from './pages/UnsubscribePage';
-import { AssessmentPage } from './pages/test/AssessmentPage';
-import { ResultsPage } from './pages/results/ResultsPage';
-import { SharedResultsPage } from './pages/results/SharedResultsPage';
-import { MyResultsPage } from './pages/results/MyResultsPage';
+
+/**
+ * Every page except the home page downloads only when it is first opened, so the first visit stays small.
+ * lazyPage also recovers a tab left open across a redeploy (src/lib/lazyPage.ts).
+ */
+const FactorsDirectoryView = lazyPage(() => import('./components/views/FactorsDirectoryView'), 'FactorsDirectoryView');
+const HowItWorksView = lazyPage(() => import('./components/views/HowItWorksView'), 'HowItWorksView');
+const BenefitsView = lazyPage(() => import('./components/views/BenefitsView'), 'BenefitsView');
+const FAQView = lazyPage(() => import('./components/views/FAQView'), 'FAQView');
+const TeamView = lazyPage(() => import('./components/views/TeamView'), 'TeamView');
+const ResearchView = lazyPage(() => import('./components/views/ResearchView'), 'ResearchView');
+const ConsultancyView = lazyPage(() => import('./components/views/ConsultancyView'), 'ConsultancyView');
+const ContactView = lazyPage(() => import('./components/views/ContactView'), 'ContactView');
+const PrivacyTermsView = lazyPage(() => import('./components/views/PrivacyTermsView'), 'PrivacyTermsView');
+const LoginPage = lazyPage(() => import('./pages/auth/LoginPage'), 'LoginPage');
+const SignupPage = lazyPage(() => import('./pages/auth/SignupPage'), 'SignupPage');
+const ForgotPasswordPage = lazyPage(() => import('./pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
+const ResetPasswordPage = lazyPage(() => import('./pages/auth/ResetPasswordPage'), 'ResetPasswordPage');
+const VerifyEmailPage = lazyPage(() => import('./pages/auth/VerifyEmailPage'), 'VerifyEmailPage');
+const AccountPage = lazyPage(() => import('./pages/AccountPage'), 'AccountPage');
+const NotFoundPage = lazyPage(() => import('./pages/NotFoundPage'), 'NotFoundPage');
+const UnsubscribePage = lazyPage(() => import('./pages/UnsubscribePage'), 'UnsubscribePage');
+const AssessmentPage = lazyPage(() => import('./pages/test/AssessmentPage'), 'AssessmentPage');
+const ResultsPage = lazyPage(() => import('./pages/results/ResultsPage'), 'ResultsPage');
+const SharedResultsPage = lazyPage(() => import('./pages/results/SharedResultsPage'), 'SharedResultsPage');
+const MyResultsPage = lazyPage(() => import('./pages/results/MyResultsPage'), 'MyResultsPage');
 
 /** Public site chrome: announcement, navbar, verification reminder, footer, cookie notice. */
 function SiteLayout() {
@@ -72,7 +78,9 @@ function SiteLayout() {
       <Navbar currentView={viewForPath(location.pathname)} onNavigate={onNavigate} />
       <VerifyEmailBanner />
       <main className="flex-1">
-        <Outlet />
+        <React.Suspense fallback={<PageSpinner />}>
+          <Outlet />
+        </React.Suspense>
       </main>
       <Footer onNavigate={onNavigate} />
       <CookieNotice />
@@ -134,6 +142,7 @@ export default function App() {
     {/* Every page, including the full-screen sign-in pages */}
     <ScrollToTop />
     <PageMeta />
+    <React.Suspense fallback={<PageSpinner />}>
     <Routes>
       {/* Focused onboarding screens (no site chrome) */}
       <Route path="/login" element={<LoginPage />} />
@@ -199,6 +208,7 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </React.Suspense>
     </>
   );
 }

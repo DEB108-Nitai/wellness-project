@@ -43,7 +43,7 @@ const ProjectCard: React.FC<{ project: ConsultancyProject; upcoming: boolean }> 
             href={project.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-auto pt-5 self-start inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
+            className="min-h-11 lg:min-h-0 mt-auto pt-5 self-start inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
           >
             Visit site
             <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
@@ -183,7 +183,7 @@ export const ConsultancyView: React.FC<Props> = ({ onNavigate }) => {
           </div>
           <button
             onClick={() => onNavigate('contact')}
-            className="shrink-0 h-12 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[15px] transition-colors inline-flex items-center gap-2 cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/30"
+            className="shrink-0 h-12 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-[15px] transition-colors inline-flex items-center gap-2 cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/30"
           >
             Contact us
             <ArrowRight className="w-4 h-4" aria-hidden="true" />

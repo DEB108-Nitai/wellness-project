@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Download, Eye, Loader2, X } from 'lucide-react';
+import { Download, Eye, Loader2, X } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { ProgramCode } from '../../api/challenge';
 import { AdminRegistration, adminApi, REGISTRATION_STATUSES, RegistrationFilters, RegistrationPage, RegistrationStatus } from '../../api/admin';
+import { Pager } from './ui';
 
 export const PROGRAM_BADGE: Record<ProgramCode, string> = {
   STI: 'bg-teal-50 text-teal-800 border-teal-200',
@@ -53,7 +54,6 @@ export const RegistrationsTable: React.FC<{ filters: RegistrationFilters; onChan
     onChanged?.(); // the tiles and charts above count statuses too
   };
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / data.perPage)) : 1;
 
   return (
     <section className="bg-white rounded-2xl border border-slate-200 shadow-xs" aria-label="Registrations">
@@ -134,21 +134,7 @@ export const RegistrationsTable: React.FC<{ filters: RegistrationFilters; onChan
         </table>
       </div>
 
-      {data && data.total > data.perPage && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 text-xs text-slate-600">
-          <span>
-            Page {data.page} of {totalPages}
-          </span>
-          <div className="flex gap-2">
-            <button disabled={page <= 1} onClick={() => setPage(page - 1)} className="p-2 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Previous page">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button disabled={page >= totalPages} onClick={() => setPage(page + 1)} className="p-2 rounded-lg border border-slate-300 disabled:opacity-40 cursor-pointer" aria-label="Next page">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+      {data && <Pager page={data.page} perPage={data.perPage} total={data.total} onPage={setPage} />}
 
       {selected && <RegistrationDetail registration={selected} onClose={() => setSelected(null)} onUpdated={onUpdated} />}
     </section>
