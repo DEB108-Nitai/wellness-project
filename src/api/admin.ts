@@ -500,7 +500,8 @@ export interface ItemRow {
   expected: number | null;
 }
 export interface NormsData {
-  normSet: { version: string; source: string; sampleSize: number };
+  /** 'table': factor stens read from the real distribution (v2); 'formula': 2z + 5.5 (v1). */
+  normSet: { version: string; source: string; sampleSize: number; stenMethod: 'formula' | 'table' };
   factors: { code: string; name: string; mean: number; sd: number; n: number | null; alpha: number | null }[];
   domains: { code: string; name: string; mean: number; sd: number }[];
 }

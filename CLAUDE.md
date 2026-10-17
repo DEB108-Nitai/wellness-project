@@ -50,8 +50,8 @@ E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clea
 
 ### Scoring (16PF)
 - 163 IPIP items + 3 attention checks. Norms derived from Open Psychometrics data; source of truth is `docs/scoring/` (`norms.json`, `ipip16_items.tsv`, `reference_scoring.py`, `golden.json`).
-- raw → z → sten = clamp(round(2z + 5.5)) with half-away-from-zero rounding; bands low 1–3 / average 4–7 / high 8–10. Global domains are signed factor composites normed separately (`ScoringService`).
-- `ScoringTest` checks the PHP engine against golden cases from the independent Python reference — keep them in agreement.
+- Active norm set `ipip16-op2019-v2`: factor sten read from `factor_stens` (built from the real distribution by `derive_norms.py` → `stens.json` → `database/tools/build-sten-seed.php` → migration 027). The old `v1` (sten = clamp(round(2z + 5.5)), half away from zero) still scores nothing new but stays for old sessions. Bands low 1–3 / average 4–7 / high 8–10. Global domains are signed factor composites normed separately and use 2z + 5.5 in both (`ScoringService`).
+- `ScoringTest` checks the PHP engine against golden cases from the independent Python reference for both versions (`golden.json` v1, `golden_v2.json` v2) — keep them in agreement. `tests/e2e/scoring-v2.mjs` takes a real respondent's answers through the site.
 
 ### Database (`database/`)
 - Versioned SQL migrations in `database/migrations/NNN_*.sql`, applied by `api/src/Migrations/Migrator.php`. Never edit an applied migration; add a new one.

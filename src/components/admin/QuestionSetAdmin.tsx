@@ -112,8 +112,10 @@ export const QuestionSetAdmin: React.FC = () => {
         <div className="space-y-4">
           <p className="text-sm text-slate-600">
             Active norms <strong className="text-slate-800">{norms.normSet.version}</strong>: {norms.normSet.source}. Sample of{' '}
-            <strong className="text-slate-800">{norms.normSet.sampleSize.toLocaleString()}</strong> people. A raw score becomes z = (raw − mean) ÷ SD, then sten = 2z +
-            5.5, rounded and kept within 1–10.
+            <strong className="text-slate-800">{norms.normSet.sampleSize.toLocaleString()}</strong> people.{' '}
+            {norms.normSet.stenMethod === 'table'
+              ? `Each trait's sten is read from a table of ${norms.normSet.sampleSize.toLocaleString()} people (standard sten cut-points). The 5 global scores use z = (composite − mean) ÷ SD, then sten = 2z + 5.5.`
+              : 'A raw score becomes z = (raw − mean) ÷ SD, then sten = 2z + 5.5, rounded and kept within 1–10.'}
           </p>
           <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
             <Panel title="16 factors">

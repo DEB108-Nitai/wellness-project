@@ -72,8 +72,8 @@ The current AI-written statements in `src/data/questionsData.ts` are **replaced*
 ### 3.2 Norms
 - **Source:** Open Psychometrics 16PF open dataset.
 - **Sample:** 35,338 complete responses from people aged 13–100.
-- **Version:** `norm_version = 'ipip16-op2019-v1'`.
-- **Reproducibility:** derived by [`docs/scoring/derive_norms.py`](scoring/derive_norms.py); the output is [`docs/scoring/norms.json`](scoring/norms.json).
+- **Versions:** `ipip16-op2019-v1` (factor sten = 2z + 5.5) scored tests until 2026-10-16. **Active: `ipip16-op2019-v2`** (owner decision 2026-10-16): the same norms, but each factor's sten is read from the real distribution (`factor_stens`, migration 027).
+- **Reproducibility:** derived by [`docs/scoring/derive_norms.py`](scoring/derive_norms.py); the outputs are [`docs/scoring/norms.json`](scoring/norms.json) and, for v2, [`docs/scoring/stens.json`](scoring/stens.json).
 - **Attribution:** credited in the footer and on the Methodology/FAQ page.
 
 | Factor | Name | Items | Mean (raw) | SD | Reliability (α) |
@@ -95,14 +95,16 @@ The current AI-written statements in `src/data/questionsData.ts` are **replaced*
 | Q3 | Perfectionism | 10 | 31.51 | 6.50 | .79 |
 | Q4 | Tension | 10 | 28.29 | 6.68 | .80 |
 
-Norms are stored in the database (`factor_norms`, `factor_percentiles`, `domain_norms`), not hard-coded. A future norm version (for example, one built from our own participants) can then be added without code changes, and historic results keep the version they were scored with.
+Norms are stored in the database (`factor_norms`, `factor_percentiles`, `factor_stens`, `domain_norms`; `norm_sets.sten_method` says `formula` or `table`), not hard-coded. A future norm version (for example, one built from our own participants) can then be added without code changes, and historic results keep the version they were scored with.
 
 ### 3.3 Algorithm (implemented in PHP only; the browser never computes scores)
 For each factor *f*:
 1. **Item score:** positively keyed items score `answer`; negatively keyed items score `6 − answer`.
 2. **Raw score:** `raw_f` = the sum of the item scores. Range: 10–50 (13–65 for B).
 3. **z-score:** `z_f = (raw_f − mean_f) / sd_f`.
-4. **Sten:** `sten_f = clamp(round(2·z_f + 5.5), 1, 10)`, the standard ten scale with mean 5.5 and SD 2, as used by the official 16PF.
+4. **Sten** (the standard ten scale, mean 5.5, SD 2):
+   - **v2 (active):** read from `factor_stens` for `raw_f`. Each attainable raw score gets the sten whose band contains its exact mid-rank share of the 35,338 people; the band edges are the standard ones, Φ(−2) … Φ(2) = 2.275, 6.681, 15.866, 30.854, 50, 69.146, 84.134, 93.319, 97.725 %. This is how the official 16PF builds stens (normalised norm tables), and it keeps the sten, the percentile and the band in agreement. A missing table row stops scoring with an error; it is never guessed.
+   - **v1:** `sten_f = clamp(round(2·z_f + 5.5), 1, 10)`. On the norm sample it contradicted the percentile for 9.0 % of trait scores (for example Warmth "higher than 85 % of people" shown as sten 7, Average); v2 brings that to 0 %. 9.6 % of trait scores move, always by exactly one sten.
 5. **Percentile:** looked up from the **empirical** table in `factor_percentiles` (mid-rank percentile for each possible raw score), not from a normal approximation.
 6. **Band:** sten 1–3 = `low`, 4–7 = `average`, 8–10 = `high`.
 
@@ -116,7 +118,7 @@ For each factor *f*:
 | IN | Independence | +E +H +L +Q1 |
 | SC | Self-Control | −F +G −M +Q3 |
 
-For each domain: `z_G = (G − mean_G) / sd_G`, using the population mean and SD of the composite (from `norms.json`; for example EX has SD 3.89). Then `sten_G = clamp(round(2·z_G + 5.5), 1, 10)`, with the same bands as above.
+For each domain: `z_G = (G − mean_G) / sd_G`, using the population mean and SD of the composite (from `norms.json`; for example EX has SD 3.89). Then `sten_G = clamp(round(2·z_G + 5.5), 1, 10)`, with the same bands as above, in both v1 and v2 (a composite of 4–5 factors is close to normal, so the formula fits it).
 
 **Completeness rule:** a session can only be submitted when **all 166 items** are answered. There is no partial scoring (fixes #8).
 

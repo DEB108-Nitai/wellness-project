@@ -300,10 +300,10 @@ final class AdminSiteService
 
     public static function norms(): array
     {
-        $set = Database::one('SELECT version, source, sample_size, created_at FROM norm_sets WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1')
+        $set = Database::one('SELECT version, source, sample_size, sten_method, created_at FROM norm_sets WHERE is_active = 1 ORDER BY created_at DESC LIMIT 1')
             ?? throw HttpException::notFound('No active norm set.');
         return [
-            'normSet' => ['version' => $set['version'], 'source' => $set['source'], 'sampleSize' => (int) $set['sample_size']],
+            'normSet' => ['version' => $set['version'], 'source' => $set['source'], 'sampleSize' => (int) $set['sample_size'], 'stenMethod' => $set['sten_method']],
             'factors' => array_map(static fn (array $r): array => [
                 'code' => $r['factor_code'], 'name' => $r['name'], 'mean' => (float) $r['mean'], 'sd' => (float) $r['sd'],
                 'n' => $r['n'] === null ? null : (int) $r['n'], 'alpha' => $r['alpha'] === null ? null : (float) $r['alpha'],
