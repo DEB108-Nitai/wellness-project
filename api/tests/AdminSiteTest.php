@@ -151,6 +151,7 @@ test('question set and norms: the active 166 items with their keys and the norm 
     assertSame(16, count($norms['factors']));
     assertSame(5, count($norms['domains']));
     assertTrue($norms['normSet']['sampleSize'] > 1000);
+    assertSame('table', $norms['normSet']['stenMethod'], 'the active norm set reads stens from the real distribution');
 });
 
 test('slice H routes are admin-only', function () {

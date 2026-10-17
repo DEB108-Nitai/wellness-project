@@ -80,17 +80,23 @@ final class PsychometricRepository
     public static function norms(string $version): array
     {
         if (!isset(self::$cache["norms:$version"])) {
-            $norms = ['factors' => [], 'percentiles' => [], 'domains' => []];
+            // method 'formula': factor sten = 2z + 5.5 (v1). 'table': factor sten read from factor_stens (v2, migration 027).
+            $method = (string) (Database::value('SELECT sten_method FROM norm_sets WHERE version = ?', [$version])
+                ?? throw new RuntimeException("Unknown norm set $version"));
+            $norms = ['method' => $method, 'factors' => [], 'percentiles' => [], 'stens' => [], 'domains' => []];
             foreach (Database::all('SELECT factor_code, mean, sd FROM factor_norms WHERE norm_version = ?', [$version]) as $r) {
                 $norms['factors'][$r['factor_code']] = ['mean' => (float) $r['mean'], 'sd' => (float) $r['sd']];
             }
             foreach (Database::all('SELECT factor_code, raw_score, percentile FROM factor_percentiles WHERE norm_version = ?', [$version]) as $r) {
                 $norms['percentiles'][$r['factor_code']][(int) $r['raw_score']] = (float) $r['percentile'];
             }
+            foreach (Database::all('SELECT factor_code, raw_score, sten FROM factor_stens WHERE norm_version = ?', [$version]) as $r) {
+                $norms['stens'][$r['factor_code']][(int) $r['raw_score']] = (int) $r['sten'];
+            }
             foreach (Database::all('SELECT domain_code, mean, sd FROM domain_norms WHERE norm_version = ?', [$version]) as $r) {
                 $norms['domains'][$r['domain_code']] = ['mean' => (float) $r['mean'], 'sd' => (float) $r['sd']];
             }
-            if (count($norms['factors']) !== 16 || count($norms['domains']) !== 5) {
+            if (count($norms['factors']) !== 16 || count($norms['domains']) !== 5 || ($method === 'table' && count($norms['stens']) !== 16)) {
                 throw new RuntimeException("Norm set $version is incomplete");
             }
             self::$cache["norms:$version"] = $norms;

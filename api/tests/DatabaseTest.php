@@ -50,14 +50,19 @@ test('items are numbered 1..166 and no two neighbours share a factor', function 
 
 test('norms cover every factor with complete, increasing percentile tables', function () {
     useTestDatabase();
-    assertSame(16, (int) Database::value("SELECT COUNT(*) FROM factor_norms WHERE norm_version = 'ipip16-op2019-v1' AND sd > 0"));
-    assertSame(5, (int) Database::value("SELECT COUNT(*) FROM domain_norms WHERE sd > 0"));
-    foreach (Database::all('SELECT f.factor_code, COUNT(i.id) k FROM factor_norms f JOIN items i ON i.factor_code = f.factor_code GROUP BY f.factor_code') as $f) {
-        $k = (int) $f['k'];
-        $pct = Database::all('SELECT raw_score, percentile FROM factor_percentiles WHERE factor_code = ? ORDER BY raw_score', [$f['factor_code']]);
-        assertSame(range($k, 5 * $k), array_map(fn ($r) => (int) $r['raw_score'], $pct), "raw range for {$f['factor_code']}");
-        for ($i = 1; $i < count($pct); $i++) {
-            assertTrue((float) $pct[$i]['percentile'] >= (float) $pct[$i - 1]['percentile'], "percentiles must not decrease for {$f['factor_code']}");
+    // v1 (2z + 5.5) and v2 (stens from the real distribution, migration 027) share the same norms.
+    $versions = array_column(Database::all('SELECT version FROM norm_sets ORDER BY version'), 'version');
+    assertSame(['ipip16-op2019-v1', 'ipip16-op2019-v2'], $versions);
+    foreach ($versions as $v) {
+        assertSame(16, (int) Database::value('SELECT COUNT(*) FROM factor_norms WHERE norm_version = ? AND sd > 0', [$v]), "$v factor norms");
+        assertSame(5, (int) Database::value('SELECT COUNT(*) FROM domain_norms WHERE norm_version = ? AND sd > 0', [$v]), "$v domain norms");
+        foreach (Database::all('SELECT f.factor_code, COUNT(i.id) k FROM factor_norms f JOIN items i ON i.factor_code = f.factor_code WHERE f.norm_version = ? GROUP BY f.factor_code', [$v]) as $f) {
+            $k = (int) $f['k'];
+            $pct = Database::all('SELECT raw_score, percentile FROM factor_percentiles WHERE norm_version = ? AND factor_code = ? ORDER BY raw_score', [$v, $f['factor_code']]);
+            assertSame(range($k, 5 * $k), array_map(fn ($r) => (int) $r['raw_score'], $pct), "$v raw range for {$f['factor_code']}");
+            for ($i = 1; $i < count($pct); $i++) {
+                assertTrue((float) $pct[$i]['percentile'] >= (float) $pct[$i - 1]['percentile'], "$v percentiles must not decrease for {$f['factor_code']}");
+            }
         }
     }
     // Domain weights follow the 16PF global factor structure.
