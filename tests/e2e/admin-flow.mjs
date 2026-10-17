@@ -7,9 +7,10 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { launch } from './cdp.mjs';
 import { finishAdminSignIn, promoteToAdmin, signOut } from './admin-signin.mjs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:3000';
-const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = `${ROOT}tests/e2e/shots/`;
 const PASSWORD = 'Calm-River-Lantern-42';
 const tag = `flow${Date.now() % 1000000}`;
@@ -118,7 +119,8 @@ try {
     ta.dispatchEvent(new Event('input', { bubbles: true })); })()`);
   await pause(3200);
   await page.clickText('Send Message', 'button');
-  await page.waitFor(`!document.querySelector('main form textarea')`);
+  // The support notification goes out over real SMTP inside the request when mail is configured: allow for it.
+  await page.waitFor(`!document.querySelector('main form textarea')`, 60000);
   await page.fill('footer input[type=email]', visitor);
   await page.clickText('Subscribe', 'footer button');
   await page.waitText('Thank you for subscribing');

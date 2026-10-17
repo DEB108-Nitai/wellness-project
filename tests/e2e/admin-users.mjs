@@ -5,9 +5,10 @@
 import { execFileSync } from 'node:child_process';
 import { launch } from './cdp.mjs';
 import { finishAdminSignIn, promoteToAdmin, signOut } from './admin-signin.mjs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:3000';
-const ROOT = new URL('../../', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = `${ROOT}tests/e2e/shots/`;
 const PASSWORD = 'Calm-River-Lantern-42';
 const tag = Date.now() % 1000000;

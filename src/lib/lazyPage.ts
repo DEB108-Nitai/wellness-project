@@ -19,9 +19,12 @@ export function lazyPage<K extends string, M extends Record<K, React.ComponentTy
     } catch (error) {
       let reloaded = true;
       try {
-        reloaded = sessionStorage.getItem(RELOAD_KEY) === '1';
-        if (!reloaded) sessionStorage.setItem(RELOAD_KEY, '1');
-      } catch { /* storage blocked: don't risk a reload loop */ }
+        // Only reload once the marker is saved; otherwise the next failure would reload again, forever.
+        if (sessionStorage.getItem(RELOAD_KEY) !== '1') {
+          sessionStorage.setItem(RELOAD_KEY, '1');
+          reloaded = false;
+        }
+      } catch { /* storage blocked or full: don't risk a reload loop */ }
       if (!reloaded) {
         window.location.reload();
         return new Promise<never>(() => {}); // keep the spinner until the reload happens

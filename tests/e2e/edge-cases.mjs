@@ -4,9 +4,10 @@
 // 2. The browser Back button steps back through statement pages.
 // 3. A test restarted in "another tab" stops saving here and says why.
 import { launch } from './cdp.mjs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:3000';
-const OUT = new URL('./shots/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const OUT = fileURLToPath(new URL('./shots/', import.meta.url));
 const email = `edge${Date.now()}@example.com`;
 const step = (m) => console.log(`• ${m}`);
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));

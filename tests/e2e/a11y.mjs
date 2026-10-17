@@ -5,10 +5,11 @@
 // Read-only: it opens pages and creates no database rows (the visit counter skips automated browsers).
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { launch } from './cdp.mjs';
 
 const BASE = process.env.E2E_BASE ?? 'http://localhost:3000';
-const OUT = new URL('./shots/a11y/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const OUT = fileURLToPath(new URL('./shots/a11y/', import.meta.url));
 mkdirSync(OUT, { recursive: true });
 const AXE = readFileSync(createRequire(import.meta.url).resolve('axe-core/axe.min.js'), 'utf8');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -54,7 +55,10 @@ try {
     for (const width of WIDTHS) {
       await page.viewport(width, 900, width < 1024);
       await page.goto(BASE + path);
-      await page.waitFor(`document.querySelector('main, h1') && !document.querySelector('.animate-spin')`, 20000).catch(() => {});
+      // Wait for the page spinner (PageSpinner) to go; decorative spinning icons don't count. A page still
+      // loading after 20 s is a failure, not something to check as if it had loaded.
+      await page.waitFor(`document.querySelector('main, h1') && !document.querySelector('[role=status][aria-label=Loading]')`, 20000)
+        .catch(() => { throw new Error(`${path} @${width} never finished loading`); });
       await sleep(700); // lazy page chunk, fonts, entry animations
       const overflow = await page.eval('document.documentElement.scrollWidth - window.innerWidth');
       const small = width < 1024 ? await page.eval(SMALL_TARGETS) : [];

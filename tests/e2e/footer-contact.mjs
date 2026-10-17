@@ -2,9 +2,10 @@
 // new pages open at the top (also from footer links), Contact copy and email, team title, 4 widths.
 // Read-only: creates no database rows. Usage (dev server running): node tests/e2e/footer-contact.mjs → shots/footer-*.png
 import { launch } from './cdp.mjs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:3000';
-const SHOTS = new URL('./shots/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const SHOTS = fileURLToPath(new URL('./shots/', import.meta.url));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failures = 0;
 const check = (ok, label) => {

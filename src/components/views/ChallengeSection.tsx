@@ -137,7 +137,7 @@ export const ChallengeSection: React.FC = () => {
                 </div>
 
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-xs shadow-xs uppercase">
+                  <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-700 to-orange-700 text-white font-bold text-xs shadow-xs uppercase">
                     60 Days · Reform and Transform
                   </span>
                 </div>
@@ -233,7 +233,7 @@ export const ChallengeSection: React.FC = () => {
 
                     <button
                       onClick={() => setModalProgram('TTI')}
-                      className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-700 to-orange-700 hover:from-amber-800 hover:to-orange-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>Register for 60-Day TTI Challenge</span>
                       <ArrowRight className="w-4 h-4" />
