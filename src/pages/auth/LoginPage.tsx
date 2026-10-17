@@ -102,7 +102,7 @@ export const LoginPage: React.FC = () => {
           onChange={(e) => setPassword(e.target.value)}
           error={fieldErrors.password}
           labelAction={
-            <Link to="/forgot-password" className="text-sm font-medium text-teal-700 hover:text-teal-800">
+            <Link to="/forgot-password" className="inline-flex items-center min-h-11 -my-3 lg:min-h-0 lg:my-0 text-sm font-medium text-teal-700 hover:text-teal-800">
               Forgot password?
             </Link>
           }

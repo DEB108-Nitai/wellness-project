@@ -98,7 +98,7 @@ export const FoundationSection: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => follow(d.link!)}
-                      className="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
+                      className="inline-flex items-center min-h-11 lg:min-h-0 gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
                     >
                       {d.link.label}
                       <ArrowRight className="w-4 h-4" aria-hidden="true" />

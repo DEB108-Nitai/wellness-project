@@ -6,6 +6,7 @@ use Transenigma\Core\Router;
 use Transenigma\Core\Session;
 use Transenigma\Core\SqlSplitter;
 use Transenigma\Core\Validator;
+use Transenigma\Support\Csv;
 
 // ------------------------------------------------------------------ Validator
 test('validator cleans, lower-cases email and drops unknown keys', function () {
@@ -88,4 +89,16 @@ test('session file cleanup deletes only old session files', function () {
         array_map('unlink', glob("$dir/*") ?: []);
         rmdir($dir);
     }
+});
+
+// ------------------------------------------------------------------ CSV writer
+test('csv writer adds the BOM, doubles quotes and neutralises formulas', function () {
+    ob_start();
+    $out = Csv::open();
+    Csv::row($out, ['=SUM(A1)', '+1', '-2', '@x', "\tTab", 'say "hi"', 'x\\",=CMD()', null, 42]);
+    fclose($out);
+    $csv = (string) ob_get_clean();
+    assertSame("\xEF\xBB\xBF", substr($csv, 0, 3), 'BOM first');
+    $cells = str_getcsv(rtrim(substr($csv, 3), "\n"), ',', '"', '');
+    assertSame(["'=SUM(A1)", "'+1", "'-2", "'@x", "'\tTab", 'say "hi"', 'x\\",=CMD()', '', '42'], $cells, 'one cell each, formulas neutralised');
 });

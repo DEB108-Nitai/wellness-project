@@ -146,7 +146,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
                 <>
                   <button
                     onClick={() => onNavigate('test')}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-teal-200"
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer ring-2 ring-teal-200"
                   >
                     <PlayCircle className="w-5 h-5 text-white" />
                     <span>Continue Assessment ({draftProgress}% Done)</span>
@@ -162,7 +162,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               ) : (
                 <button
                   onClick={() => onNavigate('test')}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 active:bg-teal-800 text-white font-bold text-base shadow-lg shadow-teal-600/25 transition-all flex items-center justify-center gap-2.5 cursor-pointer group"
                 >
                   <span>Start Free Assessment</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -391,7 +391,7 @@ export const LandingView: React.FC<LandingViewProps> = ({ onNavigate }) => {
               <div className="pt-2 text-center">
                 <button
                   onClick={() => onNavigate('test')}
-                  className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                  className="inline-flex items-center justify-center min-h-11 lg:min-h-0 w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer"
                 >
                   Generate Your Own Profile →
                 </button>

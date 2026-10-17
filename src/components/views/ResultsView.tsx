@@ -127,7 +127,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ report, mode }) => {
             {shareToken ? (
               <div className="flex flex-col sm:flex-row gap-2">
                 <input readOnly value={shareUrl(shareToken)} onFocus={(e) => e.target.select()} className="flex-1 h-10 px-3 text-sm font-mono rounded-xl border border-slate-300 bg-white" />
-                <button onClick={copyLink} className="h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+                <button onClick={copyLink} className="h-10 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
                   {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? 'Copied' : 'Copy'}
                 </button>
                 <button
@@ -142,7 +142,7 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ report, mode }) => {
               <button
                 onClick={() => toggleShare(true)}
                 disabled={shareBusy}
-                className="h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-60"
+                className="h-10 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold flex items-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 {shareBusy && <Loader2 className="w-4 h-4 animate-spin" />} Create share link
               </button>

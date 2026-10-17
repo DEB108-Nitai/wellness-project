@@ -15,7 +15,7 @@ interface Meta {
 }
 
 const PUBLIC: Record<string, Omit<Meta, 'index'>> = {
-  '/': { title: 'Transenigma — Research, Technology & Well-Being', description: DEFAULT_DESCRIPTION },
+  '/': { title: 'Transenigma | Research, Technology and Well Being', description: DEFAULT_DESCRIPTION },
   '/research': {
     title: 'Research — Trans Enigma Research Foundation | Transenigma',
     description:

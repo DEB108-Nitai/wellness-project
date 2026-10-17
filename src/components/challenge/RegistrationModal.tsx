@@ -327,7 +327,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-3 bg-gradient-to-r from-amber-600 via-orange-600 to-teal-600 hover:opacity-95 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 bg-gradient-to-r from-amber-700 via-orange-700 to-teal-700 hover:opacity-95 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                 <span>Confirm 60-Day Challenge Registration</span>

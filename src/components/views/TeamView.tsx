@@ -111,7 +111,7 @@ export const TeamView: React.FC<Props> = ({ onNavigate }) => {
           </div>
           <button
             onClick={() => onNavigate('contact')}
-            className="shrink-0 h-12 px-6 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[15px] transition-colors inline-flex items-center gap-2 cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/30"
+            className="shrink-0 h-12 px-6 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-[15px] transition-colors inline-flex items-center gap-2 cursor-pointer focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/30"
           >
             Contact us
             <ArrowRight className="w-4 h-4" aria-hidden="true" />

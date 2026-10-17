@@ -1,8 +1,9 @@
 // E2E: guest takes the assessment → resume after reload → submit → gate → sign up → report → share → My Results.
 import { launch } from './cdp.mjs';
+import { fileURLToPath } from 'node:url';
 
 const BASE = 'http://localhost:3000';
-const OUT = new URL('./shots/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const OUT = fileURLToPath(new URL('./shots/', import.meta.url));
 const email = `e2e${Date.now()}@example.com`;
 const step = (m) => console.log(`• ${m}`);
 

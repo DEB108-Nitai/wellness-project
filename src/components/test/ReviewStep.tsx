@@ -64,7 +64,7 @@ export const ReviewStep: React.FC<Props> = ({ pages, answers, totalItems, submit
           type="button"
           onClick={onSubmit}
           disabled={submitting}
-          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white font-bold text-sm shadow-md flex items-center justify-center gap-2 cursor-pointer"
         >
           {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {complete ? 'Submit and calculate my profile' : 'Submit'} <ArrowRight className="w-4 h-4" />

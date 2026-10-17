@@ -35,7 +35,8 @@ const PROGRAM_LINKS = [
 // Shown if the ventures API is unavailable, so the column never disappears.
 const FALLBACK_VENTURES = ['Evolve Institute', 'Institute of Life Semantics (ILS)', 'India Tribal Care'];
 
-const linkClass = 'hover:text-white transition-colors focus:outline-hidden focus-visible:text-white focus-visible:underline underline-offset-4';
+// Phones and tablets: every link is a 44 px row, so the lists drop their gaps there (space-y-0 lg:space-y-*).
+const linkClass = 'inline-flex items-center min-h-11 min-w-11 lg:min-h-0 lg:min-w-0 hover:text-white transition-colors focus:outline-hidden focus-visible:text-white focus-visible:underline underline-offset-4';
 
 const Column: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div>
@@ -90,10 +91,10 @@ export const Footer: React.FC<FooterProps> = () => {
               {BRAND.legalName} designs products and builds technology for social welfare: research, consultancy, the 16PF
               personality assessment and free 60-day programs.
             </p>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-0 lg:space-y-2 text-sm">
               {settings.support_email && (
                 <li>
-                  <a href={`mailto:${settings.support_email}`} className={`inline-flex items-center gap-2 ${linkClass}`}>
+                  <a href={`mailto:${settings.support_email}`} className={`gap-2 ${linkClass}`}>
                     <Mail className="w-4 h-4 text-teal-400" aria-hidden="true" />
                     {settings.support_email}
                   </a>
@@ -101,7 +102,7 @@ export const Footer: React.FC<FooterProps> = () => {
               )}
               {settings.linkedin_url && (
                 <li>
-                  <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 ${linkClass}`}>
+                  <a href={settings.linkedin_url} target="_blank" rel="noopener noreferrer" className={`gap-2 ${linkClass}`}>
                     <Linkedin className="w-4 h-4 text-teal-400" aria-hidden="true" />
                     LinkedIn
                     <span className="sr-only">(opens in a new tab)</span>
@@ -109,12 +110,12 @@ export const Footer: React.FC<FooterProps> = () => {
                 </li>
               )}
             </ul>
-            <p className="pt-1 text-xs text-slate-500">* The 16PF test is derived from the public-domain IPIP 16-factor construct (ipip.ori.org).</p>
+            <p className="pt-1 text-xs text-slate-400">* The 16PF test is derived from the public-domain IPIP 16-factor construct (ipip.ori.org).</p>
           </div>
 
           <div className="lg:col-span-2">
             <Column title="Company">
-              <ul className="space-y-2.5 text-sm">
+              <ul className="space-y-0 lg:space-y-2.5 text-sm">
                 {COMPANY_LINKS.map((l) => (
                   <li key={l.to}>
                     <Link to={l.to} className={linkClass}>
@@ -128,7 +129,7 @@ export const Footer: React.FC<FooterProps> = () => {
 
           <div className="lg:col-span-2">
             <Column title="Programs & 16PF">
-              <ul className="space-y-2.5 text-sm">
+              <ul className="space-y-0 lg:space-y-2.5 text-sm">
                 {PROGRAM_LINKS.map((l) => (
                   <li key={l.to}>
                     <Link to={l.to} className={linkClass}>
@@ -173,7 +174,7 @@ export const Footer: React.FC<FooterProps> = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    className="w-full px-3 py-2 text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-teal-500"
+                    className="w-full px-3 h-11 lg:h-auto lg:py-2 text-base lg:text-xs bg-slate-900 border border-slate-700 rounded-lg text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-teal-500"
                   />
                   <div aria-hidden="true" className="absolute -left-[10000px] w-px h-px overflow-hidden">
                     <input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)} />
@@ -182,7 +183,7 @@ export const Footer: React.FC<FooterProps> = () => {
                   <button
                     type="submit"
                     disabled={subscribing}
-                    className="w-full py-2 px-3 text-xs font-semibold text-white bg-teal-600 hover:bg-teal-500 disabled:opacity-60 rounded-lg transition-colors cursor-pointer"
+                    className="w-full min-h-11 lg:min-h-0 py-2 px-3 text-xs font-semibold text-white bg-teal-700 hover:bg-teal-800 disabled:opacity-60 rounded-lg transition-colors cursor-pointer"
                   >
                     {subscribing ? 'Subscribing…' : 'Subscribe'}
                   </button>
@@ -193,12 +194,12 @@ export const Footer: React.FC<FooterProps> = () => {
         </div>
 
         {/* Legal row */}
-        <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+        <div className="pt-8 flex flex-col lg:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div className="flex items-center gap-2 text-center lg:text-left">
             <Shield className="w-4 h-4 text-teal-500 shrink-0" aria-hidden="true" />
             <p>Disclaimer: For self-understanding, behavioral development, and personal wellness transformation.</p>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-0 lg:gap-y-2">
             <Link to="/privacy" className={linkClass}>
               Privacy
             </Link>
@@ -211,7 +212,7 @@ export const Footer: React.FC<FooterProps> = () => {
           </div>
         </div>
         {(settings.company_cin || settings.company_address) && (
-          <p className="pt-4 text-center lg:text-right text-xs text-slate-500 leading-relaxed">
+          <p className="pt-4 text-center lg:text-right text-xs text-slate-400 leading-relaxed">
             {settings.company_cin && <span className="whitespace-nowrap">CIN {settings.company_cin}</span>}
             {settings.company_cin && settings.company_address && <span aria-hidden="true"> · </span>}
             {settings.company_address && <span>Registered office: {settings.company_address}</span>}

@@ -10,6 +10,7 @@ use Transenigma\Services\AuditService;
 use Transenigma\Services\AuthService;
 use Transenigma\Services\ChallengeService;
 use Transenigma\Services\SettingsService;
+use Transenigma\Support\Csv;
 use Transenigma\Support\DateRange;
 
 /**
@@ -67,12 +68,7 @@ final class AdminController
     {
         $f = $this->registrationFilters($request);
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_REGISTRATIONS', 'export', 'registrations', $f, $request);
-        if (!headers_sent()) {
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="transenigma-registrations-' . gmdate('Ymd-His') . '.csv"');
-            header('Cache-Control: no-store');
-            header('X-Content-Type-Options: nosniff');
-        }
+        Csv::headers('registrations');
         ChallengeService::exportCsv($f);
         return Response::streamed();
     }

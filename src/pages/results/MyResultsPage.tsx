@@ -25,7 +25,7 @@ export const MyResultsPage: React.FC = () => {
           <p className="text-sm font-semibold text-teal-700">My results</p>
           <h1 className="text-3xl font-bold text-slate-900 font-heading">Your personality reports</h1>
         </div>
-        <Link to="/test" className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold">
+        <Link to="/test" className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold">
           <Plus className="w-4 h-4" /> New assessment
         </Link>
       </header>
@@ -42,7 +42,7 @@ export const MyResultsPage: React.FC = () => {
           <BarChart3 className="w-10 h-10 mx-auto text-teal-600" />
           <h2 className="text-xl font-bold text-slate-900 font-heading">No reports yet</h2>
           <p className="text-slate-600">Take the assessment to discover your 16 personality factors. It takes about 20 minutes.</p>
-          <Link to="/test" className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold">
+          <Link to="/test" className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold">
             Start the assessment <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -83,7 +83,7 @@ export const MyResultsPage: React.FC = () => {
                   View report <ArrowRight className="w-4 h-4" />
                 </Link>
               ) : (
-                <Link to="/test" className="shrink-0 inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-sm font-semibold text-white">
+                <Link to="/test" className="shrink-0 inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-teal-700 hover:bg-teal-800 text-sm font-semibold text-white">
                   <PlayCircle className="w-4 h-4" /> Continue
                 </Link>
               )}

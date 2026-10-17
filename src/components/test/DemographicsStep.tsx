@@ -187,7 +187,7 @@ export const DemographicsStep: React.FC<Props> = ({ minAge, defaultNickname, sub
           <button
             type="submit"
             disabled={submitting}
-            className="px-7 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            className="px-7 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
             <span>Begin assessment</span>

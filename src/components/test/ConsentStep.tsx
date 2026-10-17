@@ -95,13 +95,13 @@ export const ConsentStep: React.FC<Props> = ({ totalItems, onAccept }) => {
         )}
 
         <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-          <Link to="/" className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900">
+          <Link to="/" className="inline-flex items-center min-h-11 lg:min-h-0 px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900">
             Back to Home
           </Link>
           <button
             type="submit"
             disabled={!terms || !notDiagnosis}
-            className="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <span>Continue</span>
             <ArrowRight className="w-4 h-4" />

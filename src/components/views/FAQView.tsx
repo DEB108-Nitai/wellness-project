@@ -54,7 +54,7 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
             placeholder="Search questions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl"
+            className="w-full h-11 lg:h-auto pl-9 pr-3 py-2 text-base lg:text-xs bg-white border border-slate-300 rounded-xl"
           />
         </div>
 
@@ -63,7 +63,7 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
+              className={`inline-flex items-center min-h-11 lg:min-h-0 px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors cursor-pointer ${
                 selectedCategory === cat ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
@@ -114,7 +114,7 @@ export const FAQView: React.FC<FAQViewProps> = ({ onNavigate }) => {
         <p className="text-xs text-slate-600">Our team is happy to assist with any inquiries.</p>
         <button
           onClick={() => onNavigate('contact')}
-          className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+          className="inline-flex items-center min-h-11 lg:min-h-0 px-5 py-2 bg-teal-700 hover:bg-teal-800 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
         >
           Contact Support Team
         </button>
