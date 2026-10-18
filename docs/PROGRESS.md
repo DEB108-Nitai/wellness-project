@@ -125,7 +125,7 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 3 | Assessment and results: server sessions, scoring, guest flow, results gate, sharing, My Results | ✅ Committed `a1e342b` |
 | 4 | 60-Day Challenges (STI, PTI, TTI), contact, newsletter, FAQ, settings, maintenance | ✅ Committed |
 | 5 | Admin console on server data + anonymise user + admin 2FA | ✅ Done 2026-10-13 (branch `feature/admin-console`) |
-| 6 | UI polish, SEO, accessibility, performance of the bundle | ⬜ |
+| 6 | UI polish, SEO, accessibility, performance of the bundle | 🟡 Built 2026-10-16 (branch `feature/phase6-polish`), waiting for the owner's UI review |
 | 7 | Production hardening and DreamHost deploy | ⬜ |
 
 ### What each phase delivered
@@ -444,12 +444,16 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - [x] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers (slice F).
 - [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 
-### Phase 6 — UI polish
-- [ ] Consistency pass with shared components. Per-page titles and descriptions. Accessibility (WCAG 2.1 AA) and mobile pass.
-- [ ] Hide "Take Test" in the navbar while inside the test.
+### Phase 6 — UI polish (built 2026-10-16, owner UI review pending)
+- [x] **Faster first load:** every page except the home page is lazy-loaded (`src/lib/lazyPage.ts`, one reload if a tab outlives a redeploy). Main JS 541 KB → 381 KB (115 KB gzip); the size warning is gone. Admin bundle was already separate.
+- [x] **Navbar:** "Take Test"/"Continue" hidden inside the test; phone buttons 44 px. Home browser title (owner wording): "Transenigma | Research, Technology and Well Being".
+- [x] **Admin tidy:** Participants and Registrations use the shared 44 px `Pager`; FAQ/category move buttons 44 px; one query helper in `src/api/admin.ts`; all four CSV exports (registrations, assessments, messages, subscribers) written by `api/src/Support/Csv.php`. Every download kept.
+- [x] **Accessibility (WCAG 2.1 AA) and phone pass:** `tests/e2e/a11y.mjs` (axe-core, dev-only, owner-approved) passes on all 17 public pages at 360/390/768/1440 px. Fixes: white text on teal now uses teal-700 (teal-600 was 3.7:1); footer grey and small slate-400 text one shade darker; every control 44 px below 1024 px; 16 px text in phone inputs.
+- [x] **Bug found by the pass:** the test page could jump back from "A little about you" to the consent step when an older start-up reply arrived late (`AssessmentPage` now ignores stale loads).
+- [x] Per-page titles/descriptions, sitemap and robots: checked, already complete (slice S10).
 - Note: the test timer (restored 2026-10-05) shows active time and continues from the saved total after resume (`SessionState.activeSeconds`).
-- [ ] Lazy-load the admin bundle (main JS is about 500 KB raw / 140 KB gzip).
 - [ ] *Suggestion, not yet approved:* personalised growth recommendations based on actual scores.
+- Owner decisions 2026-10-16: no scoring note on the results page; scoring option A (stens from the empirical table) to be decided.
 
 ### Phase 7 — Production and deploy (DreamHost)
 - [ ] Production `config.php` outside the web root; MySQL database; run `migrate.php` and `create-admin.php`.

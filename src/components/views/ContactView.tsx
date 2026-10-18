@@ -68,7 +68,7 @@ export const ContactView: React.FC = () => {
                 <Mail className="w-4 h-4 text-teal-400 mt-0.5" />
                 <div>
                   <span className="font-semibold text-white block">Email</span>
-                  <a href={`mailto:${settings.support_email}`} className="hover:text-white underline-offset-4 hover:underline">
+                  <a href={`mailto:${settings.support_email}`} className="inline-flex items-center min-h-11 lg:min-h-0 hover:text-white underline-offset-4 hover:underline">
                     {settings.support_email}
                   </a>
                 </div>
@@ -126,7 +126,7 @@ export const ContactView: React.FC = () => {
                   placeholder="e.g. Rahul Sharma"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                  className="w-full min-h-11 lg:min-h-0 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base lg:text-sm"
                 />
               </div>
 
@@ -140,7 +140,7 @@ export const ContactView: React.FC = () => {
                   placeholder="rahul@company.in"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                  className="w-full min-h-11 lg:min-h-0 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base lg:text-sm"
                 />
               </div>
 
@@ -153,7 +153,7 @@ export const ContactView: React.FC = () => {
                   placeholder="e.g. Consultancy project enquiry"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                  className="w-full min-h-11 lg:min-h-0 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base lg:text-sm"
                 />
               </div>
 
@@ -167,7 +167,7 @@ export const ContactView: React.FC = () => {
                   placeholder="How can we help?"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm"
+                  className="w-full min-h-11 lg:min-h-0 px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-base lg:text-sm"
                 />
               </div>
 
@@ -187,7 +187,7 @@ export const ContactView: React.FC = () => {
               <button
                 type="submit"
                 disabled={sending}
-                className="w-full py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="min-h-11 lg:min-h-0 w-full py-3 bg-teal-700 hover:bg-teal-800 disabled:opacity-60 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{sending ? 'Sending…' : 'Send Message'}</span>
                 <Send className="w-3.5 h-3.5" />

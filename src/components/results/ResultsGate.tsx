@@ -40,7 +40,7 @@ export const ResultsGate: React.FC<{ reference: string }> = ({ reference }) => {
           <div className="space-y-2.5">
             <Link
               to={`/signup?next=${next}`}
-              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold"
             >
               Create free account & see results
             </Link>

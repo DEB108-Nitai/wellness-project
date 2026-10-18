@@ -2,8 +2,9 @@
 // Usage (dev server running): node tests/e2e/challenge-shots.mjs  → tests/e2e/shots/{desktop,mobile}-{sti,pti,tti}.png
 import { writeFileSync } from 'node:fs';
 import { launch } from './cdp.mjs';
+import { fileURLToPath } from 'node:url';
 
-const OUT = new URL('./shots/', import.meta.url).pathname.replace(/^\/([A-Z]:)/, '$1');
+const OUT = fileURLToPath(new URL('./shots/', import.meta.url));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const FIND = {
   sti: `document.querySelector('#sonic-therapy')`,

@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight, Loader2, X } from 'lucide-react';
 
 export const btn = {
   primary:
-    'inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/25',
+    'inline-flex items-center justify-center gap-2 h-11 px-5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/25',
   secondary:
     'inline-flex items-center justify-center gap-2 h-11 px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold disabled:opacity-60 cursor-pointer transition-colors focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/15',
   danger:

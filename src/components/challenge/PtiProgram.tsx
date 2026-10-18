@@ -22,7 +22,7 @@ export const PtiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
             Bhagavad Gita As It Is • Srimad Bhagavatam • Chaitanya Caritamrita
           </p>
         </div>
-        <span className="shrink-0 self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500 text-white font-bold text-xs shadow-xs uppercase flex items-center gap-1.5">
+        <span className="shrink-0 self-start sm:self-center px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-700 text-white font-bold text-xs shadow-xs uppercase flex items-center gap-1.5">
           60-Day Mindset Upgrade
         </span>
       </div>
@@ -118,7 +118,7 @@ export const PtiProgram: React.FC<{ onRegister: () => void }> = ({ onRegister })
             </p>
             <button
               onClick={onRegister}
-              className="w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-700 hover:to-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="min-h-11 lg:min-h-0 w-full sm:w-auto shrink-0 px-6 py-3 bg-gradient-to-r from-indigo-600 to-sky-700 hover:from-indigo-700 hover:to-sky-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Start the PTI Challenge (Free)</span>
               <ArrowRight className="w-4 h-4" />

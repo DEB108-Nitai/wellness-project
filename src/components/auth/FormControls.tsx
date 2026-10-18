@@ -81,7 +81,7 @@ export const PasswordField: React.FC<FieldProps & { showStrength?: boolean }> = 
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="absolute right-3 top-[34px] p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+          className="absolute right-1.5 top-[27px] w-11 h-11 inline-flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
           aria-label={visible ? 'Hide password' : 'Show password'}
         >
           {visible ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
@@ -112,7 +112,7 @@ export const SubmitButton: React.FC<{ loading: boolean; children: React.ReactNod
   <button
     type="submit"
     disabled={loading || disabled}
-    className="w-full h-12 rounded-xl bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-semibold text-[15px] shadow-sm shadow-teal-700/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+    className="w-full h-12 rounded-xl bg-teal-700 hover:bg-teal-800 active:bg-teal-800 text-white font-semibold text-[15px] shadow-sm shadow-teal-700/20 transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
   >
     {loading && <Loader2 className="w-4 h-4 animate-spin" />}
     {children}
@@ -152,7 +152,7 @@ export const GoogleButton: React.FC<{ href: string; label: string }> = ({ href, 
 export const OrDivider: React.FC = () => (
   <div className="flex items-center gap-3 my-6" aria-hidden="true">
     <span className="flex-1 h-px bg-slate-200" />
-    <span className="text-xs font-medium uppercase tracking-wider text-slate-400">or</span>
+    <span className="text-xs font-medium uppercase tracking-wider text-slate-500">or</span>
     <span className="flex-1 h-px bg-slate-200" />
   </div>
 );

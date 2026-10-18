@@ -90,7 +90,7 @@ export const ResearchFieldsSection: React.FC = () => {
           </div>
           <Link
             to="/research"
-            className="self-start md:self-auto inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
+            className="min-h-11 lg:min-h-0 self-start md:self-auto inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700 hover:text-teal-800 underline-offset-4 hover:underline focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 rounded"
           >
             See all research
             <ArrowRight className="w-4 h-4" aria-hidden="true" />

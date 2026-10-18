@@ -10,6 +10,7 @@ use Transenigma\Core\Validator;
 use Transenigma\Services\AdminSiteService;
 use Transenigma\Services\AuditService;
 use Transenigma\Services\AuthService;
+use Transenigma\Support\Csv;
 use Transenigma\Support\DateRange;
 
 /**
@@ -53,7 +54,7 @@ final class AdminSiteController
     {
         $f = $this->messageFilters($request);
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_MESSAGES', 'export', 'messages', $f, $request);
-        $this->csvHeaders('messages');
+        Csv::headers('messages');
         AdminSiteService::exportMessages($f);
         return Response::streamed();
     }
@@ -84,7 +85,7 @@ final class AdminSiteController
     {
         $f = Validator::validate($request->query, ['status' => 'in:subscribed,unsubscribed', 'q' => 'string|max:100']);
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_SUBSCRIBERS', 'export', 'subscribers', $f, $request);
-        $this->csvHeaders('subscribers');
+        Csv::headers('subscribers');
         AdminSiteService::exportSubscribers($f);
         return Response::streamed();
     }
@@ -173,13 +174,4 @@ final class AdminSiteController
         return $data;
     }
 
-    private function csvHeaders(string $name): void
-    {
-        if (!headers_sent()) { // always true over HTTP; the CLI test runner has already printed
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="transenigma-' . $name . '-' . gmdate('Ymd-His') . '.csv"');
-            header('Cache-Control: no-store');
-            header('X-Content-Type-Options: nosniff');
-        }
-    }
 }

@@ -7,6 +7,7 @@ use Transenigma\Core\Database;
 use Transenigma\Core\HttpException;
 use Transenigma\Core\Request;
 use Transenigma\Repositories\PsychometricRepository;
+use Transenigma\Support\Csv;
 
 /**
  * Admin: contact messages, newsletter subscribers, FAQs, the audit log and the question set / norms
@@ -344,14 +345,13 @@ final class AdminSiteService
         return $utc === null ? null : gmdate('c', strtotime($utc . ' UTC'));
     }
 
-    /** A UTF-8 CSV (BOM for Excel; RFC 4180 quoting; formula-injection safe). */
+    /** Streams the rows through the shared CSV writer (Support\Csv). */
     private static function streamCsv(array $head, \PDOStatement $rows, callable $map): void
     {
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, $head, ',', '"', '');
+        $out = Csv::open();
+        Csv::row($out, $head);
         while ($r = $rows->fetch()) {
-            fputcsv($out, array_map([ChallengeService::class, 'csvSafe'], $map($r)), ',', '"', '');
+            Csv::row($out, $map($r));
         }
         fclose($out);
     }

@@ -27,14 +27,15 @@ $ARGUMENTS
    
    Only create a new component when nothing fits. Put it in the matching `src/components/<area>/` folder. If a pattern now repeats 3+ times, extract it.
 3. **Match the design language.**
-   - Colours: slate for text, borders and surfaces (`text-slate-900/700/600/500`, `border-slate-200`, `bg-slate-50`); teal as the brand/action colour (`bg-teal-600 hover:bg-teal-700`, `text-teal-700`, `bg-teal-50`); rose for errors (`text-rose-600`, `bg-rose-50`, `border-rose-200`). No new colour families without approval.
+   - Colours: slate for text, borders and surfaces (`text-slate-900/700/600/500`, `border-slate-200`, `bg-slate-50`); teal as the brand/action colour (`bg-teal-700 hover:bg-teal-800` behind white text, since white on teal-600 fails WCAG AA contrast; `text-teal-700`, `bg-teal-50`); rose for errors (`text-rose-600`, `bg-rose-50`, `border-rose-200`). No new colour families without approval.
    - Type: Inter for body text, Poppins for headings (set globally in `src/index.css`).
    - Shape: inputs and buttons `rounded-xl`, h-12; cards `rounded-2xl`/`rounded-3xl`; pills `rounded-full`. Focus rings: `focus:ring-4 focus:ring-teal-500/15`.
    - States: every data view needs loading (`PageSpinner` or skeleton), empty, error (`FormAlert tone="error"`) and success states. Disable the submit button while a request is pending.
    - Errors: show the server's `error.message`, and map `error.fields` onto the matching inputs.
 4. **Stay focused.** Change only what the request needs. List unrelated problems you notice instead of fixing them.
 5. **Responsive and accessible.**
-   - Design mobile-first and check 360, 390, 768 and 1440 px. No horizontal scroll; tap targets ≥ 44 px.
+   - Design mobile-first and check 360, 390, 768 and 1440 px. No horizontal scroll; tap targets ≥ 44 px below 1024 px (the pattern is `min-h-11 lg:min-h-0`; inputs `text-base lg:text-sm` so iPhones don't zoom).
+   - Run `node tests/e2e/a11y.mjs` (axe-core WCAG 2.1 AA, sideways scroll, tap targets on every public page); it must print PASS.
    - Use semantic elements, `label`/`htmlFor` (via `useId`), and `aria-invalid`/`aria-describedby` on errors, as `TextField` does.
    - Keyboard reachable with visible focus. Text contrast meets WCAG AA. Icons have a text label or `aria-label`.
    - Results/report screens must still print: use the `.no-print` / `.print-only` / `.page-break` classes in `index.css`.

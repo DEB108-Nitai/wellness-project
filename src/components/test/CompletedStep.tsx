@@ -102,7 +102,7 @@ export const CompletedStep: React.FC<{ reference: string; resultsLocked: boolean
         {!resultsLocked && (
           <Link
             to={`/results/${reference}`}
-            className="inline-flex h-12 items-center gap-2 px-8 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-md"
+            className="inline-flex h-12 items-center gap-2 px-8 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold shadow-md"
           >
             View my results <ArrowRight className="w-5 h-5" />
           </Link>

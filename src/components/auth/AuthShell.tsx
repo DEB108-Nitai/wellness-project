@@ -66,12 +66,12 @@ export const AuthShell: React.FC<{ title: string; subtitle?: React.ReactNode; ch
         <DarkBackdrop />
         <div className="relative px-5 sm:px-10 pt-5 pb-8">
           <div className="flex items-center justify-between">
-            <Link to="/" aria-label={`${BRAND.name} home`}>
+            <Link to="/" aria-label={`${BRAND.name} home`} className="inline-flex items-center min-h-11">
               <BrandLogo onDark className="h-6" />
             </Link>
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+              className="inline-flex items-center min-h-11 gap-1.5 text-sm font-medium text-slate-300 hover:text-white transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> Back to home
             </Link>

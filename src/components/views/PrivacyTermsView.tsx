@@ -26,8 +26,8 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
       <div className="flex items-center justify-center gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab('privacy')}
-          className={`px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-            activeTab === 'privacy' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+          className={`min-h-11 lg:min-h-0 px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            activeTab === 'privacy' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Privacy & Data Policy
@@ -35,8 +35,8 @@ export const PrivacyTermsView: React.FC<PrivacyTermsViewProps> = ({ initialTab =
 
         <button
           onClick={() => setActiveTab('terms')}
-          className={`px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-            activeTab === 'terms' ? 'bg-teal-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+          className={`min-h-11 lg:min-h-0 px-5 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+            activeTab === 'terms' ? 'bg-teal-700 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           Terms of Service

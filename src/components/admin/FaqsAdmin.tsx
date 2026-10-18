@@ -94,10 +94,10 @@ export const FaqsAdmin: React.FC = () => {
               {faqs.map((f, i) => (
                 <li key={f.id} className="flex items-start gap-3 px-5 py-3">
                   <div className="flex flex-col shrink-0">
-                    <button onClick={() => move(i, -1)} disabled={i === 0 || ordering} className={`${btn.icon} w-8 h-8 disabled:opacity-30`} aria-label={`Move “${f.question}” up`}>
+                    <button onClick={() => move(i, -1)} disabled={i === 0 || ordering} className={`${btn.icon} w-11 h-11 disabled:opacity-30`} aria-label={`Move “${f.question}” up`}>
                       <ArrowUp className="w-4 h-4" />
                     </button>
-                    <button onClick={() => move(i, 1)} disabled={i === faqs.length - 1 || ordering} className={`${btn.icon} w-8 h-8 disabled:opacity-30`} aria-label={`Move “${f.question}” down`}>
+                    <button onClick={() => move(i, 1)} disabled={i === faqs.length - 1 || ordering} className={`${btn.icon} w-11 h-11 disabled:opacity-30`} aria-label={`Move “${f.question}” down`}>
                       <ArrowDown className="w-4 h-4" />
                     </button>
                   </div>

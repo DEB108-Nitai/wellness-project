@@ -207,7 +207,7 @@ export const QuestionsStep: React.FC<Props> = ({ items, page, totalPages, totalI
           <button
             type="button"
             onClick={onNext}
-            className="px-6 py-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-sm flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-bold text-sm shadow-sm flex items-center gap-2 cursor-pointer"
           >
             {page === totalPages ? 'Review answers' : 'Next page'} <ArrowRight className="w-4 h-4" />
           </button>

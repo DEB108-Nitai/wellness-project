@@ -86,7 +86,7 @@ export const BenefitsView: React.FC<BenefitsViewProps> = ({ onNavigate }) => {
           </div>
           <button
             onClick={() => onNavigate('test')}
-            className="w-full py-3 bg-white text-teal-900 font-bold text-xs rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="min-h-11 lg:min-h-0 w-full py-3 bg-white text-teal-900 font-bold text-xs rounded-xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Start Assessment Now</span>
             <ArrowRight className="w-4 h-4" />

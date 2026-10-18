@@ -9,6 +9,7 @@ use Transenigma\Core\Validator;
 use Transenigma\Services\AdminParticipantsService;
 use Transenigma\Services\AuditService;
 use Transenigma\Services\AuthService;
+use Transenigma\Support\Csv;
 use Transenigma\Support\DateRange;
 
 /**
@@ -54,12 +55,7 @@ final class AdminParticipantsController
         $withAnswers = (bool) ($f['answers'] ?? false);
         unset($f['answers']);
         AuditService::forUser(AuthService::requireUser(), 'EXPORT_SESSIONS', 'export', 'sessions', $f + ['answers' => $withAnswers], $request);
-        if (!headers_sent()) { // always true over HTTP; the CLI test runner has already printed
-            header('Content-Type: text/csv; charset=utf-8');
-            header('Content-Disposition: attachment; filename="transenigma-assessments-' . gmdate('Ymd-His') . '.csv"');
-            header('Cache-Control: no-store');
-            header('X-Content-Type-Options: nosniff');
-        }
+        Csv::headers('assessments');
         AdminParticipantsService::exportCsv($f, $withAnswers);
         return Response::streamed();
     }

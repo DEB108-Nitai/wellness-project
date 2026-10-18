@@ -130,7 +130,7 @@ export default function TwoFactorPage() {
             type="button"
             disabled={!saved}
             onClick={() => finish(held.payload)}
-            className="w-full h-12 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[15px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full h-12 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-[15px] cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             Continue
           </button>
@@ -153,7 +153,7 @@ export default function TwoFactorPage() {
                 applySession(held.payload);
                 navigate('/admin/security', { replace: true });
               }}
-              className="flex-1 h-12 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-[15px] cursor-pointer"
+              className="flex-1 h-12 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-[15px] cursor-pointer"
             >
               Go to Security
             </button>

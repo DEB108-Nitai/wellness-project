@@ -62,10 +62,11 @@ export interface AdminSettings {
   consent_version: string;
 }
 
-const query = (f: RegistrationFilters) => {
+/** `?a=1&b=x` from a filter object: empty values are left out, booleans become 1 / 0. Every admin list and CSV link uses it. */
+const query = (f: object) => {
   const params = new URLSearchParams();
   Object.entries(f).forEach(([k, v]) => {
-    if (v !== undefined && v !== '') params.set(k, String(v));
+    if (v !== undefined && v !== null && v !== '') params.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
   });
   const s = params.toString();
   return s ? `?${s}` : '';
@@ -263,22 +264,13 @@ export interface ParticipantDetail extends ParticipantRow {
   report: import('./assessment').ResultReport | null;
 }
 
-const pquery = (f: ParticipantFilters) => {
-  const params = new URLSearchParams();
-  Object.entries(f).forEach(([k, v]) => {
-    if (v !== undefined && v !== '') params.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
-  });
-  const s = params.toString();
-  return s ? `?${s}` : '';
-};
-
 export const participantsApi = {
-  list: (f: ParticipantFilters) => api.get<ParticipantPage>(`/admin/sessions${pquery(f)}`),
+  list: (f: ParticipantFilters) => api.get<ParticipantPage>(`/admin/sessions${query(f)}`),
   detail: (ref: string) => api.get<ParticipantDetail>(`/admin/sessions/${encodeURIComponent(ref)}`),
   /** Plain link: the browser downloads the streamed CSV with the session cookie. */
   csvUrl: (f: ParticipantFilters, answers: boolean) => {
     const { page: _p, perPage: _pp, ...rest } = f;
-    return `/api/admin/export/sessions${pquery({ ...rest, ...(answers ? ({ answers: true } as object) : {}) } as ParticipantFilters)}`;
+    return `/api/admin/export/sessions${query({ ...rest, ...(answers ? { answers: true } : {}) })}`;
   },
 };
 
@@ -429,15 +421,6 @@ export const securityApi = {
 
 // ------------------------------------------------------------------ messages, subscribers, FAQs, audit, question set (slice H)
 
-const siteQuery = (f: object) => {
-  const params = new URLSearchParams();
-  Object.entries(f).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') params.set(k, typeof v === 'boolean' ? (v ? '1' : '0') : String(v));
-  });
-  const s = params.toString();
-  return s ? `?${s}` : '';
-};
-
 export interface Paged<T> {
   items: T[];
   total: number;
@@ -523,14 +506,14 @@ export interface NormsData {
 }
 
 export const siteAdminApi = {
-  messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${siteQuery({ ...f, perPage: 25 })}`),
+  messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${query({ ...f, perPage: 25 })}`),
   message: (id: number) => api.get<MessageDetail>(`/admin/messages/${id}`),
   setMessageStatus: (id: number, status: MessageStatus) => api.patch<MessageDetail>(`/admin/messages/${id}`, { status }),
-  messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${siteQuery(f)}`,
+  messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${query(f)}`,
 
   subscribers: (f: { status?: SubscriberStatus; q?: string; page?: number }) =>
-    api.get<Paged<SubscriberRow> & { counts: { subscribed: number; unsubscribed: number; last30Days: number } }>(`/admin/subscribers${siteQuery({ ...f, perPage: 25 })}`),
-  subscribersCsvUrl: (f: { status?: SubscriberStatus; q?: string }) => `/api/admin/export/subscribers${siteQuery(f)}`,
+    api.get<Paged<SubscriberRow> & { counts: { subscribed: number; unsubscribed: number; last30Days: number } }>(`/admin/subscribers${query({ ...f, perPage: 25 })}`),
+  subscribersCsvUrl: (f: { status?: SubscriberStatus; q?: string }) => `/api/admin/export/subscribers${query(f)}`,
 
   faqs: () => api.get<AdminFaq[]>('/admin/faqs'),
   createFaq: (f: FaqInput) => api.post<AdminFaq>('/admin/faqs', f),
@@ -538,7 +521,7 @@ export const siteAdminApi = {
   deleteFaq: (id: number) => api.delete<null>(`/admin/faqs/${id}`),
   reorderFaqs: (ids: number[]) => api.post<AdminFaq[]>('/admin/faqs/reorder', { ids }),
 
-  audit: (f: AuditFilters) => api.get<Paged<AuditRow> & { actions: string[] }>(`/admin/audit${siteQuery({ ...f, perPage: 50 })}`),
+  audit: (f: AuditFilters) => api.get<Paged<AuditRow> & { actions: string[] }>(`/admin/audit${query({ ...f, perPage: 50 })}`),
   items: () => api.get<{ itemSet: { version: string; description: string }; items: ItemRow[] }>('/admin/items'),
   norms: () => api.get<NormsData>('/admin/norms'),
 };
@@ -598,7 +581,7 @@ export interface Team {
 
 export const usersAdminApi = {
   list: (f: UserFilters) =>
-    api.get<Paged<AdminUserRow> & { counts: { all: number; admins: number; disabled: number; new30: number } }>(`/admin/users${siteQuery({ ...f, perPage: 25 })}`),
+    api.get<Paged<AdminUserRow> & { counts: { all: number; admins: number; disabled: number; new30: number } }>(`/admin/users${query({ ...f, perPage: 25 })}`),
   detail: (id: number) => api.get<AdminUserDetail>(`/admin/users/${id}`),
   setStatus: (id: number, status: 'active' | 'disabled') => api.patch<AdminUserRow>(`/admin/users/${id}`, { status }),
   anonymise: (id: number, confirmEmail: string) => api.post<AdminUserDetail>(`/admin/users/${id}/anonymise`, { confirmEmail }),

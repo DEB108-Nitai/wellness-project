@@ -6,6 +6,7 @@ namespace Transenigma\Services;
 use Transenigma\Core\Database;
 use Transenigma\Core\HttpException;
 use Transenigma\Repositories\PsychometricRepository;
+use Transenigma\Support\Csv;
 
 /**
  * Admin view of assessments and their results against people's names (PRD ADM-2, ADM-3; owner ask).
@@ -134,8 +135,7 @@ final class AdminParticipantsService
         $items = $withAnswers ? PsychometricRepository::items(PsychometricRepository::activeItemSetVersion()) : [];
         @set_time_limit(300); // large exports on shared hosting
 
-        $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF");
+        $out = Csv::open();
         $head = ['Reference', 'Status', 'Name', 'Email', 'Nickname', 'Country', 'Age', 'Gender', 'Education', 'Occupation',
             'Started (UTC)', 'Completed (UTC)', 'Active minutes', 'Quality flagged', 'Item set', 'Norm version'];
         foreach ($factors as $c) {
@@ -147,7 +147,7 @@ final class AdminParticipantsService
         foreach ($items as $item) {
             $head[] = 'Item ' . $item['item_code'];
         }
-        fputcsv($out, $head, ',', '"', '');
+        Csv::row($out, $head);
 
         $stmt = Database::run(
             "SELECT s.*, u.name AS user_name, u.email AS user_email, u.anonymized_at
@@ -179,7 +179,7 @@ final class AdminParticipantsService
                     $row[] = $byCode[$item['item_code']] ?? '';
                 }
             }
-            fputcsv($out, array_map([ChallengeService::class, 'csvSafe'], $row), ',', '"', '');
+            Csv::row($out, $row);
         }
         fclose($out);
     }
