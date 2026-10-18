@@ -8,6 +8,8 @@ Item key    : https://ipip.ori.org/new16PFKey.htm / new16PFTable.htm
 
 Usage:  python derive_norms.py <path-to-data.csv> <path-to-items.txt> <out-dir>
 Outputs: ipip16_items.tsv, norms.json  (consumed by the MySQL seed generator)
+         stens.json  (norm set v2: one sten for every attainable raw score, read from the
+                      real distribution instead of 2z + 5.5; migration 027)
 
 Standard library only - no pandas required.
 """
@@ -20,6 +22,16 @@ import sys
 DATA, ITEMS, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 
 NORM_VERSION = "ipip16-op2019-v1"
+STEN_VERSION = "ipip16-op2019-v2"
+
+# Standard sten bands are half-SD wide around the mean: sten k covers z in [(k-6)/2, (k-5)/2).
+# As shares of a normal population the band edges are Phi(-2), Phi(-1.5), ... Phi(2), in percent.
+STEN_CUTS = [round(100 * 0.5 * (1 + math.erf(z / math.sqrt(2))), 3) for z in (-2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2)]
+
+
+def table_sten(share):
+    """Sten for a mid-rank share of the population (percent); a share on a band edge takes the higher sten."""
+    return 1 + sum(share >= cut for cut in STEN_CUTS)
 
 # dataset scale letter -> (16PF factor code, number of positively keyed items)
 SCALES = {
@@ -74,7 +86,7 @@ for r in rows[1:]:
     good.append(v)
 N = len(good)
 
-factors, raw = {}, {}
+factors, raw, stens = {}, {}, {}
 for s, items in scale_items.items():
     code = SCALES[s][0]
     scores = [sum(v[h] if keyed(h) == 1 else 6 - v[h] for h in items) for v in good]
@@ -85,11 +97,14 @@ for s, items in scale_items.items():
     counts = {}
     for x in scores:
         counts[x] = counts.get(x, 0) + 1
-    pct, below = {}, 0
+    pct, sten, below = {}, {}, 0
     for x in range(k, 5 * k + 1):
         c = counts.get(x, 0)
-        pct[x] = round(100 * (below + c / 2) / N, 1)
+        share = 100 * (below + c / 2) / N
+        pct[x] = round(share, 1)
+        sten[x] = table_sten(share)  # from the exact share, not the rounded percentile
         below += c
+    stens[code] = sten
     raw[code] = scores
     factors[code] = {
         "items": k, "mean": round(st.fmean(scores), 4), "sd": round(st.pstdev(scores), 4),
@@ -106,6 +121,10 @@ for gcode, (name, weights) in GLOBALS.items():
 with open(f"{OUT}/norms.json", "w", encoding="utf-8") as fh:
     json.dump({"version": NORM_VERSION, "n": N, "source": "openpsychometrics.org 16PF dataset",
                "factors": factors, "globals": globals_out}, fh, indent=1)
+
+with open(f"{OUT}/stens.json", "w", encoding="utf-8") as fh:
+    json.dump({"version": STEN_VERSION, "base": NORM_VERSION, "n": N, "method": "table",
+               "source": "openpsychometrics.org 16PF dataset", "cuts": STEN_CUTS, "factors": stens}, fh, indent=1)
 
 with open(f"{OUT}/ipip16_items.tsv", "w", encoding="utf-8", newline="") as fh:
     fh.write("item_code\tfactor\tkeyed\ttext\n")

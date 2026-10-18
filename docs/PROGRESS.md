@@ -453,7 +453,8 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - [x] Per-page titles/descriptions, sitemap and robots: checked, already complete (slice S10).
 - Note: the test timer (restored 2026-10-05) shows active time and continues from the saved total after resume (`SessionState.activeSeconds`).
 - [ ] *Suggestion, not yet approved:* personalised growth recommendations based on actual scores.
-- Owner decisions 2026-10-16: no scoring note on the results page; scoring option A (stens from the empirical table) to be decided.
+- Owner decisions 2026-10-16: no scoring note on the results page; scoring option A approved.
+- [x] **Scoring option A (branch `feature/percentile-stens`, built 2026-10-16):** norm set `ipip16-op2019-v2` reads each trait's sten from the real distribution of the same 35,338 people (migration 027, `factor_stens`); the 5 global scores keep 2z + 5.5. Finished tests keep v1 and their stored scores (checked: every stored score unchanged, including TE-LCHUHZ). On the norm sample the sten/percentile contradiction falls from 9.0 % to 0 %; 9.6 % of trait scores move, always by one. Copy: How It Works bullet "Stens read from the real score spread of 35,338 people"; admin norms page explains the method. Deploy: `migrate.php` applies 027 with the rest.
 
 ### Phase 7 — Production and deploy (DreamHost)
 - [ ] Production `config.php` outside the web root; MySQL database; run `migrate.php` and `create-admin.php`.

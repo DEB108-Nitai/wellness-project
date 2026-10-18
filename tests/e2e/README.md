@@ -25,6 +25,7 @@ They need no extra npm packages; Node 22+ has a built-in WebSocket. Screenshots 
 | `admin-participants.mjs [TE-REF]` | Participants & results list, detail and CSV export, read-only on an existing completed test (default TE-LCHUHZ) |
 | `admin-visitors.mjs` | Private visitor counter: seeded page views, the automated browser is not counted, Visitors page at desktop and phone width |
 | `admin-site.mjs` | Messages, subscribers (export without unsubscribe tokens), FAQs (add, reorder, delete, shown on /faq), audit log, question set and norms |
+| `scoring-v2.mjs [case]` | A real respondent's 166 answers (golden case `dataset-row-5`, whose stens differ from the old formula) taken through the site: the report is scored with norm set v2 and every trait and domain sten equals the Python reference (`docs/scoring/golden_v2.json`). Prints the trait table with the old formula's sten beside each change. Creates one `@example.com` account |
 | `a11y.mjs [path ...]` | Accessibility and phone pass over every public page at 360/390/768/1440 px (`WIDTHS=390,1440` to narrow): axe-core WCAG 2.1 A/AA, no sideways scroll, tap targets ≥ 44 px below 1024 px. Full-page screenshots and `report.json` in `shots/a11y/`. Read-only |
 | `admin-users.mjs` | Users list and detail, disable/enable, anonymise; Admins page is read-only for a non-primary admin and the server refuses too |
 

@@ -40,7 +40,7 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) =>
             step: '03',
             title: 'Standard Ten (Sten) Normalization Engine',
             desc: 'Raw scores across all 16 factor scales are normalized into Sten scores (ranging from 1 to 10 with a mean of 5.5 and standard deviation of 2.0). Scores are classified into Low Pole (1-3), Average Band (4-7), and High Pole (8-10).',
-            points: ['Zero arbitrary bucket stereotyping', 'Scientifically validated z-score transformations', 'Comprehensive factor bipolar analysis'],
+            points: ['Zero arbitrary bucket stereotyping', 'Stens read from the real score spread of 35,338 people', 'Comprehensive factor bipolar analysis'],
           },
           {
             step: '04',

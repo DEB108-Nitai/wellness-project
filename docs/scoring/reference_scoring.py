@@ -4,9 +4,12 @@ The PHP ScoringService must reproduce these numbers exactly (golden tests).
 
 Usage:
   python reference_scoring.py golden [path-to-open-psychometrics-data.csv]
-      -> writes golden.json (fixed answer patterns + 5 real dataset rows)
+      -> writes golden.json (norm set v1) and golden_v2.json (norm set v2), each with fixed answer
+         patterns + 5 real dataset rows
 
-Rounding rule for stens: round half away from zero (2·z + 5.5), then clamp 1..10.
+Norm set v1 (ipip16-op2019-v1): factor sten = round half away from zero (2·z + 5.5), clamped 1..10.
+Norm set v2 (ipip16-op2019-v2): factor sten read from stens.json (the real score distribution,
+standard sten cut-points); z and percentile as in v1. Global domains use 2·z + 5.5 in both.
 """
 import csv
 import json
@@ -19,6 +22,9 @@ FACTORS = ["A", "B", "C", "E", "F", "G", "H", "I", "L", "M", "N", "O", "Q1", "Q2
 
 with open(os.path.join(HERE, "norms.json"), encoding="utf-8") as fh:
     NORMS = json.load(fh)
+with open(os.path.join(HERE, "stens.json"), encoding="utf-8") as fh:
+    STENS = json.load(fh)
+VERSIONS = {NORMS["version"]: None, STENS["version"]: STENS["factors"]}
 
 ITEMS = []  # (item_code, factor, keyed)
 with open(os.path.join(HERE, "ipip16_items.tsv"), encoding="utf-8") as fh:
@@ -40,8 +46,9 @@ def band(s: int) -> str:
     return "low" if s <= 3 else "high" if s >= 8 else "average"
 
 
-def score(answers: dict) -> dict:
+def score(answers: dict, version: str = NORMS["version"]) -> dict:
     """answers: item_code -> 1..5 for all 163 scored items."""
+    table = VERSIONS[version]
     raw = {f: 0 for f in FACTORS}
     for code, factor, keyed in ITEMS:
         value = answers[code]
@@ -51,7 +58,7 @@ def score(answers: dict) -> dict:
     for f in FACTORS:
         n = NORMS["factors"][f]
         z[f] = (raw[f] - n["mean"]) / n["sd"]
-        s = sten(z[f])
+        s = sten(z[f]) if table is None else table[f][str(raw[f])]
         factors[f] = {
             "raw": raw[f],
             "z": round(z[f], 6),
@@ -70,6 +77,11 @@ def score(answers: dict) -> dict:
 
 
 def golden(data_csv: str | None) -> None:
+    for version, name in ((NORMS["version"], "golden.json"), (STENS["version"], "golden_v2.json")):
+        write_golden(data_csv, version, name)
+
+
+def write_golden(data_csv: str | None, version: str, file_name: str) -> None:
     cases = []
     codes = [c for c, _, _ in ITEMS]
     for name, fn in [
@@ -80,7 +92,7 @@ def golden(data_csv: str | None) -> None:
         ("agree-positive-keyed", lambda i, c: 5 if ITEMS[i][2] == "+" else 1),
     ]:
         answers = {c: fn(i, c) for i, c in enumerate(codes)}
-        cases.append({"name": name, "answers": answers, "expected": score(answers)})
+        cases.append({"name": name, "answers": answers, "expected": score(answers, version)})
 
     if data_csv:
         with open(data_csv, encoding="utf-8") as fh:
@@ -95,14 +107,14 @@ def golden(data_csv: str | None) -> None:
                     continue
                 if 0 in answers.values():
                     continue
-                cases.append({"name": f"dataset-row-{taken + 1}", "answers": answers, "expected": score(answers)})
+                cases.append({"name": f"dataset-row-{taken + 1}", "answers": answers, "expected": score(answers, version)})
                 taken += 1
                 if taken == 5:
                     break
 
-    with open(os.path.join(HERE, "golden.json"), "w", encoding="utf-8") as fh:
-        json.dump({"norm_version": NORMS["version"], "cases": cases}, fh, indent=1)
-    print(f"wrote {len(cases)} golden cases")
+    with open(os.path.join(HERE, file_name), "w", encoding="utf-8") as fh:
+        json.dump({"norm_version": version, "cases": cases}, fh, indent=1)
+    print(f"wrote {len(cases)} golden cases to {file_name}")
 
 
 if __name__ == "__main__":

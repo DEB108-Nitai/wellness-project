@@ -11,7 +11,9 @@ use Transenigma\Repositories\PsychometricRepository;
  *
  *  raw_f   = Σ item scores (positively keyed: answer, negatively keyed: 6 − answer)
  *  z_f     = (raw_f − mean_f) / sd_f
- *  sten_f  = clamp(round(2·z_f + 5.5), 1, 10)          round = half away from zero
+ *  sten_f  = norm set 'formula' (v1): clamp(round(2·z_f + 5.5), 1, 10)   round = half away from zero
+ *            norm set 'table' (v2):   factor_stens[f][raw_f], read from the real distribution, so the
+ *                                     sten, the percentile and the band always agree
  *  pct_f   = empirical percentile for raw_f
  *  G       = Σ w·z_f over the domain's factors (w = ±1)
  *  sten_G  = clamp(round(2·(G − mean_G)/sd_G + 5.5), 1, 10)
@@ -49,7 +51,10 @@ final class ScoringService
                 throw new RuntimeException("No items for factor $code");
             }
             $z[$code] = ($raw[$code] - $norm['mean']) / $norm['sd'];
-            $sten = self::sten($z[$code]);
+            // A table without this raw score is a broken norm set: stop rather than guess.
+            $sten = $norms['method'] === 'table'
+                ? ($norms['stens'][$code][$raw[$code]] ?? throw new RuntimeException("No sten for $code raw {$raw[$code]} in $normVersion"))
+                : self::sten($z[$code]);
             $factors[$code] = [
                 'raw' => $raw[$code],
                 'z' => $z[$code],
