@@ -111,7 +111,7 @@ It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, m
 DreamHost's PHP 8.2 command-line binary is usually `/usr/local/php82/bin/php`.
 ```
 cd ~/transenigma.com
-/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…026)
+/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…027)
 /usr/local/php82/bin/php api/bin/migrate.php --status   # all applied
 /usr/local/php82/bin/php api/bin/create-admin.php you@transenigma.com "Your Name"
 ```
@@ -208,10 +208,24 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 
 ## 8. Updating the site later
 
-1. On a developer machine: pull, `npm ci`, tests, `npm run build`.
+1. On a developer machine: pull, `npm ci`, tests, `npm run build`. Take a fresh backup on the server: `bash ~/bin/backup-db.sh`.
+   **Turn on maintenance mode** (Admin → Settings) and keep it on until step 4 passes. Visitors then can't submit a test while the database and the code don't match yet: for example, a migration that switches the active norm set (027) would otherwise let the old code score a test with the new set's label, and that result would be stored for good. Don't take a test yourself while it is on, because admins are let through.
 2. **Database first.** Upload the new `database/migrations/` files and run `/usr/local/php82/bin/php api/bin/migrate.php` over SSH (it applies only the new ones). Migrations only add things, so the old code keeps working with the new tables and columns. The other way round, new code would ask for columns that don't exist yet and every page would fail until the migration ran.
 3. Then upload the changed `api/` files, and last the new `dist/` contents (replace `assets/`; old hashed files can be deleted). **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
-4. Run `/usr/local/php82/bin/php api/bin/preflight.php` again; it should end with `READY`.
+4. Run `/usr/local/php82/bin/php api/bin/preflight.php` again; it should end with `READY`. Then turn maintenance mode off.
+
+**If a migration stops halfway.** MySQL can't roll back table changes, so a failed file can leave part of its work behind. `migrate.php` names the file and the statement that failed, and it doesn't mark that file as applied. Leave maintenance mode on and the old code in place, undo what that file added, fix the cause and run `migrate.php` again. For `027_table_stens.sql` the undo is (save it as `~/undo027.sql` and run `mysql --defaults-extra-file=$HOME/.my.cnf --force transenigma < ~/undo027.sql`; `--force` carries on past a line whose object was never created, e.g. the column if the very first statement failed):
+```sql
+DROP TABLE IF EXISTS factor_stens;
+DELETE FROM domain_norms       WHERE norm_version = 'ipip16-op2019-v2';
+DELETE FROM factor_percentiles WHERE norm_version = 'ipip16-op2019-v2';
+DELETE FROM factor_norms       WHERE norm_version = 'ipip16-op2019-v2';
+DELETE FROM norm_sets          WHERE version      = 'ipip16-op2019-v2';
+UPDATE norm_sets SET is_active = IF(version = 'ipip16-op2019-v1', 1, 0);
+ALTER TABLE norm_sets DROP COLUMN sten_method;
+DELETE FROM schema_migrations WHERE version = '027_table_stens.sql';
+```
+MySQL refuses this once any test has been scored with v2, which protects those results. After that point a problem is fixed with a new migration, never by undoing 027.
 
 ## 9. Rolling back
 
