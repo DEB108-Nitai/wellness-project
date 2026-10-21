@@ -12,6 +12,12 @@ export default defineConfig(({mode}) => {
 
   return {
     plugins: [react(), tailwindcss()],
+    build: {
+      // Tailwind 4 writes colours as oklch(), which browser engines before ~2023 (old Android WebViews, in-app
+      // browsers) drop, leaving transparent backgrounds and invisible buttons. With these targets the CSS minifier
+      // adds a plain hex fallback before each colour; modern browsers still use the exact modern value.
+      cssTarget: ['chrome90', 'edge90', 'firefox90', 'safari14'],
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

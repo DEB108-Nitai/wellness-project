@@ -389,6 +389,7 @@ export const AUDIT_LABELS: Record<string, string> = {
   ADMIN_VIEWED_ASSESSMENT: 'Viewed an assessment',
   MESSAGE_HANDLED: 'Marked a message handled',
   MESSAGE_REOPENED: 'Marked a message as new',
+  MESSAGE_REPLIED: 'Replied to a message',
   EXPORT_MESSAGES: 'Exported messages',
   EXPORT_SUBSCRIBERS: 'Exported subscribers',
   FAQ_CREATED: 'Added an FAQ',
@@ -446,9 +447,16 @@ export interface MessageRow {
   createdAt: string;
   handledAt: string | null;
 }
+export interface MessageReply {
+  id: number;
+  body: string;
+  sentAt: string;
+  sentBy: string | null;
+}
 export interface MessageDetail extends Omit<MessageRow, 'preview'> {
   message: string;
   handledBy: string | null;
+  replies: MessageReply[];
 }
 
 export type SubscriberStatus = 'subscribed' | 'unsubscribed';
@@ -510,6 +518,7 @@ export const siteAdminApi = {
   messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${query({ ...f, perPage: 25 })}`),
   message: (id: number) => api.get<MessageDetail>(`/admin/messages/${id}`),
   setMessageStatus: (id: number, status: MessageStatus) => api.patch<MessageDetail>(`/admin/messages/${id}`, { status }),
+  replyToMessage: (id: number, body: string) => api.post<MessageDetail>(`/admin/messages/${id}/reply`, { body }),
   messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${query(f)}`,
 
   subscribers: (f: { status?: SubscriberStatus; q?: string; page?: number }) =>

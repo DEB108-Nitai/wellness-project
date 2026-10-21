@@ -72,7 +72,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
     const errs: Record<string, string> = {};
     if (programs.length === 0) errs.programs = 'Please choose at least one program.';
     const ageNum = Number(age);
-    if (!Number.isInteger(ageNum) || ageNum < 18 || ageNum > 100) errs.age = 'Please enter an age between 18 and 100.';
+    if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 100) errs.age = 'Please enter an age between 1 and 100.';
     if (!city.trim()) errs.city = 'Please enter your city.';
     if (!country) errs.country = 'Please choose your country.';
     if (!consent) errs.consent = 'Please accept to continue.';
@@ -218,7 +218,7 @@ export const RegistrationModal: React.FC<Props> = ({ initialProgram, onClose }) 
                   <label htmlFor="reg-age" className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                     Age <span className="text-rose-500">*</span>
                   </label>
-                  <input id="reg-age" type="number" required inputMode="numeric" min={18} max={100} value={age} onChange={(e) => setAge(e.target.value)} className={`${input} font-mono ${border('age')}`} />
+                  <input id="reg-age" type="number" required inputMode="numeric" min={1} max={100} value={age} onChange={(e) => setAge(e.target.value)} className={`${input} font-mono ${border('age')}`} />
                   {fieldError('age')}
                 </div>
               </div>

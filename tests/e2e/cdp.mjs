@@ -95,7 +95,7 @@ export async function launch(_port) {
     async fill(selector, value) {
       const ok = await page.eval(`(() => {
         const el = document.querySelector(${JSON.stringify(selector)}); if (!el) return false;
-        const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype;
+        const proto = { SELECT: HTMLSelectElement, TEXTAREA: HTMLTextAreaElement }[el.tagName]?.prototype ?? HTMLInputElement.prototype;
         Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, ${JSON.stringify(String(value))});
         el.dispatchEvent(new Event(el.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
         return true; })()`);

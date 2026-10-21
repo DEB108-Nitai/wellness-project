@@ -156,7 +156,7 @@ try {
   await page.fill('input[type=search]', tag);
   await page.waitText('Rahul Sharma');
   await page.clickText('Rahul Sharma', 'button');
-  await page.waitFor(`document.querySelector('[role=dialog] a[href^="mailto:"]')`); // the list previews the text too
+  await page.waitFor(`document.querySelector('[role=dialog] textarea')`); // the list previews the text too
   await page.clickText('Mark handled', '[role=dialog] button');
   await page.waitText('handled');
   await page.eval(`document.querySelector('[role=dialog] [aria-label=Close]').click()`);

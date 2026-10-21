@@ -243,12 +243,15 @@ export const BarList: React.FC<{ items: { label: string; count: number; color?: 
           <li key={i.label} className="grid grid-cols-[minmax(0,8.5rem)_1fr] items-center gap-3 text-xs" title={showShare ? `${i.label}: ${i.count} (${share}%)` : `${i.label}: ${i.count}`}>
             <span className="text-slate-600 truncate">{i.label}</span>
             <span className="flex items-center gap-2 min-w-0">
-              <span
-                className="h-3 rounded-r-[4px] shrink-0"
-                style={{ width: `${(i.count / max) * 85}%`, minWidth: i.count ? 3 : 0, background: i.color ?? SINGLE }}
-              />
-              <span className="text-slate-800 font-semibold tabular-nums">{fmt(i.count)}</span>
-              {showShare && <span className="text-slate-400 tabular-nums hidden sm:inline">{share}%</span>}
+              {/* The bar grows inside its own track, so the count and share always keep their room inside the card. */}
+              <span className="flex-1 min-w-0">
+                <span
+                  className="block h-3 rounded-r-[4px]"
+                  style={{ width: `${(i.count / max) * 100}%`, minWidth: i.count ? 3 : 0, background: i.color ?? SINGLE }}
+                />
+              </span>
+              <span className="shrink-0 text-slate-800 font-semibold tabular-nums">{fmt(i.count)}</span>
+              {showShare && <span className="shrink-0 w-9 text-right text-slate-400 tabular-nums hidden sm:inline">{share}%</span>}
             </span>
           </li>
         );

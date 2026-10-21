@@ -123,7 +123,7 @@ export const SettingsPanel: React.FC = () => {
 
       <div className="grid sm:grid-cols-3 gap-4">
         {number('items_per_page', 'Statements per page (5–10)', 5, 10)}
-        {number('min_age', 'Minimum age (18+)', 18, 99)}
+        {number('min_age', 'Minimum age for the 16PF test (18+)', 18, 99)}
         {number('too_fast_minutes', '"Too fast" threshold (minutes)', 1, 60)}
       </div>
 

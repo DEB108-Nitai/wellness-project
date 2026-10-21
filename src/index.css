@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Older browser engines don't accept "in oklab" in a gradient and drop the whole background (e.g. the dark home
+   hero). They get the same gradient without it; browsers that understand it skip this block. */
+@supports not (background-image: linear-gradient(in oklab, red, red)) {
+  .bg-gradient-to-t { --tw-gradient-position: to top; }
+  .bg-gradient-to-b { --tw-gradient-position: to bottom; }
+  .bg-gradient-to-r { --tw-gradient-position: to right; }
+  .bg-gradient-to-br { --tw-gradient-position: to bottom right; }
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

@@ -132,6 +132,7 @@ return static function (Router $r): void {
     $r->get('/admin/messages', [AdminSiteController::class, 'messages'], $admin);
     $r->get("/admin/messages/$id", [AdminSiteController::class, 'message'], $admin);
     $r->patch("/admin/messages/$id", [AdminSiteController::class, 'updateMessage'], $admin);
+    $r->post("/admin/messages/$id/reply", [AdminSiteController::class, 'replyMessage'], $admin);
     $r->get('/admin/export/messages', [AdminSiteController::class, 'exportMessages'], $admin);
     $r->get('/admin/subscribers', [AdminSiteController::class, 'subscribers'], $admin);
     $r->get('/admin/export/subscribers', [AdminSiteController::class, 'exportSubscribers'], $admin);

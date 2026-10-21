@@ -50,16 +50,18 @@ try {
   await page.waitText(`Question ${tag}`);
   await page.screenshot(`${OUT}admin-11-messages.png`, true);
   await page.clickText(`Question ${tag}`, 'button');
-  await page.waitFor(`document.querySelector('[role=dialog] a[href^="mailto:"]')`); // the list previews the text too
-  if (!(await page.eval(`!!document.querySelector('[role=dialog] a[href^="mailto:${sender}"]')`))) throw new Error('no reply link');
+  await page.waitFor(`document.querySelector('[role=dialog] textarea')`); // the list previews the text too
+  await page.fill('[role=dialog] textarea', `Thank you for writing. The next cohort starts soon (${tag}).`);
   await page.screenshot(`${OUT}admin-12-message.png`);
-  await page.clickText('Mark handled', '[role=dialog] button');
-  await page.waitText('handled');
+  await page.clickText('Send reply', '[role=dialog] button');
+  await page.waitText(`Reply sent to ${sender}`);
+  if (!(await page.eval(`document.querySelector('[role=dialog]').innerText.includes('The next cohort starts soon (${tag}).')`))) throw new Error('reply not in the history');
+  await page.screenshot(`${OUT}admin-12b-message-replied.png`);
   await page.eval(`document.querySelector('[role=dialog] [aria-label=Close]').click()`);
   await page.waitFor(`!document.body.innerText.includes('Question ${tag}')`);
   await page.clickText('Handled', '[role=tab]');
   await page.waitText(`Question ${tag}`);
-  step('message opened (reply link), marked handled, listed under Handled');
+  step('message opened, replied from the console (kept in its history), marked handled, listed under Handled');
 
   // 2. Subscribers.
   await page.goto(`${BASE}/admin/subscribers`);
@@ -97,7 +99,7 @@ try {
   // 4. Audit log shows what just happened, in plain words.
   await page.goto(`${BASE}/admin/audit`);
   await page.waitText('Added an FAQ');
-  await page.waitText('Marked a message handled');
+  await page.waitText('Replied to a message');
   await page.screenshot(`${OUT}admin-15-audit.png`);
   step('audit log lists the FAQ and message actions in plain words');
 

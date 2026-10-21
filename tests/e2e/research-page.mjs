@@ -77,7 +77,7 @@ try {
 
   // Deep link from elsewhere (what the home-page cards will use).
   await page.goto(`${BASE}/`);
-  await page.waitText('Transcend the enigma');
+  await page.waitText('Transcend all obstacles');
   await page.goto(`${BASE}/research#drug-discovery`);
   await page.waitFor(`document.getElementById('drug-discovery')`, 10000);
   await sleep(1800);

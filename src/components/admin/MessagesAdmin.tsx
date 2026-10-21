@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, Download, Mail, RotateCcw, Search } from 'lucide-react';
+import { CheckCircle2, Download, RotateCcw, Search, Send } from 'lucide-react';
 import { MessageDetail, MessageFilters, MessageRow, MessageStatus, Paged, siteAdminApi } from '../../api/admin';
 import { ApiError } from '../../api/client';
-import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, LoadingBlock, Modal, PageHeader, Pager, RangeChoice, RangePicker, rangeDates, useClampPage, useDebounced } from './ui';
+import { useSettings } from '../../context/SettingsContext';
+import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, LoadingBlock, Modal, PageHeader, Pager, RangeChoice, RangePicker, rangeDates, TextArea, useClampPage, useDebounced } from './ui';
 
-/** Contact-form messages (PRD ADM-5): read, reply by email, mark handled. New ones also show on the Overview. */
+/** Contact-form messages (PRD ADM-5): read, reply from the console (sent from the support address), mark handled. New ones also show on the Overview. */
 type Data = Paged<MessageRow> & { counts: Record<MessageStatus, number> };
 
 export const MessagesAdmin: React.FC = () => {
@@ -49,7 +50,7 @@ export const MessagesAdmin: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Messages"
-        description="Everything sent through the Contact form. Reply by email, then mark the message handled so everyone on the team knows."
+        description="Everything sent through the Contact form. Open a message to reply: the reply is emailed from the support address and the message is marked handled, so everyone on the team knows."
         actions={
           <a href={siteAdminApi.messagesCsvUrl(filters)} className={btn.secondary}>
             <Download className="w-4 h-4" aria-hidden="true" /> Export CSV
@@ -123,9 +124,13 @@ export const MessagesAdmin: React.FC = () => {
 };
 
 const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () => void }> = ({ id, onClose, onChanged }) => {
+  const { settings } = useSettings();
   const [m, setM] = useState<MessageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reply, setReply] = useState('');
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [sentNote, setSentNote] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -151,7 +156,25 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
     }
   };
 
-  const reply = m ? `mailto:${encodeURIComponent(m.email).replace('%40', '@')}?subject=${encodeURIComponent(`Re: ${m.subject}`)}` : '#';
+  const sendReply = async () => {
+    if (reply.trim().length < 2) {
+      setReplyError('Please write your reply first.');
+      return;
+    }
+    setBusy(true);
+    setReplyError(null);
+    setSentNote(false);
+    try {
+      setM(await siteAdminApi.replyToMessage(id, reply.trim()));
+      setReply('');
+      setSentNote(true);
+      onChanged();
+    } catch (e) {
+      setReplyError(e instanceof ApiError ? (e.fields.body ?? e.message) : 'Could not send the reply.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <Modal
@@ -170,9 +193,9 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
                 <RotateCcw className="w-4 h-4" aria-hidden="true" /> Mark as new
               </button>
             )}
-            <a href={reply} className={btn.primary}>
-              <Mail className="w-4 h-4" aria-hidden="true" /> Reply by email
-            </a>
+            <button onClick={sendReply} disabled={busy || reply.trim() === ''} className={btn.primary}>
+              <Send className="w-4 h-4" aria-hidden="true" /> {busy ? 'Sending…' : 'Send reply'}
+            </button>
           </>
         )
       }
@@ -183,9 +206,7 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="font-semibold text-slate-900">{m.name}</span>
-            <a href={reply} className="text-teal-700 hover:underline break-all">
-              {m.email}
-            </a>
+            <span className="text-slate-600 break-all select-all">{m.email}</span>
             <span className="ml-auto">{m.status === 'new' ? <Badge tone="teal">New</Badge> : <Badge>Handled</Badge>}</span>
           </div>
           <p className="text-xs text-slate-500">
@@ -193,7 +214,33 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
             {m.handledAt && ` · handled ${fmtWhen(m.handledAt)}${m.handledBy ? ` by ${m.handledBy}` : ''}`}
           </p>
           <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-800 whitespace-pre-wrap break-words">{m.message}</div>
-          <p className="text-xs text-slate-500">“Reply by email” opens your email app with the address and subject filled in. Mark the message handled once you have replied.</p>
+          {m.replies.length > 0 && (
+            <section aria-label="Replies sent" className="space-y-3">
+              {m.replies.map((r) => (
+                <div key={r.id} className="rounded-2xl border border-teal-100 bg-teal-50/60 p-4">
+                  <p className="text-xs font-semibold text-teal-800">
+                    Reply sent {fmtWhen(r.sentAt)}
+                    {r.sentBy ? ` by ${r.sentBy}` : ''}
+                  </p>
+                  <p className="mt-2 text-sm text-slate-800 whitespace-pre-wrap break-words">{r.body}</p>
+                </div>
+              ))}
+            </section>
+          )}
+          {sentNote && (
+            <p role="status" className="flex items-center gap-2 text-sm font-medium text-teal-800">
+              <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Reply sent to {m.email}.
+            </p>
+          )}
+          <TextArea
+            label={m.replies.length ? 'Write another reply' : 'Your reply'}
+            rows={6}
+            maxLength={5000}
+            value={reply}
+            onChange={(e) => setReply(e.target.value)}
+            error={replyError ?? undefined}
+            hint={`Sent to ${m.email} from ${settings.support_email || 'the support address'}, with their message quoted below it. Their answer comes back to that inbox. Sending marks the message handled.`}
+          />
         </div>
       )}
     </Modal>
