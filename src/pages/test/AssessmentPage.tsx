@@ -16,6 +16,10 @@ type Step = 'loading' | 'failed' | 'consent' | 'demographics' | 'questions' | 'r
 
 const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 
+/** Position of the current entry in this tab's history, as react-router records it. */
+const historyIdx = () => (window.history.state as { idx?: number } | null)?.idx ?? 0;
+const TEST_BASE_KEY = 'te_test_base_idx';
+
 /**
  * The assessment (PRD §4.2): consent → demographics → statements → review → completed.
  * All state lives on the server; this page only renders and autosaves.
@@ -91,6 +95,13 @@ export const AssessmentPage: React.FC = () => {
     Object.entries(state.answers).forEach(([id, v]) => (restored[Number(id)] = v));
     setAnswers(restored);
     startedSignedIn.current = !!user;
+    // Remember which history entry is the test's start page, so Back can return there in one jump once the
+    // statement pages are stale (see below).
+    try {
+      sessionStorage.setItem(TEST_BASE_KEY, String(historyIdx()));
+    } catch {
+      // storage blocked: Back then steps out one entry at a time
+    }
     // Resume at the first page that still has an unanswered statement; if none, go straight to review.
     const firstOpen = pages.findIndex((items) => items.some((q) => !restored[q.id]));
     if (firstOpen === -1 && pages.length > 0) {
@@ -131,6 +142,36 @@ export const AssessmentPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlPage, session?.ref, step]);
+
+  // Once the test is submitted (or there is no test open), the ?page= entries it left in the browser history are
+  // stale: Back would land on them and nothing on screen would change, page after page. Skip over them so Back
+  // keeps moving to where the visitor came from (the test's start page, then home). A link opened fresh, with no
+  // history behind it, just loses its ?page= instead of leaving the site.
+  // One jump at a time: the browser moves asynchronously, so until it lands the URL still shows the old page.
+  const leaving = React.useRef(false);
+  useEffect(() => {
+    leaving.current = false; // landed somewhere: a further stale page may be skipped again
+  }, [urlPage]);
+  const leaveStatementPages = () => {
+    if (leaving.current) return;
+    leaving.current = true;
+    const idx = historyIdx();
+    let base = NaN;
+    try {
+      base = Number(sessionStorage.getItem(TEST_BASE_KEY));
+    } catch {
+      // storage blocked
+    }
+    if (Number.isInteger(base) && base >= 0 && base < idx) window.history.go(base - idx);
+    else if (idx > 0) window.history.back();
+    else setParams({}, { replace: true });
+  };
+  useEffect(() => {
+    if (urlPage === null) return;
+    if (step !== 'completed' && !(step === 'consent' && !session)) return;
+    leaveStatementPages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlPage, step, session?.ref]);
 
   // After the session is set, merge answers that were saved offline in this browser and push them.
   useEffect(() => {
@@ -235,7 +276,8 @@ export const AssessmentPage: React.FC = () => {
       setCompleted({ ref: result.ref, locked: result.resultsLocked });
       void activeSession.refresh();
       setStep('completed');
-      setParams({}, { replace: true });
+      // Show the result on the test's start entry, so one Back from here (or from the report) goes home.
+      leaveStatementPages();
       scrollTop();
     } catch (err) {
       if (err instanceof ApiError && err.code === 'INCOMPLETE') {
