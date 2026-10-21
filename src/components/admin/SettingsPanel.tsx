@@ -6,6 +6,9 @@ import { useSettings } from '../../context/SettingsContext';
 
 const input = 'w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-hidden focus:border-indigo-500';
 
+/** The form's values without maintenance_mode (switched separately), for the "unsaved changes" check. */
+const snapshot = ({ maintenance_mode: _own, ...rest }: AdminSettings) => JSON.stringify(rest);
+
 /** Platform settings stored on the server (PRD ADM-8). */
 export const SettingsPanel: React.FC = () => {
   const { refresh: refreshPublic } = useSettings();
@@ -13,11 +16,18 @@ export const SettingsPanel: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  // What the server last confirmed, to tell the admin about changes they have not saved yet.
+  const [saved, setSaved] = useState<string>('');
+
+  const accept = (s: AdminSettings) => {
+    setForm(s);
+    setSaved(snapshot(s));
+  };
 
   useEffect(() => {
     adminApi
       .settings()
-      .then(setForm)
+      .then(accept)
       .catch((err) => setMessage({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not load settings.' }));
   }, []);
 
@@ -37,8 +47,10 @@ export const SettingsPanel: React.FC = () => {
     setErrors({});
     setMessage(null);
     try {
-      const { consent_version: _ignored, ...changes } = form;
-      setForm(await adminApi.updateSettings(changes));
+      // Maintenance mode has its own switch (saved at once), so this form never sends it: a page opened earlier
+      // must not turn maintenance back on or off.
+      const { consent_version: _ignored, maintenance_mode: _own, ...changes } = form;
+      accept(await adminApi.updateSettings(changes));
       void refreshPublic();
       setMessage({ tone: 'ok', text: 'Settings saved.' });
     } catch (err) {
@@ -118,7 +130,6 @@ export const SettingsPanel: React.FC = () => {
         {toggle('announcement_active', 'Show announcement banner', 'Displays the text above at the top of every page.')}
         {toggle('signup_open', 'Allow new sign-ups', 'When off, nobody can create a new account.')}
         {toggle('challenge_registration_open', 'Open 60-Day registrations', 'When off, the registration form shows "closed".')}
-        {toggle('maintenance_mode', 'Maintenance mode', 'Public site shows a maintenance page; admins keep access.')}
       </div>
 
       <div className="grid sm:grid-cols-3 gap-4">
@@ -132,6 +143,11 @@ export const SettingsPanel: React.FC = () => {
           {saving ? 'Saving…' : 'Save settings'}
         </button>
         {message && <span className={`text-sm ${message.tone === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>{message.text}</span>}
+        {!message && snapshot(form) !== saved && (
+          <span role="status" className="text-sm font-medium text-amber-700">
+            You have unsaved changes. Press Save settings to apply them.
+          </span>
+        )}
       </div>
     </form>
   );
