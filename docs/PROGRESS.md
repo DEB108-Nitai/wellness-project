@@ -3,7 +3,7 @@
 The single document to restart this project from scratch if all context is lost. **Update it at the end of every phase.**
 Related: [PRD.md](PRD.md) (the agreed specification) · [DEVELOPMENT.md](DEVELOPMENT.md) (local setup and commands) · [`tests/e2e/README.md`](../tests/e2e/README.md) (browser tests)
 
-_Last updated: 2026-10-11. **Phases 0–4 complete. Transenigma company-site slices S1–S10 complete** (§4b). PR #1 reviewed (CodeRabbit) and merged. **Auth completion done** on `feature/auth-completion`: sliding session cookie, live SMTP via DreamHost, sign-in redesign, Google sign-in live (§4c). Owner's order: build the whole app first, deploy last — admin console (Phase 5) next → DreamHost deploy (Phase 7)._
+_Last updated: 2026-10-22. **The site is live at https://transenigma.com since 2026-10-19** (Phase 7, §4g). Phases 0–7 complete; post-launch work (newsletter, animated heading, replies with subject…) merged as PR #9 and deployed 2026-10-22. Handover for the company: [HANDOVER.md](HANDOVER.md)._
 
 ---
 
@@ -18,11 +18,11 @@ _Last updated: 2026-10-11. **Phases 0–4 complete. Transenigma company-site sli
 3. **Start the local environment** (Windows + XAMPP; Apache and MySQL must be running):
    ```
    C:\xampp\php\php.exe api\bin\migrate.php      # apply new migrations
-   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (77 at last count)
+   C:\xampp\php\php.exe api\tests\run.php        # API tests — all must pass (163 at last count, 2026-10-22)
    npm run lint                                  # TypeScript check
    npm run dev                                   # http://localhost:3000 (proxies /api to XAMPP)
    ```
-4. **Git:** Phases 1–4 and slices S1–S10 were built on `feature/backend-foundation-auth` and merged into `main` via PR #1 (merge `781dbfe`). Current work: branch `feature/auth-completion`.
+4. **Git:** all work reaches `main` through pull requests (#1–#9 merged). The live site runs `main` at `2c46916` (deployed 2026-10-22). Branch `fix/review-followups` holds the last review fixes for PR #9 and this documentation update (not merged yet). Deploying: [DEPLOY.md §8](DEPLOY.md), scripts in [`deploy/`](../deploy/).
 5. **Local databases:** `transenigma` (app) and `transenigma_test` (wiped by every test run). **Never touch** `wellness` / `wellness_test`; they belong to the separate older folder `htdocs/wellness-project`. The old `wellness16pf` / `wellness16pf_test` are a pre-rename backup (2026-10-09).
 6. **Local admin account:** created by the owner with `api/bin/create-admin.php` (id 1). Test data from browser runs is always deleted afterwards.
 
@@ -112,6 +112,15 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 019 | `support_email` support@transenigma.com; Dr. Mayank Bhasin "CEO and Founder" |
 | 020 | `linkedin_url` setting (company LinkedIn page) |
 | 021 | `company_address` and `company_cin` settings (registered office + CIN, shown in footer and Contact) |
+| 022 | Admin-managed research papers and consultancy projects (`publications.created_at`, image paths) |
+| 023 | Private visit counter (`page_views`, `daily_visits`; no cookie, IP or user agent stored) |
+| 024 | Admin two-step sign-in (encrypted TOTP secret, hashed recovery codes) |
+| 025 | Consultancy categories managed by admins |
+| 026 | Primary admin (`users.is_primary_admin`, unique `primary_lock`) |
+| 027 | Norm set `ipip16-op2019-v2`: stens from the real distribution (`factor_stens`), generated |
+| 028 | `contact_message_replies`: replies sent from the admin console |
+| 029 | `contact_message_replies.subject` (the admin writes the reply's subject) |
+| 030 | `newsletters` and `newsletter_deliveries` (newsletter composer and send queue) |
 
 ---
 
@@ -125,8 +134,8 @@ Maintenance mode: public endpoints return **503** while `auth/*`, `settings/publ
 | 3 | Assessment and results: server sessions, scoring, guest flow, results gate, sharing, My Results | ✅ Committed `a1e342b` |
 | 4 | 60-Day Challenges (STI, PTI, TTI), contact, newsletter, FAQ, settings, maintenance | ✅ Committed |
 | 5 | Admin console on server data + anonymise user + admin 2FA | ✅ Done 2026-10-13 (branch `feature/admin-console`) |
-| 6 | UI polish, SEO, accessibility, performance of the bundle | 🟡 Built 2026-10-16 (branch `feature/phase6-polish`), waiting for the owner's UI review |
-| 7 | Production hardening and DreamHost deploy | ⬜ |
+| 6 | UI polish, SEO, accessibility, performance of the bundle | ✅ Merged and live |
+| 7 | Production hardening and DreamHost deploy | ✅ Live 2026-10-19 (§4g) |
 
 ### What each phase delivered
 - **Phase 1: foundation.** PHP core and migrations 001–003. Real IPIP items and norms derived from 35,338 respondents. Locked-down `.htaccess` files. Removed: researcher portal, campaigns, deletion requests, the standalone Sonic page, demo data and unused Node packages.
@@ -402,6 +411,25 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 
 ---
 
+## 4g. Launch and post-launch (2026-10-19 → 22)
+
+**Launch (2026-10-19), DreamHost:**
+- The new site was staged beside the old one (`~/transenigma.com-new`), configured (`~/transenigma-config/config.php`, fresh `app.secret`, company Google client, new support@ password typed on the server), migrated, the primary admin created, preflight `READY`, then switched in with two `mv` commands (about a second of downtime). The old site and a tarball of it are kept on the server.
+- Fixes found on the live server: MySQL 8 needs `mysqldump --no-tablespaces` on shared hosting; `Database::connect` sets `sql_mode` and UTC itself, so MySQL 8.4 and local MariaDB behave the same.
+- Cron (panel): daily housekeeping, daily backup (database + `uploads/`, 14 days), and from 2026-10-22 the newsletter sender every 10 minutes. Output to `transenigma7@gmail.com`.
+- DNS/mail: DMARC record added (SPF/DKIM by DreamHost). Search Console verified (meta tag), sitemap submitted.
+- Updates are scripted: `deploy/build-package.sh` locally, then `~/update-site.sh` on the server (backup → maintenance on → migrations → rsync keeping `uploads/`, `.well-known/`, `api/storage/` → preflight → maintenance off). Used for the 2026-10-21 and 2026-10-22 updates.
+
+**Post-launch changes (PR #9, merged 2026-10-22; owner requests):**
+- 60-Day programs open to every age (registration age 1–100, an "Under 18" band in the admin charts); the 16PF test keeps its minimum age.
+- Reply to contact messages from the admin (emailed from support@, kept in the message's history, marks it handled); the admin writes the subject (pre-filled "Re: …").
+- Home heading: "Transcend all ___ / enigmatically", the blank cycling obstacles → problems → limitations letter by letter (CodeRabbit-style, pure CSS, `RotatingWord.tsx`); "Transcend all" never moves. Footer "Our Ventures" column removed. Chart numbers kept inside their cards.
+- **Newsletter:** "Newsletter subscribers" became **Newsletter** (tabs Newsletters / Subscribers). Block editor (heading, paragraph with bold/italic/link, image + caption, button, divider), cover image, preview text, preview at desktop/phone width, test to yourself, send. Sending is queued and paced (`mail.newsletter_per_hour`, default 80) by `api/bin/send-newsletters.php`; each email has a personal unsubscribe link and RFC 8058 one-click `List-Unsubscribe` headers (`POST /api/newsletter/one-click`, no CSRF by design). The server builds the email from the blocks and escapes everything typed.
+- Maintenance mode is its own switch (saved at once, red bar on every admin page while on); it was never saved by the old form. Back after a finished test leaves the test pages. Old in-app phone browsers get hex colour fallbacks. Real favicon for Google.
+- CodeRabbit/CodeAnt reviews of PR #9: all findings fixed (one-click unsubscribe limited per token, not per IP; drafts locked against a concurrent Send; re-checks before each email; https-only links; reply saved before it is emailed…), the last ones on `fix/review-followups`.
+
+---
+
 ## 5. Prototype faults (from the first analysis)
 
 | # | Fault | Status |
@@ -434,9 +462,9 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 
 ## 6. Pending work
 
-### Phase 5 — Admin console (next)
-- [ ] Dashboard: tests started and completed, completion rate, flagged sessions, new users, new messages, recent audit events.
-- [ ] Participants: search and filters, detail view (demographics, timing, quality, 16 + 5 scores, item answers). Streamed CSV including optional item answers.
+### Phase 5 — Admin console (done)
+- [x] Dashboard: tests started and completed, completion rate, flagged sessions, new users, new messages, recent audit events.
+- [x] Participants: search and filters, detail view (demographics, timing, quality, 16 + 5 scores, item answers). Streamed CSV including optional item answers.
 - [x] Users: list and search, view, disable/enable; admin rights by the primary admin only (slices F, F2).
 - [x] Contact messages: list, mark handled. Newsletter subscribers: list and export (slice H).
 - [x] FAQs: create, edit, delete, reorder, publish (slice H).
@@ -444,7 +472,7 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - [x] **ADM-11 Anonymise user:** for erasure requests; removes personal data, keeps answers (slice F).
 - [x] **ADM-12 Admin two-factor sign-in:** authenticator app (TOTP) plus recovery codes (slice G).
 
-### Phase 6 — UI polish (built 2026-10-16, owner UI review pending)
+### Phase 6 — UI polish (done)
 - [x] **Faster first load:** every page except the home page is lazy-loaded (`src/lib/lazyPage.ts`, one reload if a tab outlives a redeploy). Main JS 541 KB → 381 KB (115 KB gzip); the size warning is gone. Admin bundle was already separate.
 - [x] **Navbar:** "Take Test"/"Continue" hidden inside the test; phone buttons 44 px. Home browser title (owner wording): "Transenigma | Research, Technology and Well Being".
 - [x] **Admin tidy:** Participants and Registrations use the shared 44 px `Pager`; FAQ/category move buttons 44 px; one query helper in `src/api/admin.ts`; all four CSV exports (registrations, assessments, messages, subscribers) written by `api/src/Support/Csv.php`. Every download kept.
@@ -456,11 +484,18 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 - Owner decisions 2026-10-16: no scoring note on the results page; scoring option A approved.
 - [x] **Scoring option A (branch `feature/percentile-stens`, built 2026-10-16):** norm set `ipip16-op2019-v2` reads each trait's sten from the real distribution of the same 35,338 people (migration 027, `factor_stens`); the 5 global scores keep 2z + 5.5. Finished tests keep v1 and their stored scores (checked: every stored score unchanged, including TE-LCHUHZ). On the norm sample the sten/percentile contradiction falls from 9.0 % to 0 %; 9.6 % of trait scores move, always by one. Copy: How It Works bullet "Stens read from the real score spread of 35,338 people"; admin norms page explains the method. Deploy: `migrate.php` applies 027 with the rest.
 
-### Phase 7 — Production and deploy (DreamHost)
-- [ ] Production `config.php` outside the web root; MySQL database; run `migrate.php` and `create-admin.php`.
-- [ ] Cron jobs: `api/bin/cron-daily.php` daily, plus a daily `mysqldump` with 14-day rotation.
-- [ ] HTTPS; optional Cloudflare (`app.trust_cloudflare`); Google OAuth production redirect URI; SMTP; SPF/DKIM.
-- [ ] Lighthouse and security-header checks; `docs/DEPLOY.md`; PRD Appendix C acceptance run on the live site.
+### Phase 7 — Production and deploy (DreamHost): done 2026-10-19 (§4g)
+- [x] Production config outside the web root; database migrated; primary admin with two-step sign-in.
+- [x] Cron jobs: housekeeping, backup with 14-day rotation, newsletter sender.
+- [x] HTTPS, SMTP, SPF/DKIM/DMARC, Google sign-in on the company client, Search Console.
+- [x] Live checks (redirects, health, security headers, blocked private paths) and the owner's manual checklist.
+- [ ] Not done, by decision: per-page titles in the first HTML (deferred 2026-10-21; Google renders the pages).
+- [ ] Optional later: Cloudflare in front (`app.trust_cloudflare` exists).
+
+### Open after launch
+- Company ownership of every account, new SSH password, GitHub repository transfer: [HANDOVER.md §2, §7](HANDOVER.md).
+- Delete the test accounts and registrations made during the live checks.
+- Delete the old site's folder and tarball on the server when nobody needs them.
 
 ---
 
@@ -475,13 +510,12 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 
 ## 8. Waiting on the owner / their senior
 
-| Item | Needed for | Status |
-|---|---|---|
-| Domain name | Email links, Google redirect, deploy | Asked senior (message drafted 2026-10-05) |
-| Support email + sending mailbox | Contact notifications, confirmation emails | Asked senior |
-| SMTP credentials | Real email sending | Asked senior. Enter directly into `config.local.php`, never in chat |
-| Google OAuth Client ID/secret | Google sign-in | ✅ Created on the owner's personal Gmail (project `transenigma-website`, Testing). **Before launch:** add the company Gmail as IAM Owner, set it as support/contact email, publish the app |
-| Production MySQL + SFTP/SSH | Phase 7 | ✅ Owner has them (2026-10-11). Entered by the owner on the server at deploy, never in chat |
+| Item | Status |
+|---|---|
+| Domain, support mailbox, SMTP, production MySQL, SSH | ✅ Done; in use on the live site |
+| Google OAuth | ✅ Company client on the live site. The older client on a personal Gmail project is for local development only: reset its secret or delete it |
+| Account ownership and access for the company | Open: see [HANDOVER.md §2](HANDOVER.md) |
+| Primary admin hand-over before the current one leaves | Open: Admins page → Make primary ([HANDOVER.md §3](HANDOVER.md)) |
 
 **Cleaning browser-test data** (the e2e scripts create real local records): delete users, challenge registrations, contact messages and newsletter rows with `@example.com` addresses, plus their `audit_logs` / `email_log` rows. Keep the owner's admin (id 1).
 
@@ -503,8 +537,8 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 ---
 
 ## 10. Testing
-- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **77 passing tests**. They cover core, database and seeds, auth, scoring (golden), assessment lifecycle and privacy, challenges, contact, newsletter, settings and spam guard. They use the `transenigma_test` database, which is wiped on every run.
-- **Browser:** `tests/e2e/guest-flow.mjs` and `tests/e2e/phase4-flow.mjs`. Both passed at the end of their phases. `tests/e2e/challenge-shots.mjs` captures the three program blocks at desktop and phone widths for a visual check.
+- **API:** `C:\xampp\php\php.exe api\tests\run.php` gives **163 passing tests** (2026-10-22). They run on the `transenigma_test` database, which is wiped on every run.
+- **Browser:** the scripts in `tests/e2e/` (see its README). The ones touched most recently: `admin-newsletter.mjs`, `admin-site.mjs`, `back-after-test.mjs`, `home-top.mjs`, `admin-flow.mjs`, `a11y.mjs`. They create `@example.com` rows and remove them at the end. `redirects.mjs https://transenigma.com` checks the live redirects without creating data.
 - **Frontend:** `npm run lint` (TypeScript) and `npm run build`.
 
 ---
@@ -524,6 +558,9 @@ Owner asks: research papers and consultancy projects managed from the admin, and
 | 2026-10-05 | Website text: benefits-first and light on spiritual detail (international/US audience); the mahamantra may be named in STI. |
 | 2026-10-05 | Photos supplied by the owner later; empty slots until then. |
 | 2026-10-05 | All three programs share TTI's layout in calm colours (STI teal, PTI indigo/lavender, TTI amber), with slate photo panels; numbering STI 01, PTI 02, TTI 03. |
+| 2026-10-19 | Launch on DreamHost (staged beside the old site, switched with `mv`). |
+| 2026-10-21 | 60-Day programs open to every age (no note on the site). Replies to messages from the admin. Hero line "Transcend all obstacles, problems and limitations enigmatically". Footer "Our Ventures" removed. Per-page titles in the first HTML: not now. |
+| 2026-10-22 | Animated hero heading (three words, "Transcend all" stays still). Reply subject written by the admin. Newsletter composer and paced sending; scheduling left out. |
 
 ---
 
