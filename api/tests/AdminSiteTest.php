@@ -102,6 +102,13 @@ test('messages: a reply is emailed to the sender with the subject the admin wrot
     $e = assertThrows(HttpException::class, fn () => AdminSiteService::replyToMessage($id, 'Re: Program dates', 'Second try', siteAdmin(), authReq()));
     assertSame([502, 'MAIL_FAILED'], [$e->status, $e->errorCode]);
     assertSame(1, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$id]));
+    // A new message whose reply fails stays new, with no reply kept (saved first, undone when the email fails).
+    $fresh = Database::insert('INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)', ['Meera Iyer', "fresh$tag@example.com", 'Fees', 'Is it free?']);
+    assertThrows(HttpException::class, fn () => AdminSiteService::replyToMessage($fresh, 'Re: Fees', 'Yes, it is free.', siteAdmin(), authReq()));
+    $row = Database::one('SELECT status, handled_by FROM contact_messages WHERE id = ?', [$fresh]);
+    assertSame(['new', null], [$row['status'], $row['handled_by']]);
+    assertSame(0, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$fresh]));
+    Database::run('DELETE FROM contact_messages WHERE id = ?', [$fresh]);
     captureMail();
 
     // Through the controller: the reply must have some text, and the replies go when the message is deleted.

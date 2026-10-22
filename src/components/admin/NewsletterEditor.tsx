@@ -48,7 +48,6 @@ const blockMeta = (t: BlockType) => BLOCKS.find((b) => b.type === t)!;
 let nextKey = 1;
 const wrap = (block: NewsletterBlock): Item => ({ key: nextKey++, block });
 const snapshot = (c: NewsletterContent) => JSON.stringify(c);
-const SEND_RATE = 80; // per hour, as the server's default (mail.newsletter_per_hour)
 
 export const NewsletterEditor: React.FC = () => {
   const { id } = useParams();
@@ -239,7 +238,7 @@ export const NewsletterEditor: React.FC = () => {
   if (n.status !== 'draft') {
     const done = n.sent + n.failed + n.skipped;
     const pct = n.recipients ? Math.round((done / n.recipients) * 100) : 100;
-    const hoursLeft = Math.ceil(n.pending / SEND_RATE);
+    const hoursLeft = Math.ceil(n.pending / n.sendRate);
     return (
       <div className="space-y-6">
         {header}
@@ -271,7 +270,7 @@ export const NewsletterEditor: React.FC = () => {
             </dl>
             {n.status === 'sending' && (
               <p className="text-xs text-slate-500">
-                Emails go out in batches of about {SEND_RATE} an hour, so the mailbox stays under its sending limit and sign-up emails still get through. This page
+                Emails go out in batches of about {n.sendRate} an hour, so the mailbox stays under its sending limit and sign-up emails still get through. This page
                 updates by itself.
               </p>
             )}
@@ -387,8 +386,8 @@ export const NewsletterEditor: React.FC = () => {
             <>
               <p>
                 “{subject}” goes to <strong className="text-slate-900">{n.subscribers}</strong> subscriber{n.subscribers === 1 ? '' : 's'}.
-                {n.subscribers > SEND_RATE &&
-                  ` It goes out in batches of about ${SEND_RATE} an hour, so everyone has it within about ${Math.ceil(n.subscribers / SEND_RATE)} hours.`}
+                {n.subscribers > n.sendRate &&
+                  ` It goes out in batches of about ${n.sendRate} an hour, so everyone has it within about ${Math.ceil(n.subscribers / n.sendRate)} hours.`}
               </p>
               <p>Once sent, it can't be stopped or changed. Sent yourself a test first?</p>
             </>

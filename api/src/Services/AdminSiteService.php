@@ -76,16 +76,23 @@ final class AdminSiteService
         // One line, whatever was pasted in.
         $subject = trim((string) preg_replace('/\s+/u', ' ', $subject));
         RateLimiter::hit('message_reply', 'user:' . $admin['id'], 30, 3600);
+        // Saved first and emailed last: if saving fails, nothing was sent, so trying again can't send it twice.
+        // If the email fails, the saves are undone. (Not a transaction: the mail log's "failed" row must stay.)
+        $replyId = Database::insert('INSERT INTO contact_message_replies (message_id, admin_id, subject, body) VALUES (?, ?, ?, ?)', [$id, $admin['id'], $subject, $body]);
+        $wasNew = $m['status'] === 'new';
+        if ($wasNew) {
+            Database::run("UPDATE contact_messages SET status = 'handled', handled_by = ?, handled_at = UTC_TIMESTAMP() WHERE id = ?", [$admin['id'], $id]);
+        }
         $sent = Mailer::send($m['email'], 'contact-reply', [
             'name' => $m['name'], 'subject' => $subject, 'reply' => $body, 'original' => $m['message'],
             'receivedAt' => gmdate('j M Y', strtotime($m['createdAt'])),
         ]);
         if (!$sent) {
+            Database::run('DELETE FROM contact_message_replies WHERE id = ?', [$replyId]);
+            if ($wasNew) {
+                Database::run("UPDATE contact_messages SET status = 'new', handled_by = NULL, handled_at = NULL WHERE id = ?", [$id]);
+            }
             throw new HttpException(502, 'MAIL_FAILED', 'The email could not be sent. Please try again in a few minutes.');
-        }
-        Database::run('INSERT INTO contact_message_replies (message_id, admin_id, subject, body) VALUES (?, ?, ?, ?)', [$id, $admin['id'], $subject, $body]);
-        if ($m['status'] === 'new') {
-            Database::run("UPDATE contact_messages SET status = 'handled', handled_by = ?, handled_at = UTC_TIMESTAMP() WHERE id = ?", [$admin['id'], $id]);
         }
         AuditService::forUser($admin, 'MESSAGE_REPLIED', 'contact_message', (string) $id, [], $request);
         return self::message($id);

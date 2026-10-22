@@ -35,12 +35,13 @@ function withNewsletterUploads(callable $fn): void
 {
     $dir = sys_get_temp_dir() . '/te-news-' . bin2hex(random_bytes(4));
     Config::override('paths.uploads', $dir);
+    $png = tempnam(sys_get_temp_dir(), 'png');
     try {
-        $png = tempnam(sys_get_temp_dir(), 'png');
         file_put_contents($png, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='));
         $fn(NewsletterService::storeImage(['tmp' => $png, 'size' => filesize($png), 'name' => 'photo.png'], newsAdmin(), authReq()), $dir);
     } finally {
         Config::override('paths.uploads', null);
+        @unlink($png); // the upload copied it; the original is ours to remove
         array_map('unlink', glob("$dir/newsletter/*") ?: []);
         @unlink("$dir/.htaccess");
         @rmdir("$dir/newsletter");
@@ -113,6 +114,7 @@ test('newsletter images: real JPEG, PNG or GIF only, stored under uploads/newsle
         $php = tempnam(sys_get_temp_dir(), 'php');
         file_put_contents($php, '<?php echo "x";');
         $e = assertThrows(HttpException::class, fn () => NewsletterService::storeImage(['tmp' => $php, 'size' => filesize($php), 'name' => 'x.png'], newsAdmin(), authReq()));
+        unlink($php);
         assertSame(['image'], array_keys($e->fields));
 
         $html = NewsletterService::preview(['subject' => 'Pictures', 'coverImage' => $path, 'blocks' => [
@@ -144,6 +146,7 @@ test('newsletter sending: queued for subscribers only, sent in batches under the
     assertSame(newsAdmin()['email'], $mail[0]['to']);
     assertSame('[Test] October news', $mail[0]['subject']);
 
+    assertSame(80, NewsletterService::get($n['id'])['sendRate'], 'the editor shows the real hourly rate');
     $sent = NewsletterService::send($n['id'], newsAdmin(), authReq());
     assertSame('sending', $sent['status']);
     assertSame($subscribed, $sent['recipients'], 'everyone subscribed now');
@@ -210,8 +213,14 @@ test('newsletter sending: a failing address is retried, then marked failed, and 
     Mailer::$transport = static function (): void {
         throw new RuntimeException('SMTP down');
     };
+    $attempts = static fn (): int => (int) Database::value('SELECT attempts FROM newsletter_deliveries WHERE newsletter_id = ? AND subscriber_id = ?', [$n['id'], $bad['id']]);
     try {
-        for ($i = 1; $i <= 3; $i++) {
+        // Not retried within the same hour (every attempt counts against the hourly limit).
+        NewsletterService::processQueue();
+        NewsletterService::processQueue();
+        assertSame(1, $attempts(), 'one attempt per hour');
+        Database::run('UPDATE newsletter_deliveries SET attempted_at = attempted_at - INTERVAL 2 HOUR WHERE newsletter_id = ?', [$n['id']]);
+        for ($i = 2; $i <= 3; $i++) {
             NewsletterService::processQueue();
             Database::run('UPDATE newsletter_deliveries SET attempted_at = attempted_at - INTERVAL 2 HOUR WHERE newsletter_id = ?', [$n['id']]);
         }
