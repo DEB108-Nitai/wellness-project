@@ -31,10 +31,12 @@ cat > "$HOME/bin/backup-db.sh" <<EOF
 set -euo pipefail
 umask 077
 mkdir -p "\$HOME/backups" && chmod 700 "\$HOME/backups"
-stamp=\$(date +%F-%H%M%S)
+stamp=\$(date +%F-%H%M%S)-\$\$          # date, time and this run's process id: unique even for two runs in one second
 out="\$HOME/backups/transenigma-\$stamp.sql.gz"
-tmp="\$out.tmp.\$\$"
-find "\$HOME/backups" -name '*.tmp.*' -mtime +1 -delete   # left behind by a run that failed
+tmp="\$out.tmp"
+up="\$HOME/backups/transenigma-uploads-\$stamp.tar.gz"
+trap 'rm -f "\$tmp" "\$up.tmp"' EXIT     # a run that stops early leaves no partial file behind
+find "\$HOME/backups" -name '*.tmp' -mtime +1 -delete     # from a run that was killed outright
 mysqldump --defaults-extra-file="\$HOME/.my.cnf" --single-transaction --no-tablespaces $DB | gzip > "\$tmp"
 gzip -t "\$tmp"
 zcat "\$tmp" | tail -n 1 | grep -q "Dump completed"
@@ -42,10 +44,9 @@ mv "\$tmp" "\$out"
 find "\$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete
 # Admin-uploaded images are live content too (the database points at them).
 if [ -d "\$HOME/transenigma.com/uploads" ]; then
-  up="\$HOME/backups/transenigma-uploads-\$stamp.tar.gz"
-  tar -czf "\$up.tmp.\$\$" -C "\$HOME/transenigma.com" uploads
-  tar -tzf "\$up.tmp.\$\$" > /dev/null
-  mv "\$up.tmp.\$\$" "\$up"
+  tar -czf "\$up.tmp" -C "\$HOME/transenigma.com" uploads
+  tar -tzf "\$up.tmp" > /dev/null
+  mv "\$up.tmp" "\$up"
   find "\$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
 fi
 EOF

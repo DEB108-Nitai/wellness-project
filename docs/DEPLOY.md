@@ -166,6 +166,8 @@ Set "Email output to" on each job to an address someone reads. The newsletter se
 - and runs it once, so you see the first `.sql.gz` in `~/backups`.
 
 - **Before relying on it:** test a restore into a scratch database (§9).
+- **Keep `~/setup-backup.sh` on the server:** run it again whenever the database password or name changes, since it writes them into `~/.my.cnf` and the backup script.
+- Where every backup is, downloading them monthly, and restoring step by step: [BACKUPS.md](BACKUPS.md).
 - **If a run fails:** cron emails the error, and the existing backups are kept.
 
 ---
@@ -247,7 +249,12 @@ MySQL refuses this once any test has been scored with v2, which protects those r
   - **A migration that changed data or behaviour** (e.g. 027, which made norm set v2 active): don't put the old files back on their own. The old code would run against data it doesn't expect (with 027, it would score tests by the old formula but label them v2). Keep maintenance mode on and fix forward with a new update, or follow the migration's own undo notes (§8) **before** restoring the files.
 - **Database:** never restore straight over the live database. Anything visitors did since the backup (accounts, test results, registrations) would be lost.
   1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (each run writes its own file, `transenigma-<date>-<time>.sql.gz`; it is deleted after 14 days, so copy it elsewhere if you need it longer).
-  2. Create a scratch database in the panel (e.g. `transenigma_restore`). Restore last night's backup into it: `gunzip -c ~/backups/transenigma-<date>-<time>.sql.gz | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore`.
+  2. Create a scratch database in the panel (e.g. `transenigma_restore`). Check the backup file, then restore it into the scratch database; the `&&` and `pipefail` make the command stop and say so if the file is damaged, instead of loading half of it:
+     ```
+     f=~/backups/transenigma-<date>-<time>.sql.gz
+     gzip -t "$f" && bash -c 'set -o pipefail; gunzip -c "$1" | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore' _ "$f" && echo RESTORED
+     ```
+     Only continue if it printed `RESTORED`. Step by step, with checks: [BACKUPS.md §5](BACKUPS.md).
   3. Compare the two databases. Find the rows created after the backup, e.g. `SELECT … WHERE created_at > '<backup time>'` in `users`, `test_sessions`, `challenge_registrations` and `contact_messages`. Copy the good ones into the restored database, or fix only the broken rows in the live database.
   4. Only then switch production over. Either point `db.name` in `config.php` at the restored database, or copy the corrected tables back into `transenigma`. Keep the step-1 backup until the site has run normally for a while.
 - **Whole site:** point the domain back at the old site's backup (§2).

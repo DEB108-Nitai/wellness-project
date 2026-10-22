@@ -16,7 +16,7 @@ No passwords are in this document or in the code repository. They are in the ser
 | Email | `support@transenigma.com` (DreamHost) | Sends every site email; receives contact-form messages and replies |
 | Source code | GitHub `DEB108-Nitai/wellness-project`, branch `main` | Every change goes through a pull request |
 | Automatic jobs | DreamHost panel → Cron Jobs | Daily housekeeping, daily backup, newsletter sender every 10 minutes ([DEPLOY.md §6](DEPLOY.md)) |
-| Backups | `~/backups` on the server | Database + uploaded images, every night, 14 days kept |
+| Backups | `~/backups` on the server | Database + uploaded images, every night and before every update, 14 days kept. **How to check, download and restore: [BACKUPS.md](BACKUPS.md)** |
 
 Setup details (user names, host names, folders): [DEPLOY.md §0](DEPLOY.md).
 
@@ -63,7 +63,7 @@ Gmail puts newsletters in the **Promotions** tab, as it does for every brand's n
 ## 5. Regular checks
 
 - **Weekly:** look at `transenigma7@gmail.com` for cron emails. The newsletter sender only writes when it sent something; an email from the backup or housekeeping job with an error in it needs attention.
-- **Monthly:** check that `~/backups` has recent files. **Every few months:** test a restore into a scratch database ([DEPLOY.md §9](DEPLOY.md)).
+- **Monthly:** check that `~/backups` has recent files and **download them to a company drive** ([BACKUPS.md §2–3](BACKUPS.md)). **Every few months:** test a restore into a scratch database ([BACKUPS.md §5](BACKUPS.md)).
 - **When the support@ password changes:** also change `mail.password` in `~/transenigma-config/config.php` on the server, or the site stops sending email (sign-up, password reset and newsletter emails fail).
 - **Never change `app.secret`** in the config without a reason: it signs sessions and encrypts the admins' two-step sign-in, so every admin would have to set up their phone again.
 
