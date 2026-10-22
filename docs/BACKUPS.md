@@ -50,11 +50,11 @@ ssh <user>@transenigma.com "bash ~/bin/backup-db.sh && ls -lt ~/backups | head -
 ```
 This makes a new database and images backup immediately. Every update also does it automatically.
 
-**To keep a backup longer than 14 days**, copy it out of the rotation: the database file and the images file with the same date, time and number, so a later restore has both:
+**To keep a backup longer than 14 days**, copy it out of the rotation. This copies every file of that run, the database and (if the site had uploaded images then) the images, because they share the same date, time and number:
 ```
-ssh <user>@transenigma.com "mkdir -p ~/kept-backups && cp ~/backups/transenigma-<date>-<time>-<n>.sql.gz ~/backups/transenigma-uploads-<date>-<time>-<n>.tar.gz ~/kept-backups/"
+ssh <user>@transenigma.com "mkdir -p ~/kept-backups && cp ~/backups/*-<date>-<time>-<n>.* ~/kept-backups/ && ls -l ~/kept-backups"
 ```
-(or download it, §3).
+(or download it, §3). Kept files are restored exactly like the others (§5): just write `~/kept-backups/` instead of `~/backups/` in the commands.
 
 ## 5. Restore
 
@@ -64,8 +64,8 @@ Never load a backup straight over the live database: everything since the backup
 
 1. **DreamHost panel → MySQL Databases → Add new database**: name it exactly `transenigma_restore` (the commands below use that name), on the same host, and give **the same database user** as the live one access.
 2. Log in: `ssh <user>@transenigma.com`
-3. See which backups there are: `ls -lt ~/backups`
-4. Restore the one you want into the new database. It checks the file first and only prints `RESTORED` if everything worked. **If it prints an error instead,** part of the backup may already be loaded (it can't be undone): delete `transenigma_restore` in the panel, create it again empty, and try again, or use the next older backup:
+3. See which backups there are: `ls -lt ~/backups` (and `ls -lt ~/kept-backups` for the ones you kept, §4; use that folder in the command below if you pick one of those)
+4. Restore the one you want into the new database. It checks the file first and only prints `RESTORED` if everything worked. **If it prints an error instead,** part of the backup may already be loaded (it can't be undone): delete `transenigma_restore` in the panel and create it again empty **before any new attempt**, whether you retry the same backup or take the next older one:
    ```
    f=~/backups/transenigma-<date>-<time>-<n>.sql.gz
    gzip -t "$f" && bash -c 'set -o pipefail; gunzip -c "$1" | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore' _ "$f" && echo RESTORED
