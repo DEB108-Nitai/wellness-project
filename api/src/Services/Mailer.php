@@ -26,15 +26,13 @@ final class Mailer
     private const ICON_CID = 'te-icon';
     private const ICON_FILE = '/templates/email/icon.png';
 
-    public static function send(string $to, string $template, array $vars = []): bool
+    /** @param array<string,string> $headers extra headers, e.g. List-Unsubscribe on newsletters */
+    public static function send(string $to, string $template, array $vars = [], array $headers = []): bool
     {
         try {
-            $message = self::render($template, $vars + [
-                'siteName' => SettingsService::get('site_name') ?: 'Transenigma',
-                'siteUrl' => rtrim(Config::string('app.url'), '/'),
-                'supportEmail' => SettingsService::get('support_email'),
-            ]);
+            $message = self::render($template, $vars + self::defaults());
 
+            $message['headers'] = $headers;
             if (self::$transport !== null) {
                 (self::$transport)($to, $message);
             } elseif (Config::string('mail.host') !== '' && !self::isReservedTestAddress($to)) {
@@ -109,7 +107,32 @@ final class Mailer
         $mail->Body = $message['html'];
         $mail->AltBody = $message['text'];
         $mail->addEmbeddedImage(API_ROOT . self::ICON_FILE, self::ICON_CID, 'transenigma.png', PHPMailer::ENCODING_BASE64, 'image/png');
+        foreach ($message['headers'] ?? [] as $name => $value) {
+            $mail->addCustomHeader($name, $value);
+        }
         $mail->send();
+    }
+
+    /** The rendered HTML with the icon inlined, for an in-browser preview (an iframe can't load cid: images). */
+    public static function previewHtml(string $template, array $vars): string
+    {
+        $message = self::render($template, $vars + self::defaults());
+        return str_replace('cid:' . self::ICON_CID, self::iconDataUri(), $message['html']);
+    }
+
+    /** Variables every template gets. */
+    private static function defaults(): array
+    {
+        return [
+            'siteName' => SettingsService::get('site_name') ?: 'Transenigma',
+            'siteUrl' => rtrim(Config::string('app.url'), '/'),
+            'supportEmail' => SettingsService::get('support_email'),
+        ];
+    }
+
+    private static function iconDataUri(): string
+    {
+        return 'data:image/png;base64,' . base64_encode((string) file_get_contents(API_ROOT . self::ICON_FILE));
     }
 
     private static function writeToLog(string $to, string $template, array $message): void
@@ -119,8 +142,7 @@ final class Mailer
         // Escaped so user text (e.g. a contact message containing "-->") cannot close the comment and inject markup.
         $header = '<!--' . htmlspecialchars(sprintf("\nTo: %s\nSubject: %s\n\n%s\n", $to, $message['subject'], $message['text']), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "-->\n";
         // No attachments in a preview file: inline the icon so it shows when opened in a browser.
-        $icon = 'data:image/png;base64,' . base64_encode((string) file_get_contents(API_ROOT . self::ICON_FILE));
-        file_put_contents($file, $header . str_replace('cid:' . self::ICON_CID, $icon, $message['html']));
+        file_put_contents($file, $header . str_replace('cid:' . self::ICON_CID, self::iconDataUri(), $message['html']));
         Logger::info('Email written to log (no SMTP configured)', ['to' => $to, 'template' => $template, 'file' => basename($file)]);
     }
 

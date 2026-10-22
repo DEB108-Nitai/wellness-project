@@ -233,7 +233,7 @@ export const Input: React.FC<FieldShell & Omit<React.InputHTMLAttributes<HTMLInp
   );
 };
 
-export const TextArea: React.FC<FieldShell & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'>> = ({ label, error, hint, className = '', ...rest }) => {
+export const TextArea: React.FC<FieldShell & Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> & { ref?: React.Ref<HTMLTextAreaElement> }> = ({ label, error, hint, className = '', ...rest }) => {
   const id = useId();
   return (
     <Shell id={id} label={label} error={error} hint={hint}>

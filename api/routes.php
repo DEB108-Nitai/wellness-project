@@ -19,6 +19,7 @@ use Transenigma\Controllers\ChallengeController;
 use Transenigma\Controllers\ContentController;
 use Transenigma\Controllers\GoogleAuthController;
 use Transenigma\Controllers\HealthController;
+use Transenigma\Controllers\NewsletterController;
 use Transenigma\Controllers\ResultsController;
 use Transenigma\Controllers\SettingsController;
 use Transenigma\Controllers\SiteController;
@@ -78,6 +79,9 @@ return static function (Router $r): void {
     $r->post('/contact', [SiteController::class, 'contact']);
     $r->post('/newsletter/subscribe', [SiteController::class, 'subscribe']);
     $r->post('/newsletter/unsubscribe', [SiteController::class, 'unsubscribe']);
+    // One-click unsubscribe from a newsletter email's List-Unsubscribe header (RFC 8058): the mail app (Gmail, Yahoo…)
+    // posts it without our CSRF token or cookies, and it must work during maintenance. The secret token is the key.
+    $r->post('/newsletter/one-click', [SiteController::class, 'oneClickUnsubscribe'], ['csrf' => false, 'maintenance' => false]);
     $r->get('/faqs', [SiteController::class, 'faqs']);
 
     // --- Transenigma company content (slice S5) ---------------------------------
@@ -136,6 +140,16 @@ return static function (Router $r): void {
     $r->get('/admin/export/messages', [AdminSiteController::class, 'exportMessages'], $admin);
     $r->get('/admin/subscribers', [AdminSiteController::class, 'subscribers'], $admin);
     $r->get('/admin/export/subscribers', [AdminSiteController::class, 'exportSubscribers'], $admin);
+    $r->get('/admin/newsletters', [NewsletterController::class, 'index'], $admin);
+    $r->post('/admin/newsletters', [NewsletterController::class, 'create'], $admin);
+    $r->post('/admin/newsletters/preview', [NewsletterController::class, 'preview'], $admin);
+    $r->get("/admin/newsletters/$id", [NewsletterController::class, 'show'], $admin);
+    $r->put("/admin/newsletters/$id", [NewsletterController::class, 'update'], $admin);
+    $r->delete("/admin/newsletters/$id", [NewsletterController::class, 'delete'], $admin);
+    $r->post("/admin/newsletters/$id/copy", [NewsletterController::class, 'copy'], $admin);
+    $r->post("/admin/newsletters/$id/test", [NewsletterController::class, 'test'], $admin);
+    $r->post("/admin/newsletters/$id/send", [NewsletterController::class, 'send'], $admin);
+    $r->post('/admin/uploads/newsletter-image', [NewsletterController::class, 'uploadImage'], $admin);
     $r->get('/admin/faqs', [AdminSiteController::class, 'faqs'], $admin);
     $r->post('/admin/faqs', [AdminSiteController::class, 'createFaq'], $admin);
     $r->post('/admin/faqs/reorder', [AdminSiteController::class, 'reorderFaqs'], $admin);

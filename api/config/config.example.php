@@ -56,6 +56,9 @@ return [
         'password' => '',
         'from_email' => '',
         'from_name' => 'Transenigma',
+        // Newsletter emails sent per hour by api/bin/send-newsletters.php. Keep it below the host's limit for the
+        // mailbox (DreamHost shared: about 100/hour) so sign-up and password emails still go out.
+        'newsletter_per_hour' => 80,
     ],
 
     'google' => [
