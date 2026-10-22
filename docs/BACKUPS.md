@@ -12,10 +12,12 @@ A step-by-step guide for doing it yourself. Every command can be copied as it is
 
 Everything below is on the **DreamHost server**, in the SSH user's home folder (`~`). Nothing is kept on any PC unless you download it (§3).
 
+Backup files are named by date, time and a run number, e.g. `transenigma-2026-10-23-030001-48213.sql.gz`. In the commands below, copy the exact name from `ls -lt ~/backups` wherever it says `<date>-<time>-<n>`.
+
 | What | Where | Made | Kept |
 |---|---|---|---|
-| **Database** (accounts, test results, registrations, messages, newsletters, settings, website content) | `~/backups/transenigma-<date>-<time>.sql.gz` | every night (cron), and before every update | 14 days |
-| **Uploaded images** (consultancy and newsletter pictures) | `~/backups/transenigma-uploads-<date>-<time>.tar.gz` | together with each database backup | 14 days |
+| **Database** (accounts, test results, registrations, messages, newsletters, settings, website content) | `~/backups/transenigma-<date>-<time>-<n>.sql.gz` | every night (cron), and before every update | 14 days |
+| **Uploaded images** (consultancy and newsletter pictures) | `~/backups/transenigma-uploads-<date>-<time>-<n>.tar.gz` | together with each database backup | 14 days |
 | **Website files as they were before an update** | `~/site-before-update-<date>-<time>.tar.gz` | by every update (`update-site.sh`) | until you delete them |
 | **The old website** (before 2026-10-19) | `~/transenigma.com-old-2026-10-19/` and `~/old-site-backup-2026-10-19.tar.gz` | once, at launch | until you delete them |
 | **Every version of the code** | GitHub, repository `wellness-project` (§6) | every commit | forever |
@@ -50,7 +52,7 @@ This makes a new database and images backup immediately. Every update also does 
 
 **To keep a backup longer than 14 days**, copy it out of the rotation:
 ```
-ssh <user>@transenigma.com "mkdir -p ~/kept-backups && cp ~/backups/transenigma-<date>-<time>.sql.gz ~/kept-backups/"
+ssh <user>@transenigma.com "mkdir -p ~/kept-backups && cp ~/backups/transenigma-<date>-<time>-<n>.sql.gz ~/kept-backups/"
 ```
 (or download it, §3).
 
@@ -60,12 +62,12 @@ ssh <user>@transenigma.com "mkdir -p ~/kept-backups && cp ~/backups/transenigma-
 
 Never load a backup straight over the live database: everything since the backup (new accounts, tests, registrations) would be lost. Restore it next to the live one, check it, then switch.
 
-1. **DreamHost panel → MySQL Databases → Add new database**: name e.g. `transenigma_restore`, on the same host, and give **the same database user** as the live one access.
+1. **DreamHost panel → MySQL Databases → Add new database**: name it exactly `transenigma_restore` (the commands below use that name), on the same host, and give **the same database user** as the live one access.
 2. Log in: `ssh <user>@transenigma.com`
 3. See which backups there are: `ls -lt ~/backups`
 4. Restore the one you want into the new database. The first line checks the file is not damaged; it only prints `RESTORED` if everything worked:
    ```
-   f=~/backups/transenigma-<date>-<time>.sql.gz
+   f=~/backups/transenigma-<date>-<time>-<n>.sql.gz
    gzip -t "$f" && bash -c 'set -o pipefail; gunzip -c "$1" | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore' _ "$f" && echo RESTORED
    ```
 5. Look at it, e.g. how many accounts it has: `mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore -e "SELECT COUNT(*) FROM users"`
@@ -83,7 +85,7 @@ If only a few rows are wrong, it is usually better to copy those rows from the r
 ### 5b. Uploaded images
 
 ```
-ssh <user>@transenigma.com "tar -xzf ~/backups/transenigma-uploads-<date>-<time>.tar.gz -C ~/transenigma.com && echo RESTORED"
+ssh <user>@transenigma.com "tar -xzf ~/backups/transenigma-uploads-<date>-<time>-<n>.tar.gz -C ~/transenigma.com && echo RESTORED"
 ```
 This puts back the images from that backup. Images uploaded later stay.
 

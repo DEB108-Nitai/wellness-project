@@ -248,10 +248,10 @@ MySQL refuses this once any test has been scored with v2, which protects those r
   - **None, or only new tables and columns** (most updates, e.g. 028–030): putting the old files back is safe; the old code ignores what it doesn't know.
   - **A migration that changed data or behaviour** (e.g. 027, which made norm set v2 active): don't put the old files back on their own. The old code would run against data it doesn't expect (with 027, it would score tests by the old formula but label them v2). Keep maintenance mode on and fix forward with a new update, or follow the migration's own undo notes (§8) **before** restoring the files.
 - **Database:** never restore straight over the live database. Anything visitors did since the backup (accounts, test results, registrations) would be lost.
-  1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (each run writes its own file, `transenigma-<date>-<time>.sql.gz`; it is deleted after 14 days, so copy it elsewhere if you need it longer).
-  2. Create a scratch database in the panel (e.g. `transenigma_restore`). Check the backup file, then restore it into the scratch database; the `&&` and `pipefail` make the command stop and say so if the file is damaged, instead of loading half of it:
+  1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (each run writes its own file, `transenigma-<date>-<time>-<n>.sql.gz`; it is deleted after 14 days, so copy it elsewhere if you need it longer).
+  2. Create a scratch database in the panel named exactly `transenigma_restore` (the command uses that name). Check the backup file, then restore it into the scratch database; the `&&` and `pipefail` make the command stop and say so if the file is damaged, instead of loading half of it:
      ```
-     f=~/backups/transenigma-<date>-<time>.sql.gz
+     f=~/backups/transenigma-<date>-<time>-<n>.sql.gz
      gzip -t "$f" && bash -c 'set -o pipefail; gunzip -c "$1" | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore' _ "$f" && echo RESTORED
      ```
      Only continue if it printed `RESTORED`. Step by step, with checks: [BACKUPS.md §5](BACKUPS.md).
