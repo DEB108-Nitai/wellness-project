@@ -6,6 +6,9 @@ import { useSettings } from '../../context/SettingsContext';
 
 const input = 'w-full px-3.5 py-2.5 bg-slate-50 border rounded-xl text-sm text-slate-900 focus:bg-white focus:outline-hidden focus:border-indigo-500';
 
+/** The form's values without maintenance_mode (switched separately), for the "unsaved changes" check. */
+const snapshot = ({ maintenance_mode: _own, ...rest }: AdminSettings) => JSON.stringify(rest);
+
 /** Platform settings stored on the server (PRD ADM-8). */
 export const SettingsPanel: React.FC = () => {
   const { refresh: refreshPublic } = useSettings();
@@ -13,11 +16,18 @@ export const SettingsPanel: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  // What the server last confirmed, to tell the admin about changes they have not saved yet.
+  const [saved, setSaved] = useState<string>('');
+
+  const accept = (s: AdminSettings) => {
+    setForm(s);
+    setSaved(snapshot(s));
+  };
 
   useEffect(() => {
     adminApi
       .settings()
-      .then(setForm)
+      .then(accept)
       .catch((err) => setMessage({ tone: 'error', text: err instanceof ApiError ? err.message : 'Could not load settings.' }));
   }, []);
 
@@ -29,7 +39,10 @@ export const SettingsPanel: React.FC = () => {
     );
   }
 
-  const set = <K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) => setForm({ ...form, [key]: value });
+  const set = <K extends keyof AdminSettings>(key: K, value: AdminSettings[K]) => {
+    setForm({ ...form, [key]: value });
+    setMessage(null); // an old "Settings saved." must not hide the unsaved-changes note
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +50,10 @@ export const SettingsPanel: React.FC = () => {
     setErrors({});
     setMessage(null);
     try {
-      const { consent_version: _ignored, ...changes } = form;
-      setForm(await adminApi.updateSettings(changes));
+      // Maintenance mode has its own switch (saved at once), so this form never sends it: a page opened earlier
+      // must not turn maintenance back on or off.
+      const { consent_version: _ignored, maintenance_mode: _own, ...changes } = form;
+      accept(await adminApi.updateSettings(changes));
       void refreshPublic();
       setMessage({ tone: 'ok', text: 'Settings saved.' });
     } catch (err) {
@@ -68,71 +83,78 @@ export const SettingsPanel: React.FC = () => {
   );
 
   return (
-    <form onSubmit={save} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6 max-w-3xl">
-      <div className="space-y-1">
-        <h2 className="text-lg font-bold text-slate-900 font-heading">Platform Settings</h2>
-        <p className="text-xs text-slate-500">Changes take effect immediately for every visitor and are recorded in the audit log.</p>
-      </div>
+    <form onSubmit={save} className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm max-w-3xl">
+      {/* Locked while saving: the saved values replace the form, so edits made meanwhile would be lost. */}
+      <fieldset disabled={saving} className="space-y-6 min-w-0">
+        <div className="space-y-1">
+          <h2 className="text-lg font-bold text-slate-900 font-heading">Platform Settings</h2>
+          <p className="text-xs text-slate-500">Changes take effect immediately for every visitor and are recorded in the audit log.</p>
+        </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <label className="block text-xs font-semibold text-slate-700">
+            Platform name
+            <input value={form.site_name} maxLength={60} onChange={(e) => set('site_name', e.target.value)} className={`mt-1 ${input} ${errors.site_name ? 'border-rose-400' : 'border-slate-300'}`} />
+            {err('site_name')}
+          </label>
+          <label className="block text-xs font-semibold text-slate-700">
+            Support email
+            <input type="email" value={form.support_email} onChange={(e) => set('support_email', e.target.value)} placeholder="support@yourdomain.com" className={`mt-1 ${input} ${errors.support_email ? 'border-rose-400' : 'border-slate-300'}`} />
+            {err('support_email')}
+          </label>
+        </div>
+
         <label className="block text-xs font-semibold text-slate-700">
-          Platform name
-          <input value={form.site_name} maxLength={60} onChange={(e) => set('site_name', e.target.value)} className={`mt-1 ${input} ${errors.site_name ? 'border-rose-400' : 'border-slate-300'}`} />
-          {err('site_name')}
+          Company LinkedIn page
+          <input type="url" value={form.linkedin_url} maxLength={255} onChange={(e) => set('linkedin_url', e.target.value)} placeholder="https://www.linkedin.com/company/…" className={`mt-1 ${input} ${errors.linkedin_url ? 'border-rose-400' : 'border-slate-300'}`} />
+          <span className="mt-1 block font-normal text-slate-500">Shown in the site footer. Leave empty to hide it.</span>
+          {err('linkedin_url')}
         </label>
+
+        <div className="grid sm:grid-cols-3 gap-4">
+          <label className="block text-xs font-semibold text-slate-700 sm:col-span-2">
+            Registered office address
+            <input value={form.company_address} maxLength={255} onChange={(e) => set('company_address', e.target.value)} className={`mt-1 ${input} ${errors.company_address ? 'border-rose-400' : 'border-slate-300'}`} />
+            {err('company_address')}
+          </label>
+          <label className="block text-xs font-semibold text-slate-700">
+            CIN
+            <input value={form.company_cin} maxLength={21} onChange={(e) => set('company_cin', e.target.value)} placeholder="U74999WB2017PTC219904" className={`mt-1 ${input} ${errors.company_cin ? 'border-rose-400' : 'border-slate-300'}`} />
+            {err('company_cin')}
+          </label>
+          <span className="sm:col-span-3 -mt-2 block text-xs text-slate-500">Shown in the site footer and on the Contact page. Leave empty to hide.</span>
+        </div>
+
         <label className="block text-xs font-semibold text-slate-700">
-          Support email
-          <input type="email" value={form.support_email} onChange={(e) => set('support_email', e.target.value)} placeholder="support@yourdomain.com" className={`mt-1 ${input} ${errors.support_email ? 'border-rose-400' : 'border-slate-300'}`} />
-          {err('support_email')}
+          Announcement banner text
+          <input value={form.announcement_text} maxLength={200} onChange={(e) => set('announcement_text', e.target.value)} className={`mt-1 ${input} ${errors.announcement_text ? 'border-rose-400' : 'border-slate-300'}`} />
+          {err('announcement_text')}
         </label>
-      </div>
 
-      <label className="block text-xs font-semibold text-slate-700">
-        Company LinkedIn page
-        <input type="url" value={form.linkedin_url} maxLength={255} onChange={(e) => set('linkedin_url', e.target.value)} placeholder="https://www.linkedin.com/company/…" className={`mt-1 ${input} ${errors.linkedin_url ? 'border-rose-400' : 'border-slate-300'}`} />
-        <span className="mt-1 block font-normal text-slate-500">Shown in the site footer. Leave empty to hide it.</span>
-        {err('linkedin_url')}
-      </label>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {toggle('announcement_active', 'Show announcement banner', 'Displays the text above at the top of every page.')}
+          {toggle('signup_open', 'Allow new sign-ups', 'When off, nobody can create a new account.')}
+          {toggle('challenge_registration_open', 'Open 60-Day registrations', 'When off, the registration form shows "closed".')}
+        </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <label className="block text-xs font-semibold text-slate-700 sm:col-span-2">
-          Registered office address
-          <input value={form.company_address} maxLength={255} onChange={(e) => set('company_address', e.target.value)} className={`mt-1 ${input} ${errors.company_address ? 'border-rose-400' : 'border-slate-300'}`} />
-          {err('company_address')}
-        </label>
-        <label className="block text-xs font-semibold text-slate-700">
-          CIN
-          <input value={form.company_cin} maxLength={21} onChange={(e) => set('company_cin', e.target.value)} placeholder="U74999WB2017PTC219904" className={`mt-1 ${input} ${errors.company_cin ? 'border-rose-400' : 'border-slate-300'}`} />
-          {err('company_cin')}
-        </label>
-        <span className="sm:col-span-3 -mt-2 block text-xs text-slate-500">Shown in the site footer and on the Contact page. Leave empty to hide.</span>
-      </div>
+        <div className="grid sm:grid-cols-3 gap-4">
+          {number('items_per_page', 'Statements per page (5–10)', 5, 10)}
+          {number('min_age', 'Minimum age for the 16PF test (18+)', 18, 99)}
+          {number('too_fast_minutes', '"Too fast" threshold (minutes)', 1, 60)}
+        </div>
 
-      <label className="block text-xs font-semibold text-slate-700">
-        Announcement banner text
-        <input value={form.announcement_text} maxLength={200} onChange={(e) => set('announcement_text', e.target.value)} className={`mt-1 ${input} ${errors.announcement_text ? 'border-rose-400' : 'border-slate-300'}`} />
-        {err('announcement_text')}
-      </label>
-
-      <div className="grid sm:grid-cols-2 gap-3">
-        {toggle('announcement_active', 'Show announcement banner', 'Displays the text above at the top of every page.')}
-        {toggle('signup_open', 'Allow new sign-ups', 'When off, nobody can create a new account.')}
-        {toggle('challenge_registration_open', 'Open 60-Day registrations', 'When off, the registration form shows "closed".')}
-        {toggle('maintenance_mode', 'Maintenance mode', 'Public site shows a maintenance page; admins keep access.')}
-      </div>
-
-      <div className="grid sm:grid-cols-3 gap-4">
-        {number('items_per_page', 'Statements per page (5–10)', 5, 10)}
-        {number('min_age', 'Minimum age (18+)', 18, 99)}
-        {number('too_fast_minutes', '"Too fast" threshold (minutes)', 1, 60)}
-      </div>
-
-      <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-sm rounded-xl disabled:opacity-60 cursor-pointer">
-          {saving ? 'Saving…' : 'Save settings'}
-        </button>
-        {message && <span className={`text-sm ${message.tone === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>{message.text}</span>}
-      </div>
+        <div className="flex items-center gap-4 pt-2 border-t border-slate-100">
+          <button type="submit" disabled={saving} className="px-6 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-sm rounded-xl disabled:opacity-60 cursor-pointer">
+            {saving ? 'Saving…' : 'Save settings'}
+          </button>
+          {message && <span className={`text-sm ${message.tone === 'ok' ? 'text-emerald-700' : 'text-rose-600'}`}>{message.text}</span>}
+          {!message && snapshot(form) !== saved && (
+            <span role="status" className="text-sm font-medium text-amber-700">
+              You have unsaved changes. Press Save settings to apply them.
+            </span>
+          )}
+        </div>
+      </fieldset>
     </form>
   );
 };

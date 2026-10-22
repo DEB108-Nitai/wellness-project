@@ -389,8 +389,16 @@ export const AUDIT_LABELS: Record<string, string> = {
   ADMIN_VIEWED_ASSESSMENT: 'Viewed an assessment',
   MESSAGE_HANDLED: 'Marked a message handled',
   MESSAGE_REOPENED: 'Marked a message as new',
+  MESSAGE_REPLIED: 'Replied to a message',
   EXPORT_MESSAGES: 'Exported messages',
   EXPORT_SUBSCRIBERS: 'Exported subscribers',
+  NEWSLETTER_CREATED: 'Started a newsletter',
+  NEWSLETTER_SAVED: 'Saved a newsletter draft',
+  NEWSLETTER_DELETED: 'Deleted a newsletter draft',
+  NEWSLETTER_COPIED: 'Copied a newsletter',
+  NEWSLETTER_TEST_SENT: 'Sent a test newsletter',
+  NEWSLETTER_SENT: 'Sent a newsletter',
+  NEWSLETTER_IMAGE_UPLOADED: 'Uploaded a newsletter image',
   FAQ_CREATED: 'Added an FAQ',
   FAQ_UPDATED: 'Edited an FAQ',
   FAQ_DELETED: 'Deleted an FAQ',
@@ -446,9 +454,18 @@ export interface MessageRow {
   createdAt: string;
   handledAt: string | null;
 }
+export interface MessageReply {
+  id: number;
+  /** Null for replies sent before the subject could be written. */
+  subject: string | null;
+  body: string;
+  sentAt: string;
+  sentBy: string | null;
+}
 export interface MessageDetail extends Omit<MessageRow, 'preview'> {
   message: string;
   handledBy: string | null;
+  replies: MessageReply[];
 }
 
 export type SubscriberStatus = 'subscribed' | 'unsubscribed';
@@ -510,6 +527,7 @@ export const siteAdminApi = {
   messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${query({ ...f, perPage: 25 })}`),
   message: (id: number) => api.get<MessageDetail>(`/admin/messages/${id}`),
   setMessageStatus: (id: number, status: MessageStatus) => api.patch<MessageDetail>(`/admin/messages/${id}`, { status }),
+  replyToMessage: (id: number, subject: string, body: string) => api.post<MessageDetail>(`/admin/messages/${id}/reply`, { subject, body }),
   messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${query(f)}`,
 
   subscribers: (f: { status?: SubscriberStatus; q?: string; page?: number }) =>
@@ -591,4 +609,56 @@ export const usersAdminApi = {
   addAdmin: (email: string, code: string) => api.post<Team>('/admin/admins', { email, code }),
   removeAdmin: (id: number, code: string) => api.post<Team>(`/admin/admins/${id}/remove`, { code }),
   makePrimary: (id: number, code: string) => api.post<Team>(`/admin/admins/${id}/make-primary`, { code }),
+};
+
+// ------------------------------------------------------------------ newsletters (owner, 2026-10-22)
+export type NewsletterBlock =
+  | { type: 'heading'; text: string }
+  | { type: 'paragraph'; text: string }
+  | { type: 'image'; src: string; alt: string; caption: string }
+  | { type: 'button'; label: string; url: string }
+  | { type: 'divider' };
+export type NewsletterStatus = 'draft' | 'sending' | 'sent';
+export interface NewsletterContent {
+  subject: string;
+  preheader: string;
+  coverImage: string | null;
+  blocks: NewsletterBlock[];
+}
+interface NewsletterProgress {
+  id: number;
+  status: NewsletterStatus;
+  recipients: number;
+  sent: number;
+  failed: number;
+  pending: number;
+  updatedAt: string;
+  queuedAt: string | null;
+  finishedAt: string | null;
+}
+export interface NewsletterRow extends NewsletterProgress {
+  subject: string;
+  sentBy: string | null;
+}
+export interface Newsletter extends NewsletterContent, NewsletterProgress {
+  skipped: number;
+  /** People subscribed right now: who a send would reach. */
+  subscribers: number;
+}
+
+export const newsletterAdminApi = {
+  list: () => api.get<NewsletterRow[]>('/admin/newsletters'),
+  create: () => api.post<Newsletter>('/admin/newsletters'),
+  get: (id: number) => api.get<Newsletter>(`/admin/newsletters/${id}`),
+  save: (id: number, c: NewsletterContent) => api.put<Newsletter>(`/admin/newsletters/${id}`, c),
+  remove: (id: number) => api.delete<null>(`/admin/newsletters/${id}`),
+  copy: (id: number) => api.post<Newsletter>(`/admin/newsletters/${id}/copy`),
+  preview: (c: NewsletterContent) => api.post<{ html: string }>('/admin/newsletters/preview', c),
+  sendTest: (id: number) => api.post<{ to: string }>(`/admin/newsletters/${id}/test`),
+  send: (id: number) => api.post<Newsletter>(`/admin/newsletters/${id}/send`),
+  uploadImage: (file: File) => {
+    const form = new FormData();
+    form.append('image', file);
+    return api.upload<{ path: string }>('/admin/uploads/newsletter-image', form);
+  },
 };

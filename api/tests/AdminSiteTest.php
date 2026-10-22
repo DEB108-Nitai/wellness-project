@@ -69,6 +69,57 @@ test('messages: list, search, open, mark handled and back, export is audited and
     assertSame(404, assertThrows(HttpException::class, fn () => AdminSiteService::message(99999999))->status);
 });
 
+test('messages: a reply is emailed to the sender with the subject the admin wrote, kept in the history, audited and marks the message handled', function () {
+    useTestDatabase();
+    $tag = 'reply' . bin2hex(random_bytes(3));
+    $id = Database::insert(
+        'INSERT INTO contact_messages (name, email, subject, message) VALUES (?, ?, ?, ?)',
+        ['Arjun Mehta', "$tag@example.com", 'Program dates', "When does the next STI cohort start?\nThanks"]
+    );
+    $mail = captureMail();
+    $after = AdminSiteService::replyToMessage($id, "Next STI cohort:
+  dates inside", "Hello Arjun,\nThe next cohort starts on 1 November. <b>Welcome</b>", siteAdmin(), authReq());
+
+    assertSame(1, count($mail));
+    assertSame("$tag@example.com", $mail[0]['to']);
+    assertSame('Next STI cohort: dates inside', $mail[0]['subject'], 'the subject the admin wrote, on one line');
+    assertTrue(str_contains($mail[0]['text'], 'The next cohort starts on 1 November.') && str_contains($mail[0]['text'], '> When does the next STI cohort start?'), 'reply and the quoted original');
+    assertTrue(str_contains($mail[0]['html'], '&lt;b&gt;Welcome&lt;/b&gt;') && !str_contains($mail[0]['html'], '<b>Welcome</b>'), 'reply text is escaped in the HTML');
+
+    assertSame('handled', $after['status']);
+    assertSame('Site Admin', $after['handledBy']);
+    assertSame(1, count($after['replies']));
+    assertSame('Site Admin', $after['replies'][0]['sentBy']);
+    assertSame('Next STI cohort: dates inside', $after['replies'][0]['subject']);
+    assertTrue(str_starts_with($after['replies'][0]['body'], 'Hello Arjun'));
+    $audit = Database::one("SELECT details FROM audit_logs WHERE action = 'MESSAGE_REPLIED' AND entity_id = ?", [(string) $id]);
+    assertTrue($audit !== null && !str_contains((string) $audit['details'], 'November'), 'audited without the reply text');
+
+    // A failed send stores nothing and says so.
+    \Transenigma\Services\Mailer::$transport = static function (): void {
+        throw new RuntimeException('SMTP down');
+    };
+    $e = assertThrows(HttpException::class, fn () => AdminSiteService::replyToMessage($id, 'Re: Program dates', 'Second try', siteAdmin(), authReq()));
+    assertSame([502, 'MAIL_FAILED'], [$e->status, $e->errorCode]);
+    assertSame(1, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$id]));
+    captureMail();
+
+    // Through the controller: the reply must have some text, and the replies go when the message is deleted.
+    $_SESSION = ['auth_uid' => (int) siteAdmin()['id'], 'auth_ver' => (int) siteAdmin()['session_version'], 'auth_seen' => time()];
+    markSecondStepPassed();
+    $post = static function (array $body) use ($id) {
+        $req = new Request('POST', "/admin/messages/$id/reply", [], ['REMOTE_ADDR' => '10.0.0.8', 'CONTENT_TYPE' => 'application/json'], json_encode($body));
+        $req->params = ['id' => (string) $id];
+        return (new AdminSiteController())->replyMessage($req);
+    };
+    assertSame(422, assertThrows(HttpException::class, fn () => $post(['subject' => 'Re: Program dates', 'body' => ' ']))->status);
+    $e = assertThrows(HttpException::class, fn () => $post(['subject' => '  ', 'body' => 'A proper reply']));
+    assertSame(422, $e->status);
+    assertTrue(isset($e->fields['subject']), 'a subject is required');
+    Database::run('DELETE FROM contact_messages WHERE id = ?', [$id]);
+    assertSame(0, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$id]));
+});
+
 test('subscribers: counts, search, and the export never contains unsubscribe tokens', function () {
     useTestDatabase();
     $email = 'news' . bin2hex(random_bytes(3)) . '@example.com';

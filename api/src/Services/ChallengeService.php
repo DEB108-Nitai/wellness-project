@@ -61,10 +61,7 @@ final class ChallengeService
         if ($programs === [] || count($programs) !== count($data['programs'])) {
             throw HttpException::validation(['programs' => 'Please choose at least one program.']);
         }
-        $minAge = SettingsService::int('min_age');
-        if (isset($data['age']) && $data['age'] < $minAge) {
-            throw HttpException::validation(['age' => "Participants must be at least $minAge years old."]);
-        }
+        // The programs are open to every age (owner, 2026-10-21); the min_age setting applies only to the 16PF test.
         $digits = preg_replace('/\D/', '', $data['phone']);
         if (strlen($digits) < 7 || strlen($digits) > 15) {
             throw HttpException::validation(['phone' => 'Please enter a valid phone number, including the country code.']);
@@ -205,7 +202,7 @@ final class ChallengeService
         $byProgram = array_fill_keys(self::PROGRAMS, 0);
         $byStatus = array_fill_keys(self::STATUSES, 0);
         $byCohort = array_fill_keys(self::TIMINGS, 0);
-        $ages = ['18–24' => 0, '25–34' => 0, '35–44' => 0, '45–54' => 0, '55+' => 0, 'Not given' => 0];
+        $ages = ['Under 18' => 0, '18–24' => 0,'25–34' => 0, '35–44' => 0, '45–54' => 0, '55+' => 0, 'Not given' => 0];
         $struggles = $cities = $countries = [];
         foreach ($rows as $r) {
             $byProgram[$r['program']]++;
@@ -220,6 +217,7 @@ final class ChallengeService
             $age = $r['age'] === null ? null : (int) $r['age'];
             $band = match (true) {
                 $age === null => 'Not given',
+                $age < 18 => 'Under 18',
                 $age < 25 => '18–24',
                 $age < 35 => '25–34',
                 $age < 45 => '35–44',

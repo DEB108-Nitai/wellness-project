@@ -17,7 +17,7 @@ const page = await launch(9338);
 const open = async (w, h, mobile) => {
   await page.viewport(w, h, mobile);
   await page.goto(`${BASE}/`);
-  await page.waitText('Transcend the enigma');
+  await page.waitText('Transcend all obstacles');
   await page.eval(`[...document.querySelectorAll('button')].find(b => b.innerText.trim() === 'Got it')?.click()`);
   await sleep(800);
 };

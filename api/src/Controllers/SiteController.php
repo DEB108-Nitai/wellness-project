@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Transenigma\Controllers;
 
+use Transenigma\Core\HttpException;
+use Transenigma\Core\RateLimiter;
 use Transenigma\Core\Request;
 use Transenigma\Core\Response;
 use Transenigma\Core\Validator;
@@ -41,6 +43,23 @@ final class SiteController
     {
         $data = Validator::validate($request->json(), ['token' => 'required|string|regex:/^[a-f0-9]{32}$/']);
         SiteService::unsubscribe($data['token']);
+        return Response::ok(['message' => 'You have been unsubscribed.']);
+    }
+
+    /**
+     * POST /api/newsletter/one-click?token=… (RFC 8058). Mail apps call this themselves when someone presses their
+     * own "Unsubscribe" button, so there is no CSRF token and no page; the secret token is the only key.
+     */
+    public function oneClickUnsubscribe(Request $request): Response
+    {
+        $token = (string) $request->query('token', '');
+        if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
+            throw HttpException::notFound('This unsubscribe link is not valid.');
+        }
+        // Limited per token, not per IP: Gmail and Yahoo post these from a few shared servers, so an IP limit would
+        // refuse real unsubscribes after a newsletter goes out. The 128-bit token can't be guessed anyway.
+        RateLimiter::hit('one_click_unsubscribe', 'token:' . $token, 10, 3600);
+        SiteService::unsubscribe($token);
         return Response::ok(['message' => 'You have been unsubscribed.']);
     }
 

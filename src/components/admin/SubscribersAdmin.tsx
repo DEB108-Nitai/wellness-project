@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Download, Search } from 'lucide-react';
 import { Paged, siteAdminApi, SubscriberRow, SubscriberStatus } from '../../api/admin';
 import { ApiError } from '../../api/client';
-import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, LoadingBlock, PageHeader, Pager, StatTile, useClampPage, useDebounced } from './ui';
+import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, LoadingBlock, Pager, StatTile, useClampPage, useDebounced } from './ui';
 
-/** Newsletter subscribers (PRD ADM-3): who signed up from the footer, who left, and a CSV for the mailing tool. */
+/** Newsletter subscribers (PRD ADM-3): who signed up from the footer, who left, and a CSV. The Subscribers tab of the Newsletter page. */
 type Data = Paged<SubscriberRow> & { counts: { subscribed: number; unsubscribed: number; last30Days: number } };
 
 export const SubscribersAdmin: React.FC = () => {
@@ -35,15 +35,6 @@ export const SubscribersAdmin: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Newsletter subscribers"
-        description="People who subscribed with the form in the site footer. Export the list for your mailing tool, and only email people marked Subscribed."
-        actions={
-          <a href={siteAdminApi.subscribersCsvUrl(filters)} className={btn.secondary}>
-            <Download className="w-4 h-4" aria-hidden="true" /> Export CSV
-          </a>
-        }
-      />
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
         <StatTile label="Subscribed now" value={data ? data.counts.subscribed : '—'} />
         <StatTile label="New in the last 30 days" value={data ? data.counts.last30Days : '—'} />
@@ -60,6 +51,9 @@ export const SubscribersAdmin: React.FC = () => {
           <option value="unsubscribed">Unsubscribed</option>
           <option value="">Everyone</option>
         </select>
+        <a href={siteAdminApi.subscribersCsvUrl(filters)} className={btn.secondary}>
+          <Download className="w-4 h-4" aria-hidden="true" /> Export CSV
+        </a>
       </div>
 
       {error && <ErrorBox>{error}</ErrorBox>}

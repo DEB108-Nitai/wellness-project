@@ -156,7 +156,7 @@ try {
   await page.fill('input[type=search]', tag);
   await page.waitText('Rahul Sharma');
   await page.clickText('Rahul Sharma', 'button');
-  await page.waitFor(`document.querySelector('[role=dialog] a[href^="mailto:"]')`); // the list previews the text too
+  await page.waitFor(`document.querySelector('[role=dialog] textarea')`); // the list previews the text too
   await page.clickText('Mark handled', '[role=dialog] button');
   await page.waitText('handled');
   await page.eval(`document.querySelector('[role=dialog] [aria-label=Close]').click()`);
@@ -208,18 +208,24 @@ try {
   // 8. Maintenance on (visitors blocked, admin keeps access), then off.
   await page.goto(`${BASE}/admin/settings`);
   await page.waitText('Platform Settings');
-  const toggleMaintenance = () => page.eval(`[...document.querySelectorAll('label')].find(l => l.innerText.includes('Maintenance mode')).querySelector('input').click()`);
-  await toggleMaintenance();
-  await page.clickText('Save settings', 'button');
-  await page.waitText('Settings saved.');
-  await page.waitText('Maintenance mode is on');
+  // The switch saves at once (after a confirmation), with no Save button; the red bar then shows on every admin page.
+  await page.clickText('Turn on…', 'button');
+  await page.waitText('Turn maintenance mode on?');
+  await page.clickText('Turn on', '[role=dialog] button');
+  await page.waitText('Maintenance mode is ON: visitors');
   const guestStatus = await page.eval(`fetch('/api/faqs', { credentials: 'omit' }).then(r => r.status)`);
   if (guestStatus !== 503) throw new Error(`maintenance on, but a visitor got ${guestStatus}`);
-  await toggleMaintenance();
+  // Saving the rest of the form must not touch maintenance mode.
   await page.clickText('Save settings', 'button');
   await page.waitText('Settings saved.');
+  if ((await page.eval(`fetch('/api/faqs', { credentials: 'omit' }).then(r => r.status)`)) !== 503) throw new Error('Save settings switched maintenance off');
+  await page.goto(`${BASE}/admin`);
+  await page.waitText('Maintenance mode is ON: visitors');
+  await page.screenshot(`${OUT}admin-maintenance-bar.png`);
+  await page.clickText('Turn off', '[role=alert] button');
+  await page.waitFor(`!document.body.innerText.includes('Maintenance mode is ON')`);
   if ((await page.eval(`fetch('/api/faqs', { credentials: 'omit' }).then(r => r.status)`)) !== 200) throw new Error('maintenance did not switch off');
-  step('maintenance on → visitors get 503, admin keeps access; off again');
+  step('maintenance: switch saves at once after a confirmation, red bar on every admin page, Save settings leaves it alone, Turn off from the bar');
 
   // 9. Phone width on the screens used above.
   await page.viewport(390, 844, true);

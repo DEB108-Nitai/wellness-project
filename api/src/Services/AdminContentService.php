@@ -290,28 +290,40 @@ final class AdminContentService
      */
     public static function storeProjectImage(array $file, array $admin, Request $request): string
     {
+        [$path, $mime] = self::storeImage($file, self::IMAGE_TYPES, 'JPEG, PNG or WebP', 'projects');
+        AuditService::forUser($admin, 'CONTENT_IMAGE_UPLOADED', 'upload', $path, ['bytes' => $file['size'], 'type' => $mime], $request);
+        return $path;
+    }
+
+    /**
+     * Check an uploaded image by its content (one of $types, at most 2 MB and 4000 px a side) and store it under a
+     * random name in uploads/<folder>/.
+     * @param array{tmp:string, size:int, name:string} $file
+     * @param array<string,string> $types mime => extension
+     * @return array{0:string, 1:string} [public path, mime]
+     */
+    public static function storeImage(array $file, array $types, string $typesLabel, string $folder): array
+    {
         if ($file['size'] <= 0 || $file['size'] > self::IMAGE_MAX_BYTES) {
             throw HttpException::validation(['image' => 'Please choose an image of at most 2 MB.']);
         }
         $mime = (string) (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp']);
         $info = @getimagesize($file['tmp']);
-        if (!isset(self::IMAGE_TYPES[$mime]) || $info === false || ($info['mime'] ?? '') !== $mime) {
-            throw HttpException::validation(['image' => 'Please choose a JPEG, PNG or WebP image.']);
+        if (!isset($types[$mime]) || $info === false || ($info['mime'] ?? '') !== $mime) {
+            throw HttpException::validation(['image' => "Please choose a $typesLabel image."]);
         }
         if ($info[0] < 1 || $info[1] < 1 || $info[0] > self::IMAGE_MAX_SIDE || $info[1] > self::IMAGE_MAX_SIDE) {
             throw HttpException::validation(['image' => 'The image must be at most 4000 pixels wide and tall.']);
         }
-        $dir = self::uploadsDir();
-        $name = bin2hex(random_bytes(12)) . '.' . self::IMAGE_TYPES[$mime];
+        $dir = self::uploadsDir($folder);
+        $name = bin2hex(random_bytes(12)) . '.' . $types[$mime];
         $target = "$dir/$name";
         $moved = is_uploaded_file($file['tmp']) ? move_uploaded_file($file['tmp'], $target) : copy($file['tmp'], $target);
         if (!$moved) {
             throw new \RuntimeException('Could not store the uploaded image.');
         }
         @chmod($target, 0644);
-        $path = "/uploads/projects/$name";
-        AuditService::forUser($admin, 'CONTENT_IMAGE_UPLOADED', 'upload', $path, ['bytes' => $file['size'], 'type' => $mime], $request);
-        return $path;
+        return ["/uploads/$folder/$name", $mime];
     }
 
     /**
@@ -505,13 +517,13 @@ final class AdminContentService
         return $value === null || trim((string) $value) === '' ? null : trim((string) $value);
     }
 
-    private static function uploadsDir(): string
+    private static function uploadsDir(string $folder): string
     {
         $root = Config::path('uploads');
         // Config::path() creates folders as 0750 (private storage). These files are served by the web server,
         // which on shared hosting runs as another user, so the folders must be world-readable.
         @chmod($root, 0755);
-        $dir = "$root/projects";
+        $dir = "$root/$folder";
         if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
             throw new \RuntimeException('Could not create the uploads folder.');
         }

@@ -46,7 +46,7 @@ try {
 
   await page.viewport(1440, 900);
   await page.goto(`${BASE}/`);
-  await page.waitText('Transcend the enigma');
+  await page.waitText('Transcend all obstacles');
   await page.eval(`[...document.querySelectorAll('header nav[aria-label=Main] button')].find(b => b.innerText.trim() === 'Our Team').click()`);
   await page.waitFor(`location.pathname === '/team'`);
   check(true, 'nav tab opens /team');

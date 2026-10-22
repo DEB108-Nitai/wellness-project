@@ -2,7 +2,7 @@
 /**
  * Shared HTML email layout. Inline styles + tables for broad email-client support.
  * @var array $vars
- * @var array $message  ['subject','preheader','body'(HTML),'text']
+ * @var array $message  ['subject','preheader','body'(HTML),'text', optional 'footer' (text) or 'footerHtml' (escaped HTML)]
  * @var callable $e     HTML escaper
  * The icon is the site's te tile as a PNG (icon.png, from public/brand/te-icon-tile.svg), embedded as cid:te-icon:
  * email apps don't show SVG. Its white tile keeps it readable in dark mode; the name next to it is text, so apps recolour it.
@@ -31,7 +31,8 @@
         <?= $message['body'] /* already escaped by the template */ ?>
       </td></tr>
       <tr><td style="padding:24px 32px 28px;font-size:12px;line-height:1.6;color:#94a3b8;border-top:1px solid #f1f5f9;">
-        You received this email because of activity on your <?= $e($vars['siteName']) ?> account.
+        <?= $message['footerHtml'] /* already escaped by the template (newsletter: holds the unsubscribe link) */
+            ?? $e($message['footer'] ?? "You received this email because of activity on your {$vars['siteName']} account.") ?>
         <?php if (!empty($vars['supportEmail'])): ?>
           Questions? Contact <a href="mailto:<?= $e($vars['supportEmail']) ?>" style="color:#0d9488;"><?= $e($vars['supportEmail']) ?></a>.
         <?php endif; ?>

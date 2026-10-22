@@ -49,6 +49,13 @@ final class AdminSiteController
         return Response::ok(AdminSiteService::setMessageStatus((int) $request->param('id'), $data['status'], AuthService::requireUser(), $request));
     }
 
+    /** POST /api/admin/messages/{id}/reply {body}: emailed from the support address, kept, message marked handled. */
+    public function replyMessage(Request $request): Response
+    {
+        $data = Validator::validate($request->json(), ['subject' => 'required|string|max:200', 'body' => 'required|string|min:2|max:5000']);
+        return Response::ok(AdminSiteService::replyToMessage((int) $request->param('id'), $data['subject'], trim($data['body']), AuthService::requireUser(), $request));
+    }
+
     /** GET /api/admin/export/messages — streamed CSV, audited. */
     public function exportMessages(Request $request): Response
     {

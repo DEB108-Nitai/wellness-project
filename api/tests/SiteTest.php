@@ -86,7 +86,6 @@ test('registration validates phone, age, struggles and respects the open/closed 
     asGuest();
     captureMail();
     assertSame(422, assertThrows(HttpException::class, fn () => ChallengeService::register(registration(['phone' => '12']), authReq()))->status);
-    assertSame(422, assertThrows(HttpException::class, fn () => ChallengeService::register(registration(['age' => 15]), authReq()))->status);
     assertSame(422, assertThrows(HttpException::class, fn () => ChallengeService::register(registration(['struggles' => ['<script>']]), authReq()))->status);
 
     SettingsService::update(['challenge_registration_open' => false], 1);
@@ -198,6 +197,21 @@ test('CSV export keeps every value in its own cell, even with backslash-quote tr
     assertSame($goal, $rows[1][11], 'goal cell intact');
 });
 
+test('the programs are open to every age: a child registers and counts as "Under 18", while the 16PF test keeps its minimum age', function () {
+    useTestDatabase();
+    asGuest();
+    captureMail();
+    $tag = 'Kidstown' . bin2hex(random_bytes(2));
+    $send = static fn (array $body) => (new \Transenigma\Controllers\ChallengeController())->register(new Request('POST', '/challenge/registrations', [],
+        ['REMOTE_ADDR' => '10.30.40.51', 'CONTENT_TYPE' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR)));
+    $body = registration(['age' => 9, 'city' => $tag, 'formElapsedMs' => 10000]);
+    assertSame(201, $send($body)->status);
+    assertSame(9, (int) Database::value('SELECT age FROM challenge_registrations WHERE city = ?', [$tag]));
+    assertSame(422, assertThrows(HttpException::class, fn () => $send(['age' => 0] + $body))->status, 'an age is still required');
+    assertSame(1, array_column(ChallengeService::stats(['q' => $tag])['ageBands'], 'count', 'label')['Under 18']);
+    assertSame(18, SettingsService::int('min_age'), 'the 16PF minimum age is unchanged');
+});
+
 test('registration charts count by day, program, status, schedule, age, struggle and city, over the same filters as the list', function () {
     useTestDatabase();
     asGuest();
@@ -215,7 +229,7 @@ test('registration charts count by day, program, status, schedule, age, struggle
     assertSame(2, $map($s['byStatus'])['registered']);
     assertSame(1, $map($s['byStatus'])['confirmed']);
     assertSame(['morning' => 1, 'evening' => 2, 'weekend' => 0], $map($s['byCohort']));
-    assertSame(['18–24' => 1, '25–34' => 0, '35–44' => 1, '45–54' => 0, '55+' => 0, 'Not given' => 1], $map($s['ageBands']));
+    assertSame(['Under 18' => 0, '18–24' => 1, '25–34' => 0, '35–44' => 1, '45–54' => 0, '55+' => 0, 'Not given' => 1], $map($s['ageBands']));
     assertSame(['label' => 'Distractions', 'count' => 3], $s['struggles'][0]);
     assertSame([['label' => mb_convert_case($tag, MB_CASE_TITLE), 'count' => 3]], $s['cities'], 'city spellings grouped');
     assertSame(30, count($s['byDay']), 'last 30 days by default');

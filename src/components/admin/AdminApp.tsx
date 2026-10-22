@@ -21,13 +21,15 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
 import { AdminOverview } from './AdminOverview';
 import { AdminsAdmin } from './AdminsAdmin';
 import { AuditAdmin } from './AuditAdmin';
 import { ConsultancyAdmin } from './ConsultancyAdmin';
 import { FaqsAdmin } from './FaqsAdmin';
+import { MaintenanceBar, MaintenanceCard } from './Maintenance';
 import { MessagesAdmin } from './MessagesAdmin';
+import { NewsletterAdmin } from './NewsletterAdmin';
+import { NewsletterEditor } from './NewsletterEditor';
 import { ParticipantDetail } from './ParticipantDetail';
 import { ParticipantsAdmin } from './ParticipantsAdmin';
 import { QuestionSetAdmin } from './QuestionSetAdmin';
@@ -35,7 +37,6 @@ import { RegistrationsAdmin } from './RegistrationsAdmin';
 import { ResearchAdmin } from './ResearchAdmin';
 import { SecurityAdmin } from './SecurityAdmin';
 import { SettingsPanel } from './SettingsPanel';
-import { SubscribersAdmin } from './SubscribersAdmin';
 import { UserDetail, UsersAdmin } from './UsersAdmin';
 import { VisitorsAdmin } from './VisitorsAdmin';
 import { PageHeader } from './ui';
@@ -60,7 +61,7 @@ const NAV: { heading: string | null; items: NavItem[] }[] = [
     heading: 'Inbox',
     items: [
       { to: '/admin/messages', label: 'Messages', icon: Inbox },
-      { to: '/admin/subscribers', label: 'Newsletter subscribers', icon: Mail },
+      { to: '/admin/newsletter', label: 'Newsletter', icon: Mail },
     ],
   },
   {
@@ -120,7 +121,6 @@ const Brand: React.FC = () => (
 
 export default function AdminApp() {
   const { user } = useAuth();
-  const { settings } = useSettings();
   const location = useLocation();
   const [drawer, setDrawer] = useState(false);
 
@@ -179,11 +179,7 @@ export default function AdminApp() {
       )}
 
       <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
-        {settings.maintenance_mode && (
-          <p role="status" className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
-            Maintenance mode is on: visitors see the maintenance page. Turn it off in <Link to="/admin/settings" className="font-semibold underline">Settings</Link>.
-          </p>
-        )}
+        <MaintenanceBar />
         <div className="max-w-6xl mx-auto">
           <Routes>
             <Route index element={<AdminOverview />} />
@@ -197,7 +193,8 @@ export default function AdminApp() {
               path="settings"
               element={
                 <div className="space-y-6">
-                  <PageHeader title="Settings" description="Site-wide switches and details. Changes apply immediately and are recorded in the audit log." />
+                  <PageHeader title="Settings" description="Site-wide switches and details. Every change is recorded in the audit log." />
+                  <MaintenanceCard />
                   <SettingsPanel />
                 </div>
               }
@@ -207,7 +204,9 @@ export default function AdminApp() {
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="admins" element={<AdminsAdmin />} />
             <Route path="messages" element={<MessagesAdmin />} />
-            <Route path="subscribers" element={<SubscribersAdmin />} />
+            <Route path="newsletter" element={<NewsletterAdmin />} />
+            <Route path="newsletter/:id" element={<NewsletterEditor />} />
+            <Route path="subscribers" element={<Navigate to="/admin/newsletter?tab=subscribers" replace />} />
             <Route path="faqs" element={<FaqsAdmin />} />
             <Route path="audit" element={<AuditAdmin />} />
             <Route path="question-set" element={<QuestionSetAdmin />} />

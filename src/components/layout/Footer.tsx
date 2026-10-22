@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import { siteApi } from '../../api/site';
-import { contentApi, Venture } from '../../api/content';
 import { CheckCircle2, Linkedin, Mail, Shield } from 'lucide-react';
 import { BRAND } from '../../lib/brand';
 import { useSettings } from '../../context/SettingsContext';
@@ -10,8 +9,7 @@ import { BrandLogo } from '../common/BrandLogo';
 
 /**
  * Company footer (slice S9, owner-approved 2026-10-10): brand blurb with support email and LinkedIn,
- * Company / Programs & 16PF link columns, Our Ventures (plain text: their old domains no longer resolve),
- * newsletter. Links are real <a href> links so search engines can follow them.
+ * Company / Programs & 16PF link columns and the newsletter (Our Ventures removed, owner 2026-10-21). Links are real <a href> links so search engines can follow them.
  */
 interface FooterProps {
   onNavigate?: (view: string) => void;
@@ -32,9 +30,6 @@ const PROGRAM_LINKS = [
   { label: 'FAQ', to: '/faq' },
 ];
 
-// Shown if the ventures API is unavailable, so the column never disappears.
-const FALLBACK_VENTURES = ['Evolve Institute', 'Institute of Life Semantics (ILS)', 'India Tribal Care'];
-
 // Phones and tablets: every link is a 44 px row, so the lists drop their gaps there (space-y-0 lg:space-y-*).
 const linkClass = 'inline-flex items-center min-h-11 min-w-11 lg:min-h-0 lg:min-w-0 hover:text-white transition-colors focus:outline-hidden focus-visible:text-white focus-visible:underline underline-offset-4';
 
@@ -47,23 +42,12 @@ const Column: React.FC<{ title: string; children: React.ReactNode }> = ({ title,
 
 export const Footer: React.FC<FooterProps> = () => {
   const { settings } = useSettings();
-  const [ventures, setVentures] = useState<string[]>(FALLBACK_VENTURES);
-
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
   const [subscribeError, setSubscribeError] = useState<string | null>(null);
   const [subscribing, setSubscribing] = useState(false);
   const [website, setWebsite] = useState(''); // honeypot
   const startedAt = useRef(Date.now());
-
-  useEffect(() => {
-    contentApi
-      .ventures()
-      .then((list: Venture[]) => {
-        if (list.length) setVentures(list.map((v) => (v.shortName ? `${v.name} (${v.shortName})` : v.name)));
-      })
-      .catch(() => {});
-  }, []);
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,18 +125,8 @@ export const Footer: React.FC<FooterProps> = () => {
             </Column>
           </div>
 
-          <div className="lg:col-span-2">
-            <Column title="Our Ventures">
-              <ul className="space-y-2.5 text-sm text-slate-400" aria-label="Our ventures">
-                {ventures.map((v) => (
-                  <li key={v}>{v}</li>
-                ))}
-              </ul>
-            </Column>
-          </div>
-
           {/* Newsletter */}
-          <div className="sm:col-span-2 lg:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-4">
             <Column title="Transformation Digest">
               <p className="text-xs text-slate-400 mb-3 leading-normal">
                 Receive updates on upcoming 60-day challenge cohorts, psychometrics, and mental wellness.

@@ -3,6 +3,9 @@ import { ArrowRight, PlayCircle } from 'lucide-react';
 import { useActiveSession } from '../../context/ActiveSessionContext';
 import { useSectionNavigate } from '../../lib/routes';
 import { useContentStats } from '../../hooks/useContentStats';
+import { RotatingWord } from './RotatingWord';
+
+const HERO_WORDS = ['obstacles', 'problems', 'limitations'];
 
 /**
  * Opening band of the home page: Transenigma's mission in a compact dark hero.
@@ -27,18 +30,20 @@ export const CompanyHero: React.FC<Props> = ({ onNavigate }) => {
       <div aria-hidden="true" className="absolute -top-40 -left-24 w-[32rem] h-[32rem] rounded-full bg-teal-500/20 blur-3xl" />
       <div aria-hidden="true" className="absolute -bottom-48 right-0 w-[30rem] h-[30rem] rounded-full bg-indigo-500/20 blur-3xl" />
 
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-28 text-center">
+      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-24 lg:py-28 text-center">
         <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.22em] text-teal-300">
           Research · Health · Education
         </p>
 
-        <h1
-          id="company-hero-title"
-          className="mt-6 text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] font-heading text-balance"
-        >
-          Transcend the enigma.
-          <span className="block mt-1 pb-[0.12em] bg-gradient-to-r from-teal-300 via-teal-200 to-emerald-200 bg-clip-text text-transparent">
-            Transform your life.
+        <h1 id="company-hero-title" className="mt-6 text-[2.5rem] sm:text-6xl lg:text-[4rem] xl:text-7xl font-extrabold tracking-tight leading-[1.1] font-heading">
+          {/* Read in full by screen readers and search engines; the animated version below is visual only. */}
+          <span className="sr-only">Transcend all obstacles, problems and limitations enigmatically</span>
+          <span aria-hidden="true" className="block">
+            <span className="block lg:inline">Transcend all</span>{' '}
+            <RotatingWord words={HERO_WORDS} className="justify-items-center lg:justify-items-start" />
+          </span>
+          <span aria-hidden="true" className="block text-teal-300">
+            enigmatically
           </span>
         </h1>
 

@@ -28,7 +28,7 @@ final class ChallengeController
             'name' => 'required|string|min:2|max:100',
             'email' => 'required|email',
             'phone' => 'required|string|max:20|regex:/^\+?[0-9 ()\-.]{7,20}$/',
-            'age' => 'required|int|min:18|max:100',
+            'age' => 'required|int|min:1|max:100',
             'city' => 'required|string|max:100',
             'country' => 'required|string|max:2',
             'cohortTiming' => 'required|in:' . implode(',', ChallengeService::TIMINGS),

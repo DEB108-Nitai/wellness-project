@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Older browser engines don't accept "in oklab" in a gradient and drop the whole background (e.g. the dark home
+   hero). They get the same gradient without it; browsers that understand it skip this block. */
+@supports not (background-image: linear-gradient(in oklab, red, red)) {
+  .bg-gradient-to-t { --tw-gradient-position: to top; }
+  .bg-gradient-to-b { --tw-gradient-position: to bottom; }
+  .bg-gradient-to-r { --tw-gradient-position: to right; }
+  .bg-gradient-to-br { --tw-gradient-position: to bottom right; }
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -49,4 +58,50 @@
 }
 .research-marquee::-webkit-scrollbar {
   display: none;
+}
+
+/* Home hero rotating word (RotatingWord.tsx): each letter has its own clipped window and slides out one way
+   while the next word's letters slide in, tinted, a few ms apart. */
+.te-rotator {
+  display: inline-grid;
+}
+.te-rotator-word {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+}
+.te-rotator-slot {
+  display: inline-block;
+  clip-path: inset(-0.12em -0.08em);
+}
+.te-rotator-char {
+  display: inline-block;
+}
+.te-rotator-word[data-state='hidden'] {
+  visibility: hidden;
+}
+.te-rotator-word[data-state='in'] .te-rotator-char {
+  animation: te-char-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--d) both;
+}
+.te-rotator-word[data-state='out'] .te-rotator-char {
+  animation: te-char-out 0.5s cubic-bezier(0.55, 0, 0.75, 0.2) var(--d) both;
+}
+@keyframes te-char-in {
+  from { transform: translateY(calc(var(--dir) * 130%)); color: var(--tint); }
+  55% { color: var(--tint); }
+  to { transform: translateY(0); }
+}
+@keyframes te-char-out {
+  from { transform: translateY(0); }
+  30% { color: var(--tint); }
+  to { transform: translateY(calc(var(--dir) * -130%)); color: var(--tint); visibility: hidden; }
+}
+@keyframes te-char-fade-in {
+  from { opacity: 0; }
+}
+@keyframes te-char-fade-out {
+  to { opacity: 0; visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .te-rotator-word[data-state='in'] .te-rotator-char { animation: te-char-fade-in 0.4s ease both; }
+  .te-rotator-word[data-state='out'] .te-rotator-char { animation: te-char-fade-out 0.3s ease both; }
 }

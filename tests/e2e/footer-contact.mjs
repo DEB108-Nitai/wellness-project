@@ -1,4 +1,4 @@
-// Footer and Contact page (S9): company footer columns with real links, Our Ventures, support email, LinkedIn,
+// Footer and Contact page (S9): company footer columns with real links (no Our Ventures), support email, LinkedIn,
 // new pages open at the top (also from footer links), Contact copy and email, team title, 4 widths.
 // Read-only: creates no database rows. Usage (dev server running): node tests/e2e/footer-contact.mjs → shots/footer-*.png
 import { launch } from './cdp.mjs';
@@ -26,16 +26,15 @@ const toBottom = async () => {
 try {
   await page.viewport(1440, 900);
   await page.goto(`${BASE}/`);
-  await page.waitText('Our Ventures');
+  await page.waitText('Transformation Digest');
   await page.eval(`[...document.querySelectorAll('button')].find(b => b.innerText.trim() === 'Got it')?.click()`);
-  await page.waitFor(`${F}.innerText.includes('Institute of Life Semantics') && !!${F}.querySelector('a[href^="mailto:"]')`);
+  await page.waitFor(`${F}.innerText.toLowerCase().includes('transformation digest') &&!!${F}.querySelector('a[href^="mailto:"]')`);
 
   const company = await page.eval(`[...${columnLinks('Company')}].map(li => [li.innerText, li.querySelector('a')?.getAttribute('href')])`);
   check(JSON.stringify(company) === JSON.stringify([['Research', '/research'], ['Consultancy', '/consultancy'], ['Our Team', '/team'], ['Contact', '/contact']]), 'Company column: Research, Consultancy, Our Team, Contact (real links)');
   const programs = await page.eval(`[...${columnLinks('Programs & 16PF')}].map(li => li.querySelector('a')?.getAttribute('href'))`);
   check(JSON.stringify(programs) === JSON.stringify(['/#60-days-challenge', '/test', '/how-it-works', '/factors', '/faq']), 'Programs & 16PF column links');
-  const ventures = await page.eval(`[...${columnLinks('Our Ventures')}].map(li => [li.innerText, !!li.querySelector('a')])`);
-  check(JSON.stringify(ventures) === JSON.stringify([['Evolve Institute', false], ['Institute of Life Semantics (ILS)', false], ['India Tribal Care', false]]), 'Our Ventures: three names, no links');
+  check(!(await page.eval(`${F}.innerText.includes('Our Ventures')`)), 'no Our Ventures column (removed by the owner)');
   check(await page.eval(`${F}.querySelector('a[href="mailto:${settings.support_email}"]')?.innerText.includes('${settings.support_email}')`), `support email ${settings.support_email} in the footer`);
   check(await page.eval(`(() => { const a = ${F}.querySelector('a[href="${settings.linkedin_url}"]'); return !!a && a.target === '_blank' && a.rel.includes('noopener'); })()`), `LinkedIn ${settings.linkedin_url} opens safely in a new tab`);
   check(await page.eval(`${F}.innerText.includes('Transenigma Pvt Ltd designs products and builds technology for social welfare')`), 'company blurb');
@@ -82,7 +81,7 @@ try {
   for (const [w, h] of [[1440, 900], [768, 1024], [390, 844], [360, 780]]) {
     await page.viewport(w, h, w < 1440);
     await page.goto(`${BASE}/contact`);
-    await page.waitText('Our Ventures');
+    await page.waitText('Transformation Digest');
     await toBottom();
     check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
     await page.eval(`${F}.scrollIntoView({ block: 'end' })`);
