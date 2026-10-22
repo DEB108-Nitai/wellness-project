@@ -644,6 +644,8 @@ export interface Newsletter extends NewsletterContent, NewsletterProgress {
   skipped: number;
   /** People subscribed right now: who a send would reach. */
   subscribers: number;
+  /** Newsletter emails sent per hour (server setting). */
+  sendRate: number;
 }
 
 export const newsletterAdminApi = {

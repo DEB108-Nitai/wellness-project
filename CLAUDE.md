@@ -27,9 +27,11 @@ PHP is XAMPP's: `C:\xampp\php\php.exe` (also `php` if on PATH).
 | Apply migrations / status / rebuild from scratch | `php api/bin/migrate.php` / `--status` / `--fresh` |
 | Create or promote an admin | `php api/bin/create-admin.php you@example.com "Name"` |
 | Daily housekeeping | `php api/bin/cron-daily.php` |
+| Send queued newsletter emails (cron every 10 min on the server) | `php api/bin/send-newsletters.php` |
+| Build the live update package (from a clean commit) | `bash deploy/build-package.sh` → `build/transenigma-update.tar.gz` |
 | Browser E2E (needs XAMPP + `npm run dev` + Chrome) | `node tests/e2e/guest-flow.mjs`, `node tests/e2e/admin-flow.mjs` (full admin loop; more in `tests/e2e/README.md`) |
 
-E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clean them up afterwards (see `docs/PROGRESS.md`). If Apache serves the project elsewhere, set `TRANSENIGMA_API_TARGET` in `.env.local`. Full setup: `docs/DEVELOPMENT.md`. Deploying to DreamHost: `docs/DEPLOY.md`.
+E2E scripts create real rows in `transenigma` (`@example.com` accounts) — clean them up afterwards (see `docs/PROGRESS.md`). If Apache serves the project elsewhere, set `TRANSENIGMA_API_TARGET` in `.env.local`. Full setup: `docs/DEVELOPMENT.md`. Deploying to DreamHost: `docs/DEPLOY.md` (scripts in `deploy/`). The site is live at https://transenigma.com; company handover: `docs/HANDOVER.md`.
 
 ## Architecture
 

@@ -18,7 +18,6 @@ interface NavLink {
 interface NavItem extends NavLink {
   id: string;
   children?: NavLink[];
-  highlight?: boolean;
   /** false = the page is not built yet; the tab stays hidden until its slice ships. */
   ready?: boolean;
 }
@@ -28,7 +27,6 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: 'programs',
     label: 'Programs',
-    highlight: true,
     children: [
       { label: 'All 60-Day Programs', section: '60-days-challenge', hint: 'Compare STI, PTI and TTI' },
       { label: `${PROGRAMS.STI.name} (STI)`, section: PROGRAM_ANCHORS.STI, hint: 'Program 01' },
@@ -175,11 +173,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               {VISIBLE_ITEMS.map((item) => {
                 const active = isItemActive(item, currentView);
                 const tabClass = `transition-colors py-1 px-1.5 xl:px-2.5 cursor-pointer flex items-center gap-1 whitespace-nowrap rounded-lg focus:outline-hidden focus-visible:ring-4 focus-visible:ring-teal-500/20 ${
-                  item.highlight
-                    ? 'text-amber-800 font-bold bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-xl border border-amber-200 shadow-2xs'
-                    : active
-                    ? 'text-teal-700 font-semibold border-b-2 border-teal-600 rounded-b-none'
-                    : 'hover:text-teal-700 hover:bg-slate-50'
+                  active ? 'text-teal-700 font-semibold border-b-2 border-teal-600 rounded-b-none' : 'hover:text-teal-700 hover:bg-slate-50'
                 }`;
 
                 if (!item.children) {
@@ -414,11 +408,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate }) => {
               {VISIBLE_ITEMS.map((item) => {
                 const active = isItemActive(item, currentView);
                 const rowClass = `w-full text-left px-3 py-2.5 text-sm font-medium rounded-xl transition-colors flex items-center gap-2 ${
-                  item.highlight
-                    ? 'bg-amber-50 text-amber-900 font-bold border border-amber-200'
-                    : active
-                    ? 'bg-teal-50 text-teal-700 font-semibold'
-                    : 'text-slate-700 hover:bg-slate-50'
+                  active ? 'bg-teal-50 text-teal-700 font-semibold' : 'text-slate-700 hover:bg-slate-50'
                 }`;
 
                 if (!item.children) {

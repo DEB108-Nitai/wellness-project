@@ -1,6 +1,6 @@
 # Deploying Transenigma to DreamHost
 
-This guide takes the site from this repository to **https://transenigma.com** on DreamHost shared hosting (PHP 8.2 + MySQL). The server never runs Node: the React app is built on a developer machine and uploaded as static files, next to the PHP API.
+This guide takes the site from this repository to **https://transenigma.com** on DreamHost shared hosting (PHP 8.2 or newer + MySQL; the live site runs PHP 8.3 and MySQL 8.4). The server never runs Node: the React app is built on a developer machine and uploaded as static files, next to the PHP API.
 
 > **Secrets** (database password, `app.secret`, SMTP password, Google client secret) go **only** into the server's `config.php`. Never put them in chat, email or git.
 
@@ -18,6 +18,25 @@ This guide takes the site from this repository to **https://transenigma.com** on
 | MySQL database | Panel → MySQL Databases | Database `transenigma`, user `transenigma_app`, hostname e.g. `mysql.transenigma.com`. A test database is not needed on the server. |
 | Email for sending | Panel → Email (or the company's mail provider) | A mailbox such as `support@transenigma.com`, with its **SMTP host, port and password** |
 | Google sign-in (optional) | console.cloud.google.com → Credentials | OAuth client; authorised redirect URI **`https://transenigma.com/api/auth/google/callback`** |
+
+### How the live site is set up (since 2026-10-19)
+
+No passwords here: they are only in the server's `config.php` and `~/.my.cnf`, and with the people who own the accounts.
+
+| What | Value |
+|---|---|
+| SSH / SFTP | the site's SSH user (Panel → Websites → SFTP/SSH users); connect with `ssh <user>@transenigma.com` |
+| Web root | `~/transenigma.com` |
+| Config (secrets) | `~/transenigma-config/config.php` (mode 600, outside the web root) |
+| PHP | 8.3, `/usr/local/php83/bin/php` |
+| Database | MySQL 8.4 on `mysql.transenigma.com`; its name and user are in `config.php` and Panel → MySQL Databases |
+| Mail | `support@transenigma.com` through `smtp.dreamhost.com` |
+| DNS | at DreamHost. SPF and DKIM by DreamHost; DMARC TXT `_dmarc` = `v=DMARC1; p=none; rua=mailto:support@transenigma.com` |
+| HTTPS | Let's Encrypt, renewed automatically by DreamHost |
+| Backups | `~/backups` (database and `uploads/`, 14 days); site copies before each update: `~/site-before-update-*.tar.gz` |
+| Server scripts | `~/update-site.sh`, `~/bin/backup-db.sh` (copies of [`deploy/`](../deploy/)) |
+| Old site (before 2026-10-19) | `~/transenigma.com-old-2026-10-19` and `~/old-site-backup-2026-10-19.tar.gz`: can be deleted once nobody needs it |
+| Search Console | transenigma.com verified (meta tag in `index.html`), sitemap submitted |
 
 ---
 
@@ -100,7 +119,7 @@ The API finds this file automatically (`Core\Config`: `../../transenigma-config/
 **Then run the preflight check** (it never prints a secret, only whether each setting looks right):
 ```
 cd ~/transenigma.com
-/usr/local/php82/bin/php api/bin/preflight.php
+/usr/local/php83/bin/php api/bin/preflight.php
 ```
 It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, mbstring, fileinfo, curl), the production settings (`env`, `debug` off, https `url`, a 64-hex `app.secret`, SMTP), the database connection and clocks, pending migrations, the admins, writable folders, `index.html` and both `.htaccess` files, and that the config file is outside the web root. Fix every **FAIL** line before going live. On this first run, the `migrations` line fails (nothing is applied yet) and the admins line is skipped; step 5 fixes both. Run it again after step 5: it should end with `READY`.
 
@@ -108,23 +127,23 @@ It checks the PHP version and extensions (pdo_mysql, openssl with AES-256-GCM, m
 
 ## 5. Database and admin account
 
-DreamHost's PHP 8.2 command-line binary is usually `/usr/local/php82/bin/php`.
+The live site runs PHP 8.3; its command-line binary is `/usr/local/php83/bin/php` (for PHP 8.2 it would be `/usr/local/php82/bin/php`).
 ```
 cd ~/transenigma.com
-/usr/local/php82/bin/php api/bin/migrate.php            # creates every table and the content (001…027)
-/usr/local/php82/bin/php api/bin/migrate.php --status   # all applied
-/usr/local/php82/bin/php api/bin/create-admin.php you@transenigma.com "Your Name"
+/usr/local/php83/bin/php api/bin/migrate.php            # creates every table and the content (001…030)
+/usr/local/php83/bin/php api/bin/migrate.php --status   # all applied
+/usr/local/php83/bin/php api/bin/create-admin.php you@transenigma.com "Your Name"
 ```
 `create-admin` asks for the password twice, and checks it against the password policy. The password is **visible while you type**, so make sure nobody is watching the screen. It is stored only as an Argon2id hash.
 
-**The primary admin:** the first admin created on the server is the primary admin, the only one who can add or remove admins in the console (Admins page). To name another one from the server (for example if the primary admin has left): `/usr/local/php82/bin/php api/bin/create-admin.php --primary admin@transenigma.com`.
+**The primary admin:** the first admin created on the server is the primary admin, the only one who can add or remove admins in the console (Admins page). To name another one from the server (for example if the primary admin has left): `/usr/local/php83/bin/php api/bin/create-admin.php --primary admin@transenigma.com`.
 
 **Two-step sign-in (every admin):**
 - At the first sign-in on the live site, the admin scans a QR code with an authenticator app (Google Authenticator, Microsoft Authenticator…) and saves **10 recovery codes**. After that, every admin sign-in needs a code from the app.
 - The app secret is encrypted with `app.secret`. Setting a new `app.secret` makes saved app secrets unreadable: admins then sign in with a recovery code and use **Security → Move to a new phone**, or are reset as below. So set the final `app.secret` **before** the admins set up their phones.
 - **Lost phone and recovery codes:** reset from the server, and the admin sets it up again at their next sign-in:
   ```
-  /usr/local/php82/bin/php api/bin/create-admin.php --reset-2fa admin@transenigma.com
+  /usr/local/php83/bin/php api/bin/create-admin.php --reset-2fa admin@transenigma.com
   ```
 
 ---
@@ -133,44 +152,23 @@ cd ~/transenigma.com
 
 | Job | Schedule | Command |
 |---|---|---|
-| Housekeeping | daily, 03:00 | `/usr/local/php82/bin/php /home/<user>/transenigma.com/api/bin/cron-daily.php` |
-| Database backup (14 days kept) | daily, 03:30 | `bash $HOME/bin/backup-db.sh` (script below) |
+| Housekeeping | daily | `/usr/local/php83/bin/php /home/<user>/transenigma.com/api/bin/cron-daily.php` |
+| Database + uploads backup (14 days kept) | daily | `bash $HOME/bin/backup-db.sh` |
+| Newsletter sender | **every 10 minutes** | `/usr/local/php83/bin/php /home/<user>/transenigma.com/api/bin/send-newsletters.php` |
 
-For the backup, create `~/.my.cnf` (mode 600) so the password is not in the cron line:
-```
-[client]
-host=mysql.transenigma.com
-user=transenigma_app
-password=...
-```
+Set "Email output to" on each job to an address someone reads. The newsletter sender prints nothing when the queue is empty, so it only emails when it actually sent a batch. Without that job, a newsletter sent from the admin stays at "0 delivered".
 
-Then create `~/bin/backup-db.sh`. It fails loudly instead of hiding a broken dump, and it only deletes old backups after a new one has been checked:
-```bash
-#!/bin/bash
-# Daily MySQL backup for Transenigma: fail on any error, verify, then rotate (14 days).
-set -euo pipefail                      # a failed mysqldump fails the whole pipeline
-umask 077                              # backups readable by this user only
-mkdir -p "$HOME/backups" && chmod 700 "$HOME/backups"
-out="$HOME/backups/transenigma-$(date +%F).sql.gz"
-tmp="$out.tmp"
-mysqldump --defaults-extra-file="$HOME/.my.cnf" --single-transaction transenigma | gzip > "$tmp"
-gzip -t "$tmp"                                          # the archive is readable
-zcat "$tmp" | tail -n 1 | grep -q "Dump completed"      # mysqldump finished the dump
-mv "$tmp" "$out"
-find "$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete   # only after a good backup
-# Admin-uploaded images are live content too (the database points at them).
-if [ -d "$HOME/transenigma.com/uploads" ]; then
-  up="$HOME/backups/transenigma-uploads-$(date +%F).tar.gz"
-  tar -czf "$up.tmp" -C "$HOME/transenigma.com" uploads
-  tar -tzf "$up.tmp" > /dev/null                         # the archive is readable
-  mv "$up.tmp" "$up"
-  find "$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
-fi
-```
+**The newsletter sender** sends at most `mail.newsletter_per_hour` emails an hour (default 80; set it in `config.php` under `mail`). DreamHost limits each mailbox to about 100 messages an hour, and sign-up, reset and contact emails use the same mailbox, so keep the setting below the limit. A failed address is retried once an hour, three times at most.
 
-- **Set up:** run `chmod 700 ~/bin/backup-db.sh`, then run the script once by hand and check that a `.sql.gz` file appears in `~/backups`.
+**The backup** is set up once with [`deploy/setup-backup.sh`](../deploy/setup-backup.sh) (upload it, run `bash setup-backup.sh`). It writes:
+- `~/.my.cnf` (mode 600) with the database login read from `config.php`, so no password is in a cron line or a script;
+- `~/bin/backup-db.sh`, which runs `mysqldump --single-transaction --no-tablespaces` (DreamHost needs `--no-tablespaces`), checks the archive and that the dump finished, and only then deletes backups older than 14 days. It also archives `uploads/` (the images admins upload are live content);
+- and runs it once, so you see the first `.sql.gz` in `~/backups`.
+
 - **Before relying on it:** test a restore into a scratch database (§9).
-- **If a run fails:** cron emails the error (set the cron job's email address in the panel), and the existing backups are kept.
+- **Keep `~/setup-backup.sh` on the server:** run it again whenever the database password or name changes, since it writes them into `~/.my.cnf` and the backup script.
+- Where every backup is, downloading them monthly, and restoring step by step: [BACKUPS.md](BACKUPS.md).
+- **If a run fails:** cron emails the error, and the existing backups are kept.
 
 ---
 
@@ -185,7 +183,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 
 **Before launch (secrets and email):**
 - [ ] Fresh secrets on the server only: a new `app.secret` (`php -r "echo bin2hex(random_bytes(32));"`), the company's Google OAuth client and secret (delete the old personal-project client afterwards), and a **new password for the support@ mailbox** (DreamHost panel → Email). The local development copies may have been reachable on the LAN while `npm run dev` ran, so none are reused.
-- [ ] Email authentication for transenigma.com: SPF and DKIM records exist (DreamHost panel → Mail → or the DNS provider). Then send one **password reset to a Gmail address** and confirm it lands in the inbox, not Spam.
+- [ ] Email authentication for transenigma.com: SPF and DKIM records exist (DreamHost panel → Mail → or the DNS provider), plus a DMARC record (§0). Then send one **password reset to a Gmail address** and confirm it lands in the inbox, not Spam.
 
 **By hand:**
 - [ ] `http://` and `www.` addresses end up on `https://transenigma.com` (the redirect check above covers `www`).
@@ -196,7 +194,7 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 - [ ] Google sign-in (if configured).
 - [ ] 60-day program registration → "Registered successfully" → **confirmation email arrives**.
 - [ ] Contact form → **notification arrives at support@transenigma.com**.
-- [ ] Newsletter subscribe/unsubscribe.
+- [ ] Newsletter subscribe/unsubscribe. Admin → Newsletter: write one, **Send me a test**, and check it arrives in the inbox. Admin → Messages: reply to a message (the Subject box is pre-filled) and check it arrives.
 - [ ] Admin: sign in → set up two-step sign-in on your phone → save the recovery codes → Registrations and Settings work. Sign out and in again: the code is asked for. A normal account is refused.
 - [ ] Phone check: menu drawer, research cards swipe, no sideways scrolling.
 - [ ] `https://transenigma.com/robots.txt` and `/sitemap.xml` load. Submit the sitemap in Google Search Console.
@@ -208,11 +206,28 @@ curl -sI https://transenigma.com/ | grep -iE "strict-transport|x-frame|content-s
 
 ## 8. Updating the site later
 
-1. On a developer machine: pull, `npm ci`, tests, `npm run build`. Take a fresh backup on the server: `bash ~/bin/backup-db.sh`.
-   **Turn on maintenance mode** (Admin → Settings) and keep it on until step 4 passes. Visitors then can't submit a test while the database and the code don't match yet: for example, a migration that switches the active norm set (027) would otherwise let the old code score a test with the new set's label, and that result would be stored for good. Don't take a test yourself while it is on, because admins are let through.
-2. **Database first.** Upload the new `database/migrations/` files and run `/usr/local/php82/bin/php api/bin/migrate.php` over SSH (it applies only the new ones). Migrations only add things, so the old code keeps working with the new tables and columns. The other way round, new code would ask for columns that don't exist yet and every page would fail until the migration ran.
-3. Then upload the changed `api/` files, and last the new `dist/` contents (replace `assets/`; old hashed files can be deleted). **Never delete or replace the `uploads/` folder**: it holds the images admins uploaded, and the site points at them.
-4. Run `/usr/local/php82/bin/php api/bin/preflight.php` again; it should end with `READY`. Then turn maintenance mode off.
+Scripted since the launch. On a developer machine, with the change merged into `main`:
+```
+git checkout main && git pull
+npm ci
+npm run lint
+php api/tests/run.php                       # all must pass
+bash deploy/build-package.sh                # → build/transenigma-update.tar.gz (refuses uncommitted changes)
+scp build/transenigma-update.tar.gz <user>@transenigma.com:~/
+ssh <user>@transenigma.com "bash ~/update-site.sh"
+```
+`~/update-site.sh` on the server is a copy of [`deploy/update-site.sh`](../deploy/update-site.sh); upload it again if it changes. It prints each step and ends with **`DONE. The update is live.`** In order:
+1. **Backups:** database and `uploads/` (`~/bin/backup-db.sh`), and the whole site folder (`~/site-before-update-<time>.tar.gz`).
+2. Unpacks the package into a staging folder and sets file permissions.
+3. **Maintenance mode on.** Visitors can't submit a test while the database and the code don't match yet: for example, a migration that switches the active norm set (027) would otherwise let the old code score a test with the new set's label, and that result would be stored for good. Admins are let through, so don't take a test yourself during an update.
+4. **Database first:** runs `migrate.php` from the new package (only new files are applied). Migrations only add things, so the old code keeps working with the new tables and columns. The other way round, new code would ask for columns that don't exist yet.
+5. Copies the new files over the live ones with `rsync --delete`, **keeping `uploads/`, `.well-known/` and `api/storage/`** (admin images, certificates, sessions and logs).
+6. Runs `preflight.php`; it must end with `READY`.
+7. **Maintenance mode off**, and removes the package.
+
+If any step fails, it stops with **maintenance mode still on** and says which step. Fix the cause and run it again, or roll back (§9). To look at the maintenance setting at any time: `bash ~/check-maintenance.sh` (read-only).
+
+A change that needs a new cron job or config key says so in its pull request (e.g. the newsletter sender, §6); add those by hand.
 
 **If a migration stops halfway.** MySQL can't roll back table changes, so a failed file can leave part of its work behind. `migrate.php` names the file and the statement that failed, and it doesn't mark that file as applied. Leave maintenance mode on and the old code in place, undo what that file added, fix the cause and run `migrate.php` again. For `027_table_stens.sql` the undo is (save it as `~/undo027.sql` and run `mysql --defaults-extra-file=$HOME/.my.cnf --force transenigma < ~/undo027.sql`; `--force` carries on past a line whose object was never created, e.g. the column if the very first statement failed):
 ```sql
@@ -229,10 +244,17 @@ MySQL refuses this once any test has been scored with v2, which protects those r
 
 ## 9. Rolling back
 
-- **Frontend:** re-upload the previous `dist/`.
+- **Site files:** each update keeps a copy of the site folder from just before it, `~/site-before-update-<time>.tar.gz` (without `uploads/`). To go back: turn maintenance mode on, rename the live folder (`mv ~/transenigma.com ~/transenigma.com.broken`), unpack the copy (`tar -xzf ~/site-before-update-<time>.tar.gz -C ~`), and move `uploads/` back from `~/transenigma.com.broken`. The database is **not** rolled back by this, so first check which migrations the update applied (`migrate.php --status`, or step 4 of its output):
+  - **None, or only new tables and columns** (most updates, e.g. 028–030): putting the old files back is safe; the old code ignores what it doesn't know.
+  - **A migration that changed data or behaviour** (e.g. 027, which made norm set v2 active): don't put the old files back on their own. The old code would run against data it doesn't expect (with 027, it would score tests by the old formula but label them v2). Keep maintenance mode on and fix forward with a new update, or follow the migration's own undo notes (§8) **before** restoring the files.
 - **Database:** never restore straight over the live database. Anything visitors did since the backup (accounts, test results, registrations) would be lost.
-  1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (rename the file it writes, e.g. `transenigma-YYYY-MM-DD-before-restore.sql.gz`, so the next run doesn't replace it).
-  2. Create a scratch database in the panel (e.g. `transenigma_restore`). Restore last night's backup into it: `gunzip -c ~/backups/transenigma-YYYY-MM-DD.sql.gz | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore`.
+  1. Take a backup of the database as it is **now**: `bash ~/bin/backup-db.sh` (each run writes its own file, `transenigma-<date>-<time>-<n>.sql.gz`; it is deleted after 14 days, so copy it elsewhere if you need it longer).
+  2. Create a scratch database in the panel named exactly `transenigma_restore` (the command uses that name). Check the backup file, then restore it into the scratch database; the `&&` and `pipefail` make the command stop and say so if the file is damaged, instead of loading half of it:
+     ```
+     f=~/backups/transenigma-<date>-<time>-<n>.sql.gz
+     gzip -t "$f" && bash -c 'set -o pipefail; gunzip -c "$1" | mysql --defaults-extra-file=$HOME/.my.cnf transenigma_restore' _ "$f" && echo RESTORED
+     ```
+     Only continue if it printed `RESTORED`. Step by step, with checks: [BACKUPS.md §5](BACKUPS.md).
   3. Compare the two databases. Find the rows created after the backup, e.g. `SELECT … WHERE created_at > '<backup time>'` in `users`, `test_sessions`, `challenge_registrations` and `contact_messages`. Copy the good ones into the restored database, or fix only the broken rows in the live database.
   4. Only then switch production over. Either point `db.name` in `config.php` at the restored database, or copy the corrected tables back into `transenigma`. Keep the step-1 backup until the site has run normally for a while.
 - **Whole site:** point the domain back at the old site's backup (§2).

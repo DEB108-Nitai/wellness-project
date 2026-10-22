@@ -3,7 +3,7 @@
 // the queued rows, uploaded images and everything else are removed at the end.
 // Usage: node tests/e2e/admin-newsletter.mjs   (needs XAMPP + npm run dev + Chrome)
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync, unlinkSync, existsSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, unlinkSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -197,6 +197,6 @@ try {
          DELETE FROM audit_logs WHERE actor_user_id = ${id} OR (entity_type = 'user' AND entity_id = '${id}'); DELETE FROM users WHERE id = ${id};`);
   }
   sql(`DELETE FROM newsletter_subscribers WHERE email = '${reader}'; DELETE FROM email_log WHERE to_email = '${email}';`);
-  for (const f of ['workshop.jpg', 'photo.webp']) if (existsSync(join(files, f))) unlinkSync(join(files, f));
+  rmSync(files, { recursive: true, force: true });
   console.log('removed the e2e admin, subscriber, newsletters, queue rows and uploaded images');
 }
