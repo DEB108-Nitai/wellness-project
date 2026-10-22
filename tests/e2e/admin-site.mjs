@@ -51,17 +51,22 @@ try {
   await page.screenshot(`${OUT}admin-11-messages.png`, true);
   await page.clickText(`Question ${tag}`, 'button');
   await page.waitFor(`document.querySelector('[role=dialog] textarea')`); // the list previews the text too
+  const startSubject = await page.eval(`(() => { const l = [...document.querySelectorAll('[role=dialog] label')].find(x => x.textContent.trim() === 'Subject'); return document.getElementById(l.htmlFor).value; })()`);
+  if (startSubject !== `Re: Question ${tag}`) throw new Error(`subject starts as "${startSubject}"`);
+  await page.eval(`(() => { const l = [...document.querySelectorAll('[role=dialog] label')].find(x => x.textContent.trim() === 'Subject'); l.htmlFor && document.getElementById(l.htmlFor).setAttribute('data-e2e', 'subject'); })()`);
+  await page.fill('[role=dialog] [data-e2e=subject]', `PTI cohort dates ${tag}`);
   await page.fill('[role=dialog] textarea', `Thank you for writing. The next cohort starts soon (${tag}).`);
   await page.screenshot(`${OUT}admin-12-message.png`);
   await page.clickText('Send reply', '[role=dialog] button');
   await page.waitText(`Reply sent to ${sender}`);
   if (!(await page.eval(`document.querySelector('[role=dialog]').innerText.includes('The next cohort starts soon (${tag}).')`))) throw new Error('reply not in the history');
+  if (!(await page.eval(`document.querySelector('[aria-label="Replies sent"]').innerText.includes('PTI cohort dates ${tag}')`))) throw new Error('reply subject not in the history');
   await page.screenshot(`${OUT}admin-12b-message-replied.png`);
   await page.eval(`document.querySelector('[role=dialog] [aria-label=Close]').click()`);
   await page.waitFor(`!document.body.innerText.includes('Question ${tag}')`);
   await page.clickText('Handled', '[role=tab]');
   await page.waitText(`Question ${tag}`);
-  step('message opened, replied from the console (kept in its history), marked handled, listed under Handled');
+  step('message opened, replied from the console with an edited subject (kept in its history), marked handled, listed under Handled');
 
   // 2. Subscribers.
   await page.goto(`${BASE}/admin/subscribers`);
@@ -83,6 +88,7 @@ try {
   await fillLabel(page, 'Answer', 'Yes. Write to us and we will move you to the next cohort.');
   await page.clickText('Add FAQ', '[role=dialog] button');
   await page.waitText('FAQ added at the end of the FAQ page');
+  await page.waitFor(`document.querySelector('[aria-label="Move “${QUESTION}” up"]')`); // the list reloads after the add
   await page.eval(`document.querySelector('[aria-label="Move “${QUESTION}” up"]').click()`);
   await page.waitText('Order saved');
   await page.screenshot(`${OUT}admin-14-faqs.png`, true);

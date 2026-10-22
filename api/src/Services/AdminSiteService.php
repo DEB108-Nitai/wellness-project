@@ -52,7 +52,7 @@ final class AdminSiteService
             [$id]
         ) ?? throw HttpException::notFound('Message not found.');
         $replies = Database::all(
-            'SELECT r.id, r.body, r.created_at, u.name AS admin_name FROM contact_message_replies r
+            'SELECT r.id, r.subject, r.body, r.created_at, u.name AS admin_name FROM contact_message_replies r
              LEFT JOIN users u ON u.id = r.admin_id WHERE r.message_id = ? ORDER BY r.created_at, r.id',
             [$id]
         );
@@ -61,7 +61,7 @@ final class AdminSiteService
             'message' => $m['message'], 'status' => $m['status'], 'createdAt' => self::iso($m['created_at']),
             'handledAt' => self::iso($m['handled_at']), 'handledBy' => $m['handled_by_name'],
             'replies' => array_map(static fn (array $r): array => [
-                'id' => (int) $r['id'], 'body' => $r['body'], 'sentAt' => self::iso($r['created_at']), 'sentBy' => $r['admin_name'],
+                'id' => (int) $r['id'], 'subject' => $r['subject'], 'body' => $r['body'], 'sentAt' => self::iso($r['created_at']), 'sentBy' => $r['admin_name'],
             ], $replies),
         ];
     }
@@ -70,18 +70,20 @@ final class AdminSiteService
      * Email a reply from the support address, keep a copy and mark the message handled. Nothing is stored if the
      * email could not be sent, so the history only shows replies that really went out.
      */
-    public static function replyToMessage(int $id, string $body, array $admin, Request $request): array
+    public static function replyToMessage(int $id, string $subject, string $body, array $admin, Request $request): array
     {
         $m = self::message($id);
+        // One line, whatever was pasted in.
+        $subject = trim((string) preg_replace('/\s+/u', ' ', $subject));
         RateLimiter::hit('message_reply', 'user:' . $admin['id'], 30, 3600);
         $sent = Mailer::send($m['email'], 'contact-reply', [
-            'name' => $m['name'], 'subject' => $m['subject'], 'reply' => $body, 'original' => $m['message'],
+            'name' => $m['name'], 'subject' => $subject, 'reply' => $body, 'original' => $m['message'],
             'receivedAt' => gmdate('j M Y', strtotime($m['createdAt'])),
         ]);
         if (!$sent) {
             throw new HttpException(502, 'MAIL_FAILED', 'The email could not be sent. Please try again in a few minutes.');
         }
-        Database::run('INSERT INTO contact_message_replies (message_id, admin_id, body) VALUES (?, ?, ?)', [$id, $admin['id'], $body]);
+        Database::run('INSERT INTO contact_message_replies (message_id, admin_id, subject, body) VALUES (?, ?, ?, ?)', [$id, $admin['id'], $subject, $body]);
         if ($m['status'] === 'new') {
             Database::run("UPDATE contact_messages SET status = 'handled', handled_by = ?, handled_at = UTC_TIMESTAMP() WHERE id = ?", [$admin['id'], $id]);
         }

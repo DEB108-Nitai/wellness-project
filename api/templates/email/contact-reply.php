@@ -1,8 +1,7 @@
 <?php
-/** @var array $vars ['name','subject','reply','original','receivedAt','siteName'] @var callable $e */
-$subject = preg_match('/^re:/i', $vars['subject']) ? $vars['subject'] : "Re: {$vars['subject']}";
+/** @var array $vars ['name','subject' (written by the admin),'reply','original','receivedAt','siteName'] @var callable $e */
 return [
-    'subject' => $subject,
+    'subject' => $vars['subject'],
     'preheader' => mb_substr(preg_replace('/\s+/', ' ', $vars['reply']), 0, 90),
     'body' => '<p style="margin:0 0 16px;">' . nl2br($e($vars['reply'])) . '</p>'
         . '<p style="margin:0 0 20px;">' . $e($vars['siteName']) . '</p>'

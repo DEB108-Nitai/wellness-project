@@ -449,6 +449,8 @@ export interface MessageRow {
 }
 export interface MessageReply {
   id: number;
+  /** Null for replies sent before the subject could be written. */
+  subject: string | null;
   body: string;
   sentAt: string;
   sentBy: string | null;
@@ -518,7 +520,7 @@ export const siteAdminApi = {
   messages: (f: MessageFilters) => api.get<Paged<MessageRow> & { counts: Record<MessageStatus, number> }>(`/admin/messages${query({ ...f, perPage: 25 })}`),
   message: (id: number) => api.get<MessageDetail>(`/admin/messages/${id}`),
   setMessageStatus: (id: number, status: MessageStatus) => api.patch<MessageDetail>(`/admin/messages/${id}`, { status }),
-  replyToMessage: (id: number, body: string) => api.post<MessageDetail>(`/admin/messages/${id}/reply`, { body }),
+  replyToMessage: (id: number, subject: string, body: string) => api.post<MessageDetail>(`/admin/messages/${id}/reply`, { subject, body }),
   messagesCsvUrl: ({ page: _p, ...f }: MessageFilters) => `/api/admin/export/messages${query(f)}`,
 
   subscribers: (f: { status?: SubscriberStatus; q?: string; page?: number }) =>

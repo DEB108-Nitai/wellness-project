@@ -3,7 +3,7 @@ import { CheckCircle2, Download, RotateCcw, Search, Send } from 'lucide-react';
 import { MessageDetail, MessageFilters, MessageRow, MessageStatus, Paged, siteAdminApi } from '../../api/admin';
 import { ApiError } from '../../api/client';
 import { useSettings } from '../../context/SettingsContext';
-import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, LoadingBlock, Modal, PageHeader, Pager, RangeChoice, RangePicker, rangeDates, TextArea, useClampPage, useDebounced } from './ui';
+import { Badge, btn, EmptyState, ErrorBox, filterControl, fmtWhen, Input, LoadingBlock, Modal, PageHeader, Pager, RangeChoice, RangePicker, rangeDates, TextArea, useClampPage, useDebounced } from './ui';
 
 /** Contact-form messages (PRD ADM-5): read, reply from the console (sent from the support address), mark handled. New ones also show on the Overview. */
 type Data = Paged<MessageRow> & { counts: Record<MessageStatus, number> };
@@ -128,15 +128,22 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
   const [m, setM] = useState<MessageDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [subject, setSubject] = useState('');
   const [reply, setReply] = useState('');
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [subjectError, setSubjectError] = useState<string | null>(null);
   const [sentNote, setSentNote] = useState(false);
 
   useEffect(() => {
     let alive = true;
     siteAdminApi
       .message(id)
-      .then((d) => alive && setM(d))
+      .then((d) => {
+        if (!alive) return;
+        setM(d);
+        // A starting subject the admin can change.
+        setSubject(/^re:/i.test(d.subject) ? d.subject : `Re: ${d.subject}`);
+      })
       .catch((e) => alive && setError(e instanceof ApiError ? e.message : 'Could not open the message.'));
     return () => {
       alive = false;
@@ -157,20 +164,20 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
   };
 
   const sendReply = async () => {
-    if (reply.trim().length < 2) {
-      setReplyError('Please write your reply first.');
-      return;
-    }
+    setSubjectError(subject.trim() ? null : 'Please write a subject.');
+    setReplyError(reply.trim().length < 2 ? 'Please write your reply first.' : null);
+    if (!subject.trim() || reply.trim().length < 2) return;
     setBusy(true);
     setReplyError(null);
     setSentNote(false);
     try {
-      setM(await siteAdminApi.replyToMessage(id, reply.trim()));
+      setM(await siteAdminApi.replyToMessage(id, subject.trim(), reply.trim()));
       setReply('');
       setSentNote(true);
       onChanged();
     } catch (e) {
-      setReplyError(e instanceof ApiError ? (e.fields.body ?? e.message) : 'Could not send the reply.');
+      if (e instanceof ApiError && e.fields.subject) setSubjectError(e.fields.subject);
+      setReplyError(e instanceof ApiError ? (e.fields.body ?? (e.fields.subject ? null : e.message)) : 'Could not send the reply.');
     } finally {
       setBusy(false);
     }
@@ -222,6 +229,7 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
                     Reply sent {fmtWhen(r.sentAt)}
                     {r.sentBy ? ` by ${r.sentBy}` : ''}
                   </p>
+                  {r.subject && <p className="mt-2 text-sm font-semibold text-slate-900 break-words">{r.subject}</p>}
                   <p className="mt-2 text-sm text-slate-800 whitespace-pre-wrap break-words">{r.body}</p>
                 </div>
               ))}
@@ -232,6 +240,7 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
               <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Reply sent to {m.email}.
             </p>
           )}
+          <Input label="Subject" maxLength={200} value={subject} onChange={(e) => setSubject(e.target.value)} error={subjectError ?? undefined} />
           <TextArea
             label={m.replies.length ? 'Write another reply' : 'Your reply'}
             rows={6}
