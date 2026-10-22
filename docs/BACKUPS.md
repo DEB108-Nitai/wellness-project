@@ -39,7 +39,12 @@ In PowerShell:
 mkdir C:\Transenigma-backups\<year-month>
 scp -r <user>@transenigma.com:~/backups/* C:\Transenigma-backups\<year-month>\
 ```
-Without the command line, use **WinSCP** or **FileZilla**: host `transenigma.com`, protocol **SFTP**, the SSH user and password. Then copy the `backups` folder to your PC.
+If you kept backups out of the rotation (§4), download those too, once (they don't change):
+```
+mkdir C:\Transenigma-backups\kept
+scp -r <user>@transenigma.com:~/kept-backups/* C:\Transenigma-backups\kept\
+```
+Without the command line, use **WinSCP** or **FileZilla**: host `transenigma.com`, protocol **SFTP**, the SSH user and password. Then copy the `backups` folder (and `kept-backups`, if it exists) to your PC.
 
 Keep these copies somewhere safe and private, such as a company drive. They contain people's personal data (emails, test results), so never share them or upload them to a public place.
 
