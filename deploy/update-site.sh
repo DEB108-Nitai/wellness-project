@@ -18,6 +18,11 @@ DB=$("$PHP" -r '$c = require $argv[1]; echo $c["db"]["name"];' "$CONF")
 sql() { mysql --defaults-extra-file="$HOME/.my.cnf" "$DB" -N -e "$1"; }
 fail() { echo; echo "FAILED at: $1"; echo "Maintenance mode is still ON, so visitors see the maintenance page. Send this output to the developer."; exit 1; }
 
+# One update at a time: two runs would share the staging folder and could switch maintenance off mid-copy.
+LOCK="$HOME/.transenigma-update.lock"
+mkdir "$LOCK" 2> /dev/null || { echo "STOP: another update is running. (If none is, a crashed run left $LOCK behind: remove it with rmdir.)"; exit 1; }
+trap 'rmdir "$LOCK"' EXIT
+
 echo "1. Backups"
 bash "$HOME/bin/backup-db.sh" || { echo "STOP: database backup failed. Nothing changed."; exit 1; }
 tar -czf "$HOME/site-before-update-$STAMP.tar.gz" -C "$HOME" --exclude='transenigma.com/uploads' transenigma.com

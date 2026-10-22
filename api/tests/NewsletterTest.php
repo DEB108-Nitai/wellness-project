@@ -146,7 +146,10 @@ test('newsletter sending: queued for subscribers only, sent in batches under the
     assertSame(newsAdmin()['email'], $mail[0]['to']);
     assertSame('[Test] October news', $mail[0]['subject']);
 
-    assertSame(80, NewsletterService::get($n['id'])['sendRate'], 'the editor shows the real hourly rate');
+    Config::override('mail.newsletter_per_hour', 37);
+    assertSame(37, NewsletterService::get($n['id'])['sendRate'], 'the editor shows the configured hourly rate');
+    Config::override('mail.newsletter_per_hour', null);
+    assertSame(80, NewsletterService::get($n['id'])['sendRate'], 'default when not configured');
     $sent = NewsletterService::send($n['id'], newsAdmin(), authReq());
     assertSame('sending', $sent['status']);
     assertSame($subscribed, $sent['recipients'], 'everyone subscribed now');
@@ -245,7 +248,10 @@ test('newsletter sending: someone who unsubscribes while a batch is running is n
 
     // The second person unsubscribes while the first email is going out.
     $sentTo = [];
-    Mailer::$transport = static function (string $to) use (&$sentTo, $second): void {
+    $recordedFirst = null;
+    Mailer::$transport = static function (string $to) use (&$sentTo, &$recordedFirst, $second, $n, $first): void {
+        // The attempt is already recorded while the email is being sent (a killed run can't resend it unnoticed).
+        $recordedFirst ??= Database::one('SELECT attempts, attempted_at FROM newsletter_deliveries WHERE newsletter_id = ? AND subscriber_id = ?', [$n['id'], $first['id']]);
         $sentTo[] = $to;
         Database::run("UPDATE newsletter_subscribers SET status = 'unsubscribed' WHERE id = ?", [$second['id']]);
     };
@@ -255,6 +261,7 @@ test('newsletter sending: someone who unsubscribes while a batch is running is n
         captureMail();
     }
     assertSame([$first['email']], $sentTo);
+    assertTrue($recordedFirst !== null && (int) $recordedFirst['attempts'] === 1 && $recordedFirst['attempted_at'] !== null, 'attempt recorded before sending');
     assertSame('skipped', Database::value('SELECT status FROM newsletter_deliveries WHERE newsletter_id = ? AND subscriber_id = ?', [$n['id'], $second['id']]));
 });
 

@@ -79,20 +79,31 @@ final class AdminSiteService
         // Saved first and emailed last: if saving fails, nothing was sent, so trying again can't send it twice.
         // If the email fails, the saves are undone. (Not a transaction: the mail log's "failed" row must stay.)
         $replyId = Database::insert('INSERT INTO contact_message_replies (message_id, admin_id, subject, body) VALUES (?, ?, ?, ?)', [$id, $admin['id'], $subject, $body]);
-        $wasNew = $m['status'] === 'new';
-        if ($wasNew) {
-            Database::run("UPDATE contact_messages SET status = 'handled', handled_by = ?, handled_at = UTC_TIMESTAMP() WHERE id = ?", [$admin['id'], $id]);
-        }
-        $sent = Mailer::send($m['email'], 'contact-reply', [
-            'name' => $m['name'], 'subject' => $subject, 'reply' => $body, 'original' => $m['message'],
-            'receivedAt' => gmdate('j M Y', strtotime($m['createdAt'])),
-        ]);
-        if (!$sent) {
-            Database::run('DELETE FROM contact_message_replies WHERE id = ?', [$replyId]);
-            if ($wasNew) {
-                Database::run("UPDATE contact_messages SET status = 'new', handled_by = NULL, handled_at = NULL WHERE id = ?", [$id]);
+        $marked = false; // whether this reply is what marked the message handled
+        try {
+            $marked = Database::run(
+                "UPDATE contact_messages SET status = 'handled', handled_by = ?, handled_at = UTC_TIMESTAMP() WHERE id = ? AND status = 'new'",
+                [$admin['id'], $id]
+            )->rowCount() === 1;
+            $sent = Mailer::send($m['email'], 'contact-reply', [
+                'name' => $m['name'], 'subject' => $subject, 'reply' => $body, 'original' => $m['message'],
+                'receivedAt' => gmdate('j M Y', strtotime($m['createdAt'])),
+            ]);
+            if (!$sent) {
+                throw new HttpException(502, 'MAIL_FAILED', 'The email could not be sent. Please try again in a few minutes.');
             }
-            throw new HttpException(502, 'MAIL_FAILED', 'The email could not be sent. Please try again in a few minutes.');
+        } catch (\Throwable $e) {
+            Database::run('DELETE FROM contact_message_replies WHERE id = ?', [$replyId]);
+            // Back to new only if this reply marked it handled and no other reply exists: another admin's reply,
+            // sent meanwhile, keeps it handled.
+            if ($marked) {
+                Database::run(
+                    "UPDATE contact_messages SET status = 'new', handled_by = NULL, handled_at = NULL
+                     WHERE id = ? AND NOT EXISTS (SELECT 1 FROM contact_message_replies WHERE message_id = ?)",
+                    [$id, $id]
+                );
+            }
+            throw $e;
         }
         AuditService::forUser($admin, 'MESSAGE_REPLIED', 'contact_message', (string) $id, [], $request);
         return self::message($id);

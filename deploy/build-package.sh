@@ -2,7 +2,8 @@
 # Builds the update package for the live site from the current commit (DEPLOY.md §8).
 # Run on a developer machine from the repository root (Git Bash on Windows):  bash deploy/build-package.sh
 # Output: build/transenigma-update.tar.gz, which deploy/update-site.sh installs on the server.
-# Only files tracked by git go in (git archive), so local secrets (config.local.php, .env*) can never be included.
+# api/ and the migrations come from git archive (tracked files only, so local secrets such as config.local.php or
+# .env* can never be included); the frontend is dist/, built fresh from the same commit. Both are checked below.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

@@ -238,9 +238,7 @@ export const NewsletterEditor: React.FC = () => {
   if (n.status !== 'draft') {
     const done = n.sent + n.failed + n.skipped;
     const pct = n.recipients ? Math.round((done / n.recipients) * 100) : 100;
-    // The sender runs every 10 minutes: what fits in one hour's allowance goes out at its next run.
-    const hoursLeft = Math.ceil(n.pending / n.sendRate);
-    const eta = n.pending <= n.sendRate ? 'within about 10 minutes' : `in about ${hoursLeft} hours`;
+    // No finish time is promised: the hourly allowance is shared with other newsletters and retries.
     return (
       <div className="space-y-6">
         {header}
@@ -260,7 +258,7 @@ export const NewsletterEditor: React.FC = () => {
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               {[
                 ['Sent', fmtWhen(n.queuedAt)],
-                ['Finished', n.finishedAt ? fmtWhen(n.finishedAt) : n.pending ? eta : '—'],
+                n.finishedAt ? ['Finished', fmtWhen(n.finishedAt)] : ['Still to send', String(n.pending)],
                 ['Failed', String(n.failed)],
                 ['Unsubscribed meanwhile', String(n.skipped)],
               ].map(([k, v]) => (
@@ -272,8 +270,8 @@ export const NewsletterEditor: React.FC = () => {
             </dl>
             {n.status === 'sending' && (
               <p className="text-xs text-slate-500">
-                Emails go out in batches of about {n.sendRate} an hour, so the mailbox stays under its sending limit and sign-up emails still get through. This page
-                updates by itself.
+                The sender runs every 10 minutes and sends at most {n.sendRate} emails an hour (shared with any other newsletter being sent), so the mailbox stays
+                under its sending limit and sign-up emails still get through. This page updates by itself.
               </p>
             )}
             {n.failed > 0 && <p className="text-xs text-slate-500">Failed addresses were tried three times; they are usually mistyped or closed mailboxes.</p>}
@@ -388,9 +386,9 @@ export const NewsletterEditor: React.FC = () => {
             <>
               <p>
                 “{subject}” goes to <strong className="text-slate-900">{n.subscribers}</strong> subscriber{n.subscribers === 1 ? '' : 's'}.
-                {n.subscribers > n.sendRate
-                  ? ` It goes out in batches of about ${n.sendRate} an hour, so everyone has it within about ${Math.ceil(n.subscribers / n.sendRate)} hours.`
-                  : ' It goes out within about 10 minutes.'}
+                {` The sender runs every 10 minutes and sends at most ${n.sendRate} emails an hour`}
+                {/* The first batch goes out at once, so the rest needs one more hour per full batch. */}
+                {n.subscribers > n.sendRate ? `, so this takes more than ${Math.ceil(n.subscribers / n.sendRate) - 1} hour${Math.ceil(n.subscribers / n.sendRate) - 1 === 1 ? '' : 's'}.` : '.'}
               </p>
               <p>Once sent, it can't be stopped or changed. Sent yourself a test first?</p>
             </>

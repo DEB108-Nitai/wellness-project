@@ -25,12 +25,16 @@ echo "2. Writing ~/bin/backup-db.sh"
 mkdir -p "$HOME/bin"
 cat > "$HOME/bin/backup-db.sh" <<EOF
 #!/bin/bash
-# Daily MySQL backup for Transenigma: fail on any error, verify, then rotate (14 days).
+# MySQL + uploads backup for Transenigma (nightly cron, and before every update): fail on any error, verify,
+# then rotate (14 days). Each run gets its own file (date and time), so an update's backup never replaces that
+# night's one, and two runs at once never write the same temporary file.
 set -euo pipefail
 umask 077
 mkdir -p "\$HOME/backups" && chmod 700 "\$HOME/backups"
-out="\$HOME/backups/transenigma-\$(date +%F).sql.gz"
-tmp="\$out.tmp"
+stamp=\$(date +%F-%H%M%S)
+out="\$HOME/backups/transenigma-\$stamp.sql.gz"
+tmp="\$out.tmp.\$\$"
+find "\$HOME/backups" -name '*.tmp.*' -mtime +1 -delete   # left behind by a run that failed
 mysqldump --defaults-extra-file="\$HOME/.my.cnf" --single-transaction --no-tablespaces $DB | gzip > "\$tmp"
 gzip -t "\$tmp"
 zcat "\$tmp" | tail -n 1 | grep -q "Dump completed"
@@ -38,10 +42,10 @@ mv "\$tmp" "\$out"
 find "\$HOME/backups" -name 'transenigma-*.sql.gz' -mtime +14 -delete
 # Admin-uploaded images are live content too (the database points at them).
 if [ -d "\$HOME/transenigma.com/uploads" ]; then
-  up="\$HOME/backups/transenigma-uploads-\$(date +%F).tar.gz"
-  tar -czf "\$up.tmp" -C "\$HOME/transenigma.com" uploads
-  tar -tzf "\$up.tmp" > /dev/null
-  mv "\$up.tmp" "\$up"
+  up="\$HOME/backups/transenigma-uploads-\$stamp.tar.gz"
+  tar -czf "\$up.tmp.\$\$" -C "\$HOME/transenigma.com" uploads
+  tar -tzf "\$up.tmp.\$\$" > /dev/null
+  mv "\$up.tmp.\$\$" "\$up"
   find "\$HOME/backups" -name 'transenigma-uploads-*.tar.gz' -mtime +14 -delete
 fi
 EOF
@@ -50,7 +54,7 @@ chmod 700 "$HOME/bin/backup-db.sh"
 echo "3. Running the backup once"
 bash "$HOME/bin/backup-db.sh"
 ls -lh "$HOME/backups"
-echo "   tables in the backup: $(zcat "$HOME/backups/transenigma-$(date +%F).sql.gz" | grep -c '^CREATE TABLE')"
+echo "   tables in the backup: $(zcat "$(ls -t "$HOME"/backups/transenigma-*.sql.gz | head -1)" | grep -c '^CREATE TABLE')"
 ls -l "$HOME/.my.cnf"
 echo
 echo "DONE. Backups work."

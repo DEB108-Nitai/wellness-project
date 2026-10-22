@@ -212,13 +212,13 @@ final class NewsletterService
                 }
                 $nid = (int) $d['newsletter_id'];
                 $contents[$nid] ??= self::content(self::row($nid), false);
-                $ok = self::deliver($d['email'], $d['unsubscribe_token'], $contents[$nid]);
+                // The attempt is recorded before sending: if the run is killed mid-send, the email still counts
+                // against the hourly limit and is not tried again within the hour.
                 $attempts = (int) $d['attempts'] + 1;
+                Database::run('UPDATE newsletter_deliveries SET attempts = ?, attempted_at = UTC_TIMESTAMP() WHERE id = ?', [$attempts, $d['id']]);
+                $ok = self::deliver($d['email'], $d['unsubscribe_token'], $contents[$nid]);
                 $status = $ok ? 'sent' : ($attempts >= self::MAX_ATTEMPTS ? 'failed' : 'pending');
-                Database::run(
-                    'UPDATE newsletter_deliveries SET status = ?, attempts = ?, attempted_at = UTC_TIMESTAMP() WHERE id = ?',
-                    [$status, $attempts, $d['id']]
-                );
+                Database::run('UPDATE newsletter_deliveries SET status = ? WHERE id = ?', [$status, $d['id']]);
                 $result[$ok ? 'sent' : 'failed'] += 1;
             }
             $result['finished'] = Database::run(

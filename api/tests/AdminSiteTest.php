@@ -108,6 +108,25 @@ test('messages: a reply is emailed to the sender with the subject the admin wrot
     $row = Database::one('SELECT status, handled_by FROM contact_messages WHERE id = ?', [$fresh]);
     assertSame(['new', null], [$row['status'], $row['handled_by']]);
     assertSame(0, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$fresh]));
+
+    // Another admin's reply goes out while this one fails: the message stays handled.
+    $other = UserRepository::find(UserRepository::create('Other Admin', uniqueEmail(), null, null, true, 'admin'));
+    \Transenigma\Services\Mailer::$transport = static function () use ($fresh, $other): void {
+        Database::run('INSERT INTO contact_message_replies (message_id, admin_id, subject, body) VALUES (?, ?, ?, ?)', [$fresh, $other['id'], 'Re: Fees', 'It is free.']);
+        throw new RuntimeException('SMTP down');
+    };
+    assertThrows(HttpException::class, fn () => AdminSiteService::replyToMessage($fresh, 'Re: Fees', 'Yes, it is free.', siteAdmin(), authReq()));
+    assertSame('handled', Database::value('SELECT status FROM contact_messages WHERE id = ?', [$fresh]));
+    assertSame(1, (int) Database::value('SELECT COUNT(*) FROM contact_message_replies WHERE message_id = ?', [$fresh]), 'only the other admin\'s reply');
+
+    // A message marked handled by hand stays handled when a reply to it fails.
+    Database::run('DELETE FROM contact_message_replies WHERE message_id = ?', [$fresh]);
+    AdminSiteService::setMessageStatus($fresh, 'handled', siteAdmin(), authReq());
+    \Transenigma\Services\Mailer::$transport = static function (): void {
+        throw new RuntimeException('SMTP down');
+    };
+    assertThrows(HttpException::class, fn () => AdminSiteService::replyToMessage($fresh, 'Re: Fees', 'Yes.', siteAdmin(), authReq()));
+    assertSame('handled', Database::value('SELECT status FROM contact_messages WHERE id = ?', [$fresh]));
     Database::run('DELETE FROM contact_messages WHERE id = ?', [$fresh]);
     captureMail();
 
