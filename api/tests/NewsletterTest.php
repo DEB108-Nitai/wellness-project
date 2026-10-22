@@ -70,6 +70,11 @@ test('newsletter drafts: saved half-written, checked fully before a test or a se
     ]], newsAdmin(), authReq()));
     assertSame(422, $e->status);
     assertSame(['blocks.0', 'blocks.1', 'blocks.2'], array_keys($e->fields));
+    // Links must be https, as the message says.
+    $e = assertThrows(HttpException::class, fn () => NewsletterService::update($n['id'], ['blocks' => [
+        ['type' => 'button', 'label' => 'Go', 'url' => 'http://transenigma.com/'],
+    ]], newsAdmin(), authReq()));
+    assertSame(['blocks.0'], array_keys($e->fields));
 
     // Testing needs everything filled in.
     $e = assertThrows(HttpException::class, fn () => NewsletterService::sendTest($n['id'], newsAdmin(), authReq()));
@@ -84,7 +89,7 @@ test('newsletter content: everything typed is escaped; only bold, italic and htt
     useTestDatabase();
     $html = NewsletterService::preview(['subject' => 'Hello', 'preheader' => 'Inside: dates', 'blocks' => [
         ['type' => 'heading', 'text' => 'News <b>now</b>'],
-        ['type' => 'paragraph', 'text' => "**Big** and *small* <script>alert(1)</script>\n[our site](https://transenigma.com/test?a=1&b=2) [bad](javascript:alert(1))"],
+        ['type' => 'paragraph', 'text' => "**Big** and *small* <script>alert(1)</script>\n[our site](https://transenigma.com/test?a=1&b=2) [bad](javascript:alert(1)) [plain](http://example.com/)"],
         ['type' => 'button', 'label' => 'Take the test', 'url' => 'https://transenigma.com/test'],
         ['type' => 'divider'],
     ]]);
@@ -93,6 +98,7 @@ test('newsletter content: everything typed is escaped; only bold, italic and htt
     assertTrue(!str_contains($html, '<script>') && str_contains($html, '&lt;script&gt;'), 'no script');
     assertTrue(str_contains($html, '<a href="https://transenigma.com/test?a=1&amp;b=2"'), 'https link');
     assertTrue(!str_contains($html, 'href="javascript'), 'javascript: is never a link');
+    assertTrue(!str_contains($html, 'href="http://example.com/"'), 'only https becomes a link');
     assertTrue(str_contains($html, '>Take the test</a>') && str_contains($html, '<hr'), 'button and divider');
     assertTrue(str_contains($html, 'Inside: dates'), 'preview text');
     assertTrue(!str_contains($html, 'cid:'), 'icon inlined for the preview');
@@ -218,6 +224,31 @@ test('newsletter sending: a failing address is retried, then marked failed, and 
     assertSame(['sent', 1], [$done['status'], $done['failed']]);
 });
 
+test('newsletter sending: someone who unsubscribes while a batch is running is not emailed', function () {
+    useTestDatabase();
+    Database::run("UPDATE newsletters SET status = 'sent' WHERE status = 'sending'");
+    Database::run("UPDATE newsletter_subscribers SET status = 'unsubscribed' WHERE status = 'subscribed'");
+    $first = newsSubscriber();
+    $second = newsSubscriber();
+    $n = NewsletterService::create(newsAdmin(), authReq());
+    NewsletterService::update($n['id'], ['subject' => 'Mid-batch', 'blocks' => [['type' => 'paragraph', 'text' => 'Hello']]], newsAdmin(), authReq());
+    NewsletterService::send($n['id'], newsAdmin(), authReq());
+
+    // The second person unsubscribes while the first email is going out.
+    $sentTo = [];
+    Mailer::$transport = static function (string $to) use (&$sentTo, $second): void {
+        $sentTo[] = $to;
+        Database::run("UPDATE newsletter_subscribers SET status = 'unsubscribed' WHERE id = ?", [$second['id']]);
+    };
+    try {
+        NewsletterService::processQueue();
+    } finally {
+        captureMail();
+    }
+    assertSame([$first['email']], $sentTo);
+    assertSame('skipped', Database::value('SELECT status FROM newsletter_deliveries WHERE newsletter_id = ? AND subscriber_id = ?', [$n['id'], $second['id']]));
+});
+
 test('one-click unsubscribe works without a CSRF token or cookies, also during maintenance', function () {
     useTestDatabase();
     $s = newsSubscriber();
@@ -225,9 +256,11 @@ test('one-click unsubscribe works without a CSRF token or cookies, also during m
     (require dirname(__DIR__) . '/routes.php')($router);
     $kernel = new Kernel($router);
     $kernel->setUserResolver(static fn (): ?array => null);
+    // Gmail posts every one-click unsubscribe from the same few servers: one IP for all of them here.
+    $ip = '10.9.' . random_int(0, 255) . '.1';
     $post = static fn (string $token): int => $kernel->handle(new Request(
         'POST', '/newsletter/one-click', ['token' => $token],
-        ['REMOTE_ADDR' => '10.9.' . random_int(0, 255) . '.1', 'HTTP_ORIGIN' => 'https://mail.google.com', 'CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
+        ['REMOTE_ADDR' => $ip, 'HTTP_ORIGIN' => 'https://mail.google.com', 'CONTENT_TYPE' => 'application/x-www-form-urlencoded'],
         'List-Unsubscribe=One-Click'
     ))->status;
 
@@ -241,4 +274,23 @@ test('one-click unsubscribe works without a CSRF token or cookies, also during m
     assertSame(200, $post($s['token']), 'pressing it twice is fine');
     assertSame(404, $post(str_repeat('0', 32)));
     assertSame(404, $post('not-a-token'));
+
+    // After a newsletter, many readers of one provider unsubscribe within the hour: none is refused.
+    for ($i = 0; $i < 70; $i++) {
+        assertSame(200, $post(newsSubscriber()['token']), "unsubscribe $i from the shared IP");
+    }
+});
+
+test('one-click unsubscribe: repeats of one token are limited', function () {
+    useTestDatabase();
+    $s = newsSubscriber();
+    $router = new Router();
+    (require dirname(__DIR__) . '/routes.php')($router);
+    $kernel = new Kernel($router);
+    $kernel->setUserResolver(static fn (): ?array => null);
+    $codes = [];
+    for ($i = 0; $i < 11; $i++) {
+        $codes[] = $kernel->handle(new Request('POST', '/newsletter/one-click', ['token' => $s['token']], ['REMOTE_ADDR' => "10.8.0.$i"], ''))->status;
+    }
+    assertSame(array_merge(array_fill(0, 10, 200), [429]), $codes);
 });

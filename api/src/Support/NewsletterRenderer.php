@@ -63,7 +63,7 @@ final class NewsletterRenderer
     {
         $s = self::e($text);
         $s = (string) preg_replace_callback(
-            '/\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]{1,500})\)/',
+            '/\[([^\]\n]{1,200})\]\((https:\/\/[^\s)]{1,500})\)/',
             static fn (array $m): string => '<a href="' . $m[2] . '" style="color:' . self::TEAL . ';text-decoration:underline;">' . $m[1] . '</a>',
             $s
         );
@@ -75,7 +75,7 @@ final class NewsletterRenderer
     /** The same text for the plain-text part: links as "text (url)", no asterisks. */
     private static function plain(string $text): string
     {
-        $s = (string) preg_replace('/\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]{1,500})\)/', '$1 ($2)', $text);
+        $s = (string) preg_replace('/\[([^\]\n]{1,200})\]\((https:\/\/[^\s)]{1,500})\)/', '$1 ($2)', $text);
         $s = (string) preg_replace('/\*\*(?=\S)(.+?)(?<=\S)\*\*/u', '$1', $s);
         return (string) preg_replace('/(?<![*\w])\*(?=\S)(.+?)(?<=\S)\*(?![*\w])/u', '$1', $s);
     }

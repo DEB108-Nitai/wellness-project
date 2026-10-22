@@ -240,13 +240,25 @@ const MessageDialog: React.FC<{ id: number; onClose: () => void; onChanged: () =
               <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Reply sent to {m.email}.
             </p>
           )}
-          <Input label="Subject" maxLength={200} value={subject} onChange={(e) => setSubject(e.target.value)} error={subjectError ?? undefined} />
+          <Input
+            label="Subject"
+            maxLength={200}
+            value={subject}
+            onChange={(e) => {
+              setSubject(e.target.value);
+              setSubjectError(null);
+            }}
+            error={subjectError ?? undefined}
+          />
           <TextArea
             label={m.replies.length ? 'Write another reply' : 'Your reply'}
             rows={6}
             maxLength={5000}
             value={reply}
-            onChange={(e) => setReply(e.target.value)}
+            onChange={(e) => {
+              setReply(e.target.value);
+              setReplyError(null);
+            }}
             error={replyError ?? undefined}
             hint={`Sent to ${m.email} from ${settings.support_email || 'the support address'}, with their message quoted below it. Their answer comes back to that inbox. Sending marks the message handled.`}
           />

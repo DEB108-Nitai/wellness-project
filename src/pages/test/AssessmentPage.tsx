@@ -158,7 +158,8 @@ export const AssessmentPage: React.FC = () => {
     const idx = historyIdx();
     let base = NaN;
     try {
-      base = Number(sessionStorage.getItem(TEST_BASE_KEY));
+      const stored = sessionStorage.getItem(TEST_BASE_KEY);
+      if (stored !== null) base = Number(stored); // Number(null) would be 0: the tab's first page, not one step back
     } catch {
       // storage blocked
     }

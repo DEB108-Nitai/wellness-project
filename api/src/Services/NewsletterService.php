@@ -81,10 +81,13 @@ final class NewsletterService
     {
         self::draft($id);
         $c = self::content($input, false);
-        Database::run(
-            'UPDATE newsletters SET subject = ?, preheader = ?, cover_image = ?, blocks = ? WHERE id = ?',
-            [$c['subject'], $c['preheader'], $c['coverImage'], json_encode($c['blocks'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $id]
-        );
+        Database::transaction(static function () use ($id, $c): void {
+            self::lockDraft($id); // another admin may have pressed Send meanwhile
+            Database::run(
+                'UPDATE newsletters SET subject = ?, preheader = ?, cover_image = ?, blocks = ? WHERE id = ?',
+                [$c['subject'], $c['preheader'], $c['coverImage'], json_encode($c['blocks'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), $id]
+            );
+        });
         AuditService::forUser($admin, 'NEWSLETTER_SAVED', 'newsletter', (string) $id, [], $request);
         return self::get($id);
     }
@@ -92,7 +95,10 @@ final class NewsletterService
     public static function delete(int $id, array $admin, Request $request): void
     {
         $n = self::draft($id);
-        Database::run('DELETE FROM newsletters WHERE id = ?', [$id]);
+        Database::transaction(static function () use ($id): void {
+            self::lockDraft($id); // never delete one that started sending meanwhile (its queue would go with it)
+            Database::run('DELETE FROM newsletters WHERE id = ?', [$id]);
+        });
         AuditService::forUser($admin, 'NEWSLETTER_DELETED', 'newsletter', (string) $id, ['subject' => $n['subject']], $request);
     }
 
@@ -143,11 +149,7 @@ final class NewsletterService
             throw new HttpException(409, 'NO_SUBSCRIBERS', 'Nobody is subscribed yet, so there is no one to send this to.');
         }
         Database::transaction(static function () use ($id, $admin): void {
-            // Locks the row: two admins pressing Send at once queue it only once.
-            $status = Database::value('SELECT status FROM newsletters WHERE id = ? FOR UPDATE', [$id]);
-            if ($status !== 'draft') {
-                throw new HttpException(409, 'ALREADY_SENT', 'This newsletter has already been sent.');
-            }
+            self::lockDraft($id); // two admins pressing Send at once queue it only once
             $queued = Database::run(
                 "INSERT INTO newsletter_deliveries (newsletter_id, subscriber_id)
                  SELECT ?, id FROM newsletter_subscribers WHERE status = 'subscribed' ORDER BY id",
@@ -186,7 +188,7 @@ final class NewsletterService
             $recent = (int) Database::value('SELECT COUNT(*) FROM newsletter_deliveries WHERE attempted_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR');
             $result['budget'] = $budget = max(0, $perHour - $recent);
             $rows = $budget === 0 ? [] : Database::all(
-                "SELECT d.id, d.newsletter_id, d.attempts, s.email, s.unsubscribe_token
+                "SELECT d.id, d.newsletter_id, d.subscriber_id, d.attempts, s.email, s.unsubscribe_token
                  FROM newsletter_deliveries d
                  JOIN newsletters n ON n.id = d.newsletter_id AND n.status = 'sending'
                  JOIN newsletter_subscribers s ON s.id = d.subscriber_id
@@ -194,6 +196,12 @@ final class NewsletterService
             );
             $contents = [];
             foreach ($rows as $d) {
+                // A batch takes a while: someone may unsubscribe while it runs. Checked again right before sending.
+                if (Database::value('SELECT status FROM newsletter_subscribers WHERE id = ?', [$d['subscriber_id']]) !== 'subscribed') {
+                    Database::run("UPDATE newsletter_deliveries SET status = 'skipped' WHERE id = ?", [$d['id']]);
+                    $result['skipped']++;
+                    continue;
+                }
                 $nid = (int) $d['newsletter_id'];
                 $contents[$nid] ??= self::content(self::row($nid), false);
                 $ok = self::deliver($d['email'], $d['unsubscribe_token'], $contents[$nid]);
@@ -370,7 +378,7 @@ final class NewsletterService
 
     private static function validUrl(string $url): bool
     {
-        return mb_strlen($url) <= 500 && preg_match('#^https?://[^\s<>"]+$#i', $url) === 1 && filter_var($url, FILTER_VALIDATE_URL) !== false;
+        return mb_strlen($url) <= 500 && preg_match('#^https://[^\s<>"]+$#i', $url) === 1 && filter_var($url, FILTER_VALIDATE_URL) !== false;
     }
 
     private static function row(int $id): array
@@ -385,6 +393,14 @@ final class NewsletterService
             throw new HttpException(409, 'ALREADY_SENT', 'This newsletter has already been sent and can no longer be changed. Make a copy to send it again.');
         }
         return $n;
+    }
+
+    /** Inside a transaction: lock the row until commit, and refuse unless it is still a draft. */
+    private static function lockDraft(int $id): void
+    {
+        if (Database::value('SELECT status FROM newsletters WHERE id = ? FOR UPDATE', [$id]) !== 'draft') {
+            throw new HttpException(409, 'ALREADY_SENT', 'This newsletter has already been sent and can no longer be changed. Make a copy to send it again.');
+        }
     }
 
     private static function subscriberCount(): int

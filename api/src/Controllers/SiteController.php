@@ -56,7 +56,9 @@ final class SiteController
         if (!preg_match('/^[a-f0-9]{32}$/', $token)) {
             throw HttpException::notFound('This unsubscribe link is not valid.');
         }
-        RateLimiter::hit('one_click_unsubscribe', $request->ip(), 60, 3600);
+        // Limited per token, not per IP: Gmail and Yahoo post these from a few shared servers, so an IP limit would
+        // refuse real unsubscribes after a newsletter goes out. The 128-bit token can't be guessed anyway.
+        RateLimiter::hit('one_click_unsubscribe', 'token:' . $token, 10, 3600);
         SiteService::unsubscribe($token);
         return Response::ok(['message' => 'You have been unsubscribed.']);
     }
