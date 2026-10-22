@@ -238,7 +238,9 @@ export const NewsletterEditor: React.FC = () => {
   if (n.status !== 'draft') {
     const done = n.sent + n.failed + n.skipped;
     const pct = n.recipients ? Math.round((done / n.recipients) * 100) : 100;
+    // The sender runs every 10 minutes: what fits in one hour's allowance goes out at its next run.
     const hoursLeft = Math.ceil(n.pending / n.sendRate);
+    const eta = n.pending <= n.sendRate ? 'within about 10 minutes' : `in about ${hoursLeft} hours`;
     return (
       <div className="space-y-6">
         {header}
@@ -258,7 +260,7 @@ export const NewsletterEditor: React.FC = () => {
             <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
               {[
                 ['Sent', fmtWhen(n.queuedAt)],
-                ['Finished', n.finishedAt ? fmtWhen(n.finishedAt) : n.pending ? `in about ${hoursLeft} hour${hoursLeft === 1 ? '' : 's'}` : '—'],
+                ['Finished', n.finishedAt ? fmtWhen(n.finishedAt) : n.pending ? eta : '—'],
                 ['Failed', String(n.failed)],
                 ['Unsubscribed meanwhile', String(n.skipped)],
               ].map(([k, v]) => (
@@ -386,8 +388,9 @@ export const NewsletterEditor: React.FC = () => {
             <>
               <p>
                 “{subject}” goes to <strong className="text-slate-900">{n.subscribers}</strong> subscriber{n.subscribers === 1 ? '' : 's'}.
-                {n.subscribers > n.sendRate &&
-                  ` It goes out in batches of about ${n.sendRate} an hour, so everyone has it within about ${Math.ceil(n.subscribers / n.sendRate)} hours.`}
+                {n.subscribers > n.sendRate
+                  ? ` It goes out in batches of about ${n.sendRate} an hour, so everyone has it within about ${Math.ceil(n.subscribers / n.sendRate)} hours.`
+                  : ' It goes out within about 10 minutes.'}
               </p>
               <p>Once sent, it can't be stopped or changed. Sent yourself a test first?</p>
             </>
