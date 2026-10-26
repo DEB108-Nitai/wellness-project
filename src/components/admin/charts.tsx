@@ -139,7 +139,8 @@ export function StackedColumns<K extends string>({
       {series.length > 1 && <Legend items={series.map((s) => ({ label: s.label, color: s.color }))} />}
       {/* Long ranges below ~560px scroll inside their card instead of squeezing the bars; the tooltip scrolls with them. */}
       <div className="overflow-x-auto -mx-1 px-1">
-      <div ref={boxRef} className={`relative ${long ? 'min-w-[560px]' : ''}`}>
+      {/* At least 4px a day (a 2px bar + 2px gap), so a 400-day range scrolls instead of overlapping its bars. */}
+      <div ref={boxRef} className="relative" style={long ? { minWidth: Math.max(560, pad.l + pad.r + data.length * 4) } : undefined}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="group" aria-labelledby={titleId}>
         <title id={titleId}>{`Columns per day from ${data[0]?.day ?? ''} to ${data[data.length - 1]?.day ?? ''}; open the table for exact values.`}</title>
         {ticks.map((t) => (
