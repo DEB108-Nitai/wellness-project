@@ -63,7 +63,7 @@ export const AdminOverview: React.FC = () => {
         <StatTile label="Registrations awaiting review" value={awaiting} hint="Status “registered”" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <Panel title="Visitors, last 7 days" actions={<SectionLink to="/admin/visitors">Visitors</SectionLink>}>
           <StackedColumns data={d.visitors.byDay} series={[{ key: 'visitors', label: 'Visitors', color: SINGLE }]} xLabel={shortDay} />
         </Panel>
@@ -102,7 +102,7 @@ export const AdminOverview: React.FC = () => {
         </Panel>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Panel title="60-Day registrations" actions={<SectionLink to="/admin/registrations">All</SectionLink>}>
           <BarList items={ORDER.map((c) => ({ label: PROGRAMS[c].short, count: regTotal(c), color: SERIES_COLORS[c] }))} empty="No registrations yet." />
         </Panel>

@@ -76,6 +76,19 @@ try {
   if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px');
   step('phone width: no sideways scroll');
 
+  // Overview: its 7-day chart sits in a grid row, which once stretched the whole page past a phone's width.
+  for (const w of [360, 390, 768, 1440]) {
+    await page.viewport(w, w < 1024 ? 844 : 1000, w < 1024);
+    await page.goto(`${BASE}/admin`);
+    await page.waitText('Visitors, last 7 days');
+    await pause(300);
+    await page.screenshot(`${OUT}admin-13-overview-${w}.png`, true);
+    if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error(`overview: horizontal scroll at ${w} px`);
+    const fits = await page.eval(`(() => { const s = document.querySelector('svg[role=group]'); const box = s.closest('.overflow-x-auto'); return box.scrollWidth <= box.clientWidth + 1; })()`);
+    if (!fits) throw new Error(`overview: the 7-day chart scrolls sideways at ${w} px`);
+  }
+  step('overview at 360/390/768/1440 px: no sideways scroll, the 7-day chart fits its card');
+
   console.log(`\nRESULT: PASS (${email})`);
 } catch (err) {
   console.error(`\nRESULT: FAIL — ${err.message}`);
