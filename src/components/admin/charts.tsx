@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import React, { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Table2 } from 'lucide-react';
 
 /**
@@ -106,7 +106,20 @@ export function StackedColumns<K extends string>({
 }) {
   const [active, setActive] = useState<number | null>(null);
   const titleId = useId();
-  const W = 640;
+  // Drawn at the card's real width (1 unit = 1px), so labels stay 10px on a phone instead of shrinking.
+  const boxRef = useRef<HTMLDivElement>(null);
+  const [W, setW] = useState(640);
+  const long = data.length > 31; // e.g. 90 days: keep the bars readable and scroll inside the card instead
+  const empty = data.every((d) => series.every((s) => !(d[s.key] ?? 0)));
+  useLayoutEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    const measure = () => setW(Math.max(240, Math.round(el.getBoundingClientRect().width)));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [empty]);
   const H = 200;
   const pad = { l: 28, r: 4, t: 8, b: 22 };
   const totals = data.map((d) => series.reduce((n, s) => n + (d[s.key] ?? 0), 0));
@@ -117,16 +130,17 @@ export function StackedColumns<K extends string>({
   const ticks = [...new Set([0, max / 2, max].map((t) => Math.round(t)))]; // no repeated tick when max is 1
   const labelEvery = Math.ceil(data.length / 6);
 
-  if (totals.every((t) => t === 0)) {
+  if (empty) {
     return <p className="py-12 text-center text-xs text-slate-400">Nothing recorded for these days yet.</p>;
   }
 
   return (
     <div onMouseLeave={() => setActive(null)}>
       {series.length > 1 && <Legend items={series.map((s) => ({ label: s.label, color: s.color }))} />}
-      {/* Below ~560px the chart scrolls inside its card instead of shrinking its labels; the tooltip scrolls with it. */}
+      {/* Long ranges below ~560px scroll inside their card instead of squeezing the bars; the tooltip scrolls with them. */}
       <div className="overflow-x-auto -mx-1 px-1">
-      <div className="relative min-w-[560px]">
+      {/* At least 4px a day (a 2px bar + 2px gap), so a 400-day range scrolls instead of overlapping its bars. */}
+      <div ref={boxRef} className="relative" style={long ? { minWidth: Math.max(560, pad.l + pad.r + data.length * 4) } : undefined}>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="group" aria-labelledby={titleId}>
         <title id={titleId}>{`Columns per day from ${data[0]?.day ?? ''} to ${data[data.length - 1]?.day ?? ''}; open the table for exact values.`}</title>
         {ticks.map((t) => (
