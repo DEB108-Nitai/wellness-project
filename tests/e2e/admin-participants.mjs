@@ -62,7 +62,7 @@ try {
   await page.waitText('16 personality factors');
   await pause(300);
   await page.screenshot(`${OUT}admin-10-participant-mobile.png`, true);
-  if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px');
+  if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error('horizontal scroll at 390 px');
   step('phone width: no sideways scroll');
 
   console.log(`\nRESULT: PASS (${email})`);

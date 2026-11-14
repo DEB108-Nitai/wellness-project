@@ -35,7 +35,7 @@ try {
     }
     const perRow = await page.eval(`(() => { const t = [...document.querySelectorAll('section[aria-label="Team members"] > ul > li')].map(li => Math.round(li.getBoundingClientRect().top)); return t.filter(x => x === t[0]).length; })()`);
     check(perRow === cols, `${w}px shows ${cols} per row (got ${perRow})`);
-    check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
+    check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), `${w}px has no horizontal page scroll`);
     await page.screenshot(`${SHOTS}team-${w}.png`);
     if (w === 1440) {
       await page.eval(`window.scrollTo(0, 650)`);

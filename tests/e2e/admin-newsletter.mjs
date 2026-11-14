@@ -167,13 +167,13 @@ try {
   for (const path of ['/admin/newsletter?tab=subscribers', `/admin/newsletter/${id}`, '/admin/newsletter']) {
     await page.goto(`${BASE}${path}`);
     await pause(900);
-    if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error(`horizontal scroll at 390 px on ${path}`);
+    if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error(`horizontal scroll at 390 px on ${path}`);
   }
   await page.clickText('New newsletter', 'button');
   await page.waitText('Email details');
   await page.clickText('Paragraph', 'button');
   await pause(500);
-  if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px in the editor');
+  if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error('horizontal scroll at 390 px in the editor');
   await page.screenshot(`${OUT}news-08-editor-phone.png`);
   step('audited; no sideways scroll at 390 px');
 

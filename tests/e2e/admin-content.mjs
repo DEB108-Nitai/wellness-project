@@ -119,7 +119,7 @@ try {
   await page.goto(`${BASE}/admin/consultancy`);
   await page.waitText(PROJECT);
   await page.screenshot(`${OUT}admin-05-consultancy-mobile.png`);
-  const overflow = await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`);
+  const overflow = await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`);
   if (overflow) throw new Error('horizontal scroll at 390 px');
   await page.viewport(1440, 900);
 

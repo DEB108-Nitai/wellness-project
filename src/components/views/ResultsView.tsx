@@ -4,6 +4,7 @@ import { AlertTriangle, Award, Check, Copy, Info, Link2, Loader2, Printer, Rotat
 import { ApiError } from '../../api/client';
 import { ResultReport, resultsApi, shareUrl } from '../../api/assessment';
 import { BipolarBar } from '../common/BipolarBar';
+import { useSettings } from '../../context/SettingsContext';
 
 interface ResultsViewProps {
   report: ResultReport;
@@ -22,6 +23,7 @@ const regionName = (code?: string) => {
 
 /** The 16-factor report (PRD RES-2). */
 export const ResultsView: React.FC<ResultsViewProps> = ({ report, mode }) => {
+  const supportEmail = useSettings().settings.support_email;
   const [filter, setFilter] = useState<'all' | 'high' | 'low' | 'average'>('all');
   const [shareToken, setShareToken] = useState<string | null>(report.shareToken ?? null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -285,6 +287,11 @@ export const ResultsView: React.FC<ResultsViewProps> = ({ report, mode }) => {
           medical or psychiatric diagnosis.
         </p>
       </div>
+
+      {/* Printed reports leave out the site header and footer, so they end with who issued them. */}
+      <p className="hidden print:block text-center text-xs text-slate-600 pt-2">
+        Transenigma Pvt Ltd · transenigma.com{supportEmail && ` · ${supportEmail}`}
+      </p>
     </div>
   );
 };

@@ -107,7 +107,7 @@ try {
   for (const [w, h] of [[768, 1024], [390, 844], [360, 780]]) {
     await page.viewport(w, h, true);
     await open('/research');
-    check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
+    check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), `${w}px has no horizontal page scroll`);
     check(await page.eval(`getComputedStyle(document.querySelector('nav[aria-label="Research fields"]')).display !== 'none'`), `${w}px shows the field chips`);
     await page.screenshot(`${SHOTS}research-${w}.png`);
   }

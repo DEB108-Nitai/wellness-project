@@ -73,7 +73,7 @@ try {
   await page.waitText('Visitors per day');
   await pause(300);
   await page.screenshot(`${OUT}admin-12-visitors-mobile.png`, true);
-  if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px');
+  if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error('horizontal scroll at 390 px');
   step('phone width: no sideways scroll');
 
   // Overview: its 7-day chart sits in a grid row, which once stretched the whole page past a phone's width.
@@ -83,7 +83,7 @@ try {
     await page.waitText('Visitors, last 7 days');
     await pause(300);
     await page.screenshot(`${OUT}admin-13-overview-${w}.png`, true);
-    if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error(`overview: horizontal scroll at ${w} px`);
+    if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error(`overview: horizontal scroll at ${w} px`);
     const fits = await page.eval(`(() => { const s = document.querySelector('svg[role=group]'); const box = s.closest('.overflow-x-auto'); return box.scrollWidth <= box.clientWidth + 1; })()`);
     if (!fits) throw new Error(`overview: the 7-day chart scrolls sideways at ${w} px`);
   }

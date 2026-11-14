@@ -19,7 +19,21 @@
 }
 
 /* Custom styles for printing results */
+/* Older phone browsers (Chrome before 104, Safari before 14.1) ignore the CSS `translate` property that Tailwind 4
+   uses for translate-x/y-*. Centred search icons and sten markers then sat half their own size too low.
+   Same offsets through `transform`, only where `translate` is missing. */
+@supports not (translate: 0) {
+  [class*='translate-'] {
+    transform: translate(var(--tw-translate-x, 0), var(--tw-translate-y, 0));
+  }
+}
+
 @media print {
+  /* Keep the report's colours (sten circles, band badges, dark panels). Browsers drop backgrounds by default. */
+  html {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .no-print {
     display: none !important;
   }

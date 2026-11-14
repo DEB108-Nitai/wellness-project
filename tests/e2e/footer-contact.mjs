@@ -83,7 +83,7 @@ try {
     await page.goto(`${BASE}/contact`);
     await page.waitText('Transformation Digest');
     await toBottom();
-    check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
+    check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), `${w}px has no horizontal page scroll`);
     await page.eval(`${F}.scrollIntoView({ block: 'end' })`);
     await sleep(300);
     await page.screenshot(`${SHOTS}footer-${w}.png`);
