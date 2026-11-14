@@ -60,7 +60,7 @@ try {
       await page.waitFor(`document.querySelector('main, h1') && !document.querySelector('[role=status][aria-label=Loading]')`, 20000)
         .catch(() => { throw new Error(`${path} @${width} never finished loading`); });
       await sleep(700); // lazy page chunk, fonts, entry animations
-      const overflow = await page.eval('document.documentElement.scrollWidth - window.innerWidth');
+      const overflow = await page.eval('document.documentElement.scrollWidth - document.documentElement.clientWidth');
       const small = width < 1024 ? await page.eval(SMALL_TARGETS) : [];
       let violations = [];
       if (width === 390 || width === 1440) {

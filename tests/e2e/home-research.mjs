@@ -53,7 +53,7 @@ try {
   await sleep(300); const f1 = await page.eval(offset); await sleep(1000); const f2 = await page.eval(offset);
   check(Math.abs(f2 - f1) < 0.5, 'row pauses while a card has keyboard focus');
   await page.eval(`document.activeElement.blur()`);
-  check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), '1440px has no horizontal page scroll');
+  check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), '1440px has no horizontal page scroll');
   await page.screenshot(`${SHOTS}home-research-1440.png`);
 
   // A card opens its field on the Research page.
@@ -78,7 +78,7 @@ try {
     if (!moving) {
       check(await page.eval(`(() => { const s = ${SECTION}.querySelector('.research-marquee'); return getComputedStyle(s).overflowX === 'auto' && getComputedStyle(s).scrollSnapType.includes('x') && s.scrollWidth > s.clientWidth; })()`), `${w}px is a swipe row with snap`);
     }
-    check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
+    check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), `${w}px has no horizontal page scroll`);
     await page.screenshot(`${SHOTS}home-research-${w}.png`);
   }
 } finally {

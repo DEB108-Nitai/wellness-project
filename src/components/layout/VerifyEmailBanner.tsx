@@ -25,7 +25,7 @@ export const VerifyEmailBanner: React.FC = () => {
   };
 
   return (
-    <div className="bg-amber-50 border-b border-amber-200 text-amber-900">
+    <div className="no-print bg-amber-50 border-b border-amber-200 text-amber-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3 text-sm">
         <MailWarning className="w-4 h-4 shrink-0 text-amber-600" />
         <p className="flex-1">

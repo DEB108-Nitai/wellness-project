@@ -71,7 +71,8 @@ export const RegistrationsTable: React.FC<{ filters: RegistrationFilters; onChan
 
       {error && <p className="px-5 pt-4 text-sm text-rose-600">{error}</p>}
 
-      <div className={`overflow-x-auto transition-opacity ${data && !error ? '' : 'opacity-70'}`}>
+      {/* relative: keeps the hidden "Actions" column label inside the scroll box; without it the label widened the whole page on phones. */}
+      <div className={`relative overflow-x-auto transition-opacity ${data && !error ? '' : 'opacity-70'}`}>
         <table className="w-full text-left text-xs">
           <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px]">
             <tr>

@@ -19,7 +19,7 @@ export const CookieNotice: React.FC = () => {
   if (!visible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 bg-white border border-slate-200 rounded-2xl shadow-xl p-4.5 animate-in slide-in-from-bottom-5 duration-300">
+    <div className="no-print fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 bg-white border border-slate-200 rounded-2xl shadow-xl p-4.5 animate-in slide-in-from-bottom-5 duration-300">
       <div className="flex items-start gap-3">
         <div className="p-2 rounded-xl bg-teal-50 text-teal-700 shrink-0">
           <ShieldCheck className="w-5 h-5" />

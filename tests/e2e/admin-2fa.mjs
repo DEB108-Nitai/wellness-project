@@ -137,7 +137,7 @@ try {
   await page.waitText('Enter your sign-in code');
   await pause(300);
   await page.screenshot(`${OUT}2fa-05-code-mobile.png`, true);
-  if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px');
+  if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error('horizontal scroll at 390 px');
   step('phone width: no sideways scroll');
 
   const audit = sql(`SELECT GROUP_CONCAT(DISTINCT action ORDER BY action) FROM audit_logs WHERE actor_user_id = (SELECT id FROM users WHERE email = '${email}') AND action LIKE 'AUTH_2FA%'`);

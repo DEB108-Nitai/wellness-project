@@ -93,7 +93,7 @@ try {
   for (const path of ['/admin/users', `/admin/users/${memberId}`, '/admin/admins']) {
     await page.goto(`${BASE}${path}`);
     await pause(900);
-    if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error(`horizontal scroll at 390 px on ${path}`);
+    if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error(`horizontal scroll at 390 px on ${path}`);
   }
   step('phone width: no sideways scroll');
 

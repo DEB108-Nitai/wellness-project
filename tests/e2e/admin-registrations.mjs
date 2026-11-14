@@ -87,7 +87,7 @@ try {
   await page.eval(`document.querySelector('section[aria-label="Registrations per day"]').scrollIntoView()`);
   await pause(200);
   await page.screenshot(`${OUT}admin-07b-day-chart-mobile.png`);
-  if (await page.eval(`document.documentElement.scrollWidth > window.innerWidth + 1`)) throw new Error('horizontal scroll at 390 px');
+  if (await page.eval(`document.documentElement.scrollWidth > document.documentElement.clientWidth + 1`)) throw new Error('horizontal scroll at 390 px');
   step('phone width: no sideways scroll');
 
   console.log(`\nRESULT: PASS (${email})`);

@@ -22,7 +22,7 @@ const step = (m) => console.log(`• ${m}`);
 const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', 'transenigma'], { input: q }).toString().trim();
 const stats = (page) => page.eval(`fetch('/api/content/stats').then(r => r.json()).then(j => j.data)`);
-const noSideways = (page) => page.eval(`document.documentElement.scrollWidth <= window.innerWidth + 1`);
+const noSideways = (page) => page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1`);
 
 async function signUp(page, name, address) {
   await page.goto(`${BASE}/signup`);

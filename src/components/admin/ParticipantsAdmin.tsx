@@ -170,7 +170,8 @@ export const ParticipantsAdmin: React.FC = () => {
               Assessments {data && <span className="font-medium text-slate-400">({data.total})</span>}
             </h2>
           </div>
-          <div className="overflow-x-auto">
+          {/* relative: keeps the hidden "Open" column label inside the scroll box; without it the label widened the whole page on phones. */}
+          <div className="relative overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px]">
                 <tr>

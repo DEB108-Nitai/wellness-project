@@ -47,7 +47,7 @@ try {
       const heroH = await page.eval(`document.querySelector('[aria-labelledby=company-hero-title]').offsetHeight`);
       check(heroH < 900, `dark intro stays compact (${heroH}px)`);
     }
-    check(await page.eval(`document.documentElement.scrollWidth <= innerWidth`), `${w}px has no horizontal page scroll`);
+    check(await page.eval(`document.documentElement.scrollWidth <= document.documentElement.clientWidth`), `${w}px has no horizontal page scroll`);
     await page.eval(`window.scrollTo(0, 0)`);
     await sleep(400);
     await page.screenshot(`${SHOTS}home-${w}-intro.png`);
